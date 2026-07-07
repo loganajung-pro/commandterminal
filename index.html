@@ -425,8 +425,8 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><label>YM bias</label><select id="cb-bias-YM"><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral</option></select></div>
   </div>
   <div class="briefsec"><h4>Annotated Levels</h4>
-    <table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th><th style="text-align:left">Key levels</th></tr></thead><tbody id="cb-lvl-body"></tbody></table>
-    <div class="subtle" style="margin-top:6px">Type the levels you marked on your charts. PDH/PDL/Open prefill from live data when available.</div>
+    <div style="overflow-x:auto"><table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th><th>Lon H</th><th>Lon L</th><th>Asia H</th><th>Asia L</th><th>Mid Open</th><th style="text-align:left">Key levels</th></tr></thead><tbody id="cb-lvl-body"></tbody></table></div>
+    <div class="subtle" style="margin-top:6px">Type the levels you marked on your charts. PDH/PDL/Open prefill from live data when available. Lon/Asia H-L = London & Asia session high/low · Mid Open = 00:00 midnight open.</div>
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
     <div class="drop" id="cb-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
@@ -810,6 +810,7 @@ function renderCal72(){
 }
 
 /* ===== Thesis ===== */
+function sessLevels(_c){if(!_c)return{lonH:null,lonL:null,asiaH:null,asiaL:null,mid:null};return{lonH:parseLvlNum(_c.lonH),lonL:parseLvlNum(_c.lonL),asiaH:parseLvlNum(_c.asiaH),asiaL:parseLvlNum(_c.asiaL),mid:parseLvlNum(_c.mid)};}
 function renderThesis(){
   const el=document.getElementById('thesisCards');if(!el)return;if(!LASTQ.NQUSD){el.innerHTML='<div class="panel">Loading…</div>';return;}
   const evs=todayHigh();
@@ -822,15 +823,37 @@ function renderThesis(){
     if(bw==='bullish'&&lo!=null){entry=fmtN(lo)+'–'+fmtN(pv);t1=fmtN(hi);t2=fmtN(hi+(hi-lo));stop=fmtN(lo-(hi-lo)*0.25);}
     else if(bw==='bearish'&&hi!=null){entry=fmtN(pv)+'–'+fmtN(hi);t1=fmtN(lo);t2=fmtN(lo-(hi-lo));stop=fmtN(hi+(hi-lo)*0.25);}
     else{entry='wait';t1=fmtN(hi);t2=fmtN(lo);stop='—';}
-    const cat=[];if(typeof d.priceAvg50==='number'){cat.push(px>d.priceAvg50?'Holding above 50-day ('+fmtN(d.priceAvg50)+')':'Below 50-day ('+fmtN(d.priceAvg50)+')');cat.push(px>d.priceAvg200?'Above 200-day — bull regime':'Below 200-day — bear regime');}
-    if(evs.length)cat.push('High-impact catalyst today: '+cleanEv(evs[0].event));
-    const risk=[bw==='bullish'?'Sweep below PDL invalidates the discount long':'Sweep above PDH invalidates the premium short','News spike outside a time window = no-trade','SMT on both sides of range = liquidity engineering'];
+    let cat=[],risk=[],sessBlock='';
+    if(_c){
+      // Catalysts + Risks built from YOUR screenshot marks (draw, session liquidity, midnight open, key levels)
+      const sess=sessLevels(_c);
+      const up=[['PDH',hi],['London H',sess.lonH],['Asia H',sess.asiaH]].filter(x=>x[1]!=null).sort((a,b)=>a[1]-b[1]);
+      const dn=[['PDL',lo],['London L',sess.lonL],['Asia L',sess.asiaL]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
+      const drawTxt=COMPOSED.draw||'TWO-SIDED';
+      const tgt=drawTxt==='HIGHER'?up:drawTxt==='LOWER'?dn:up.concat(dn);
+      cat.push('Draw on liquidity: <b>'+drawTxt+'</b>'+(tgt.length?' — targeting '+tgt.map(x=>x[0]+' '+fmtN(x[1])).join(' · '):''));
+      if(sess.mid!=null)cat.push(px>sess.mid?'Above midnight open ('+fmtN(sess.mid)+') — intraday premium':'Below midnight open ('+fmtN(sess.mid)+') — intraday discount');
+      if(_c.key)cat.push('Your marks: '+escH(_c.key));
+      if(evs.length)cat.push('High-impact catalyst today: '+cleanEv(evs[0].event));
+      const dnStr=dn.map(x=>x[0]+' '+fmtN(x[1])).join(' / '),upStr=up.map(x=>x[0]+' '+fmtN(x[1])).join(' / ');
+      if(drawTxt==='HIGHER')risk.push('Sweep below '+(dnStr||'PDL')+' invalidates the long');
+      else if(drawTxt==='LOWER')risk.push('Sweep above '+(upStr||'PDH')+' invalidates the short');
+      else risk.push('Two-sided draw — SMT both sides of range; demand a clean CSD at time or stand aside');
+      if(up.length>1||dn.length>1)risk.push('Equal highs/lows at session extremes = engineered liquidity — expect a sweep before the real move');
+      risk.push('News spike outside a time window = no-trade');
+      const li=(label,arr,side)=>arr.length?`<li><b>${label}:</b> ${arr.map(x=>escH(x[0])+' '+fmtN(x[1])).join(' · ')}${drawTxt===side?` <span class="tag ${side==='HIGHER'?'bull':'bear'}">DRAW</span>`:''}</li>`:'';
+      sessBlock=`<div class="sec" style="margin-top:10px">Draw-on-Liquidity Targets</div><ul class="tight">${li('Buyside',up,'HIGHER')}${li('Sellside',dn,'LOWER')}${sess.mid!=null?`<li><b>Midnight open:</b> ${fmtN(sess.mid)}</li>`:''}</ul>`;
+    } else {
+      if(typeof d.priceAvg50==='number'){cat.push(px>d.priceAvg50?'Holding above 50-day ('+fmtN(d.priceAvg50)+')':'Below 50-day ('+fmtN(d.priceAvg50)+')');cat.push(px>d.priceAvg200?'Above 200-day — bull regime':'Below 200-day — bear regime');}
+      if(evs.length)cat.push('High-impact catalyst today: '+cleanEv(evs[0].event));
+      risk=[bw==='bullish'?'Sweep below PDL invalidates the discount long':'Sweep above PDH invalidates the premium short','News spike outside a time window = no-trade','SMT on both sides of range = liquidity engineering'];
+    }
     return `<div class="panel tcard"><div class="th"><div><div class="sym">${SHORT[sy]}</div><div class="sub">${NAMES[sy].split('· ')[1]}</div></div><span class="tag ${bt}">${arrow} ${bias}</span></div>
       <hr class="d"><div class="sec">Catalysts</div><ul class="tight">${cat.map(c=>`<li>${c}</li>`).join('')}</ul>
       <div class="sec" style="margin-top:10px">Risks</div><ul class="tight">${risk.map(c=>`<li>${c}</li>`).join('')}</ul>
       <div class="sec" style="margin-top:10px">Price Levels</div>
       <div class="lvlbar"><div><div class="l">Now</div><div class="n">${fmtN(px)}</div></div><div><div class="l">Entry</div><div class="n">${entry}</div></div><div><div class="l">T1</div><div class="n">${t1}</div></div><div><div class="l">T2</div><div class="n">${t2}</div></div><div><div class="l">Stop</div><div class="n down">${stop}</div></div></div>
-      ${(_c&&_c.key)?`<div class="subtle" style="margin-top:8px"><b>Your marks:</b> ${escH(_c.key)}</div>`:''}
+      ${sessBlock}
       <div class="subtle" style="margin-top:8px"><b>Invalidation:</b> ${bw==='bullish'?'clean CSD back below '+fmtN(lo):bw==='bearish'?'clean CSD back above '+fmtN(hi):'range holds — no directional read'}. Entry only on POI + time + SMT + CSD.</div></div>`;
   }).join('');
 }
@@ -967,6 +990,7 @@ function briefHtml(b){
   <div class="briefsec"><h4>Key Themes</h4><ul class="tight">${(b.themes||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
   <div class="briefsec"><h4>Watch Today</h4><ul class="tight">${(b.watch||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
   <div class="briefsec"><h4>Intraday Reversion Levels</h4><table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th></tr></thead><tbody>${(b.levels||[]).map(l=>`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`).join('')}</tbody></table></div>
+  ${(b.levels&&b.levels.some(hasSess))?`<div class="briefsec"><h4>Session Levels</h4>${sessTable(b.levels)}</div>`:''}
   ${(b.levels&&b.levels.some(l=>l.key))?`<div class="briefsec"><h4>Key Levels</h4><ul class="tight">${b.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${String(l.key).replace(/</g,'&lt;')}</li>`).join('')}</ul></div>`:''}
   ${(b.shots&&b.shots.length)?`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:''}
   <div class="briefsec"><h4>High-Impact Events</h4>${(b.events&&b.events.length)?b.events.map(e=>`<div class="evrow"><span class="tm">${e.t}</span><span>${e.name}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`).join(''):'<div class="subtle">Clean tape — no high-impact prints.</div>'}</div>`;
@@ -984,7 +1008,7 @@ let cbShots=[];
 function cbEl(id){return document.getElementById(id);}
 function cbRenderShots(){const c=cbEl('cb-shots');if(!c)return;c.innerHTML=cbShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{cbShots.splice(+x.dataset.i,1);cbRenderShots();}));}
 function cbAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{cbShots.push(u);cbRenderShots();});rd.readAsDataURL(file);}
-function cbBuildLevels(){const body=cbEl('cb-lvl-body');if(!body)return;body.innerHTML=['NQ','ES','YM'].map(k=>`<tr><td>${k}</td><td><input id="cb-pdh-${k}" class="cbin"></td><td><input id="cb-pdl-${k}" class="cbin"></td><td><input id="cb-open-${k}" class="cbin"></td><td><input id="cb-now-${k}" class="cbin"></td><td><input id="cb-key-${k}" class="cbin" style="text-align:left" placeholder="OB · FVG · equal highs…"></td></tr>`).join('');}
+function cbBuildLevels(){const body=cbEl('cb-lvl-body');if(!body)return;body.innerHTML=['NQ','ES','YM'].map(k=>`<tr><td>${k}</td><td><input id="cb-pdh-${k}" class="cbin"></td><td><input id="cb-pdl-${k}" class="cbin"></td><td><input id="cb-open-${k}" class="cbin"></td><td><input id="cb-now-${k}" class="cbin"></td><td><input id="cb-lonH-${k}" class="cbin"></td><td><input id="cb-lonL-${k}" class="cbin"></td><td><input id="cb-asiaH-${k}" class="cbin"></td><td><input id="cb-asiaL-${k}" class="cbin"></td><td><input id="cb-mid-${k}" class="cbin"></td><td><input id="cb-key-${k}" class="cbin" style="text-align:left" placeholder="OB · FVG · equal highs…"></td></tr>`).join('');}
 function openCompose(){
   const ds=etParts().date;cbEl('cb-date').value=ds;
   try{const s=drawState();cbEl('cb-draw').value=(s&&s.draw)?s.draw:'HIGHER';}catch(e){cbEl('cb-draw').value='HIGHER';}
@@ -998,14 +1022,15 @@ function openCompose(){
       if(d.open!=null)cbEl('cb-open-'+k).value=fmtN(d.open);
       if(d.price!=null)cbEl('cb-now-'+k).value=fmtN(d.price);}});
   cbShots=[];['cb-overview','cb-themes','cb-watch'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
-  const existing=getBriefs()[ds];if(existing&&existing.manual)cbLoad(existing);
+  // Reopen keeps your work: prefer the live composed brief (screenshots + fields) for today, else a saved manual brief.
+  const existing=(COMPOSED&&COMPOSED.date===ds)?COMPOSED:getBriefs()[ds];if(existing&&existing.manual)cbLoad(existing);
   cbRenderShots();cbEl('cb-status').textContent='';
   cbEl('composeModal').classList.add('open');
 }
 function cbLoad(b){
   if(b.draw)cbEl('cb-draw').value=b.draw;
   if(b.bias)['NQ','ES','YM'].forEach(k=>{if(b.bias[k]&&cbEl('cb-bias-'+k))cbEl('cb-bias-'+k).value=b.bias[k];});
-  (b.levels||[]).forEach(l=>{const k=l.s;if(cbEl('cb-pdh-'+k)){cbEl('cb-pdh-'+k).value=(l.pdh&&l.pdh!=='—')?l.pdh:'';cbEl('cb-pdl-'+k).value=(l.pdl&&l.pdl!=='—')?l.pdl:'';cbEl('cb-open-'+k).value=(l.open&&l.open!=='—')?l.open:'';cbEl('cb-now-'+k).value=(l.now&&l.now!=='—')?l.now:'';if(cbEl('cb-key-'+k))cbEl('cb-key-'+k).value=l.key||'';}});
+  (b.levels||[]).forEach(l=>{const k=l.s;if(cbEl('cb-pdh-'+k)){const setv=(id,v)=>{if(cbEl(id))cbEl(id).value=(v&&v!=='—')?v:'';};setv('cb-pdh-'+k,l.pdh);setv('cb-pdl-'+k,l.pdl);setv('cb-open-'+k,l.open);setv('cb-now-'+k,l.now);setv('cb-lonH-'+k,l.lonH);setv('cb-lonL-'+k,l.lonL);setv('cb-asiaH-'+k,l.asiaH);setv('cb-asiaL-'+k,l.asiaL);setv('cb-mid-'+k,l.mid);if(cbEl('cb-key-'+k))cbEl('cb-key-'+k).value=l.key||'';}});
   cbEl('cb-overview').value=(b.overview||[]).join('\n\n');
   cbEl('cb-themes').value=(b.themes||[]).join('\n');
   cbEl('cb-watch').value=(b.watch||[]).join('\n');
@@ -1017,7 +1042,7 @@ function buildComposedObject(){
   const draw=cbEl('cb-draw').value;
   const g=k=>cbEl(k)?cbEl(k).value.trim():'';
   const bias={NQ:g('cb-bias-NQ'),ES:g('cb-bias-ES'),YM:g('cb-bias-YM')};
-  const levels=['NQ','ES','YM'].map(k=>({s:k,pdh:g('cb-pdh-'+k)||'—',pdl:g('cb-pdl-'+k)||'—',open:g('cb-open-'+k)||'—',now:g('cb-now-'+k)||'—',key:g('cb-key-'+k)}));
+  const levels=['NQ','ES','YM'].map(k=>({s:k,pdh:g('cb-pdh-'+k)||'—',pdl:g('cb-pdl-'+k)||'—',open:g('cb-open-'+k)||'—',now:g('cb-now-'+k)||'—',lonH:g('cb-lonH-'+k)||'—',lonL:g('cb-lonL-'+k)||'—',asiaH:g('cb-asiaH-'+k)||'—',asiaL:g('cb-asiaL-'+k)||'—',mid:g('cb-mid-'+k)||'—',key:g('cb-key-'+k)}));
   const overview=cbEl('cb-overview').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
   const themes=cbEl('cb-themes').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const watch=cbEl('cb-watch').value.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -1027,14 +1052,20 @@ function buildComposedObject(){
 function doneCompose(){ COMPOSED=buildComposedObject(); try{localStorage.setItem('ct_composed',JSON.stringify(COMPOSED));}catch(e){} closeCompose(); goBrief(); applyComposed(); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
 function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);safe(renderThesis);renderComposedCharts();}
+const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
+function lvlShow(v){return (v&&v!=='—')?escH(v):'—';}
+function hasSess(l){return SESS_FIELDS.some(f=>l[f]&&l[f]!=='—');}
+function sessTable(levels){const rows=(levels||[]).filter(hasSess);if(!rows.length)return'';return `<table class="lvl"><thead><tr><th></th><th>London H</th><th>London L</th><th>Asia H</th><th>Asia L</th><th>Mid Open</th></tr></thead><tbody>${rows.map(l=>`<tr><td>${l.s}</td><td>${lvlShow(l.lonH)}</td><td>${lvlShow(l.lonL)}</td><td>${lvlShow(l.asiaH)}</td><td>${lvlShow(l.asiaL)}</td><td>${lvlShow(l.mid)}</td></tr>`).join('')}</tbody></table>`;}
 function renderComposedCharts(){
   const el=cbEl('composedCharts');if(!el)return;
   if(!COMPOSED){el.innerHTML='';return;}
   const hasKey=COMPOSED.levels&&COMPOSED.levels.some(l=>l.key);
-  if(!hasKey){el.innerHTML='';return;}
-  // Key-level text only on the main page. Chart screenshots live in the pop-outs (composer + brief review), never on the main brief.
+  const st=sessTable(COMPOSED.levels);
+  if(!hasKey&&!st){el.innerHTML='';return;}
+  // Key-level text + session levels only on the main page. Chart screenshots live in the pop-outs (composer + brief review), never on the main brief.
   let h='<hr class="d">';
-  h+=`<div class="panel"><h2 class="sec">Key Levels — your marks</h2><ul class="tight">${COMPOSED.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${escH(l.key)}</li>`).join('')}</ul></div>`;
+  if(st)h+=`<div class="panel"><h2 class="sec">Session Levels — your marks</h2>${st}<div class="subtle" style="margin-top:6px">London / Asia session highs & lows · 00:00 midnight open.</div></div>`;
+  if(hasKey){if(st)h+='<hr class="d">';h+=`<div class="panel"><h2 class="sec">Key Levels — your marks</h2><ul class="tight">${COMPOSED.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${escH(l.key)}</li>`).join('')}</ul></div>`;}
   el.innerHTML=h;
 }
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1046,11 +1077,12 @@ function parseJsonLoose(t){if(!t)return null;let s=String(t).trim();s=s.replace(
 const CHART_PROMPT=`You are reading annotated futures index charts (NQ = Nasdaq 100, ES = S&P 500, YM = Dow). Each image is one instrument with price levels the trader has marked. Identify the instrument from the ticker/title on the chart, then read the marked horizontal price levels and the current price.
 
 Return ONLY strict JSON — no prose, no code fences — in exactly this shape:
-{"NQ":{"pdh":"","pdl":"","open":"","now":"","key":""},"ES":{"pdh":"","pdl":"","open":"","now":"","key":""},"YM":{"pdh":"","pdl":"","open":"","now":"","key":""},"bias":{"NQ":"neutral","ES":"neutral","YM":"neutral"},"draw":"TWO-SIDED"}
+{"NQ":{"pdh":"","pdl":"","open":"","now":"","lonH":"","lonL":"","asiaH":"","asiaL":"","mid":"","key":""},"ES":{"pdh":"","pdl":"","open":"","now":"","lonH":"","lonL":"","asiaH":"","asiaL":"","mid":"","key":""},"YM":{"pdh":"","pdl":"","open":"","now":"","lonH":"","lonL":"","asiaH":"","asiaL":"","mid":"","key":""},"bias":{"NQ":"neutral","ES":"neutral","YM":"neutral"},"draw":"TWO-SIDED"}
 
 Rules:
 - Include an instrument object ONLY if that instrument appears in an image; omit the others entirely.
 - pdh = prior day high, pdl = prior day low, open = session/day open, now = current/last price (usually the highlighted price on the right axis).
+- lonH / lonL = London session high / low. asiaH / asiaL = Asia session high / low. mid = 00:00 midnight open price. Read these only if the trader marked them.
 - Preserve the number formatting as shown (commas are fine). If a value is not marked or visible, use "".
 - key = any other marked levels as short text, e.g. "OB 29,650 · FVG 29,720 · equal lows 29,400". Use "" if none.
 - bias per instrument: bullish, bearish, or neutral — infer from structure/annotations only if clear, else neutral.
@@ -1080,8 +1112,8 @@ async function cbReadChart(){
 function cbApplyRead(data){
   let n=0;const setIf=(id,v)=>{const el=cbEl(id);if(el&&v!=null&&String(v).trim()!=='')el.value=String(v).trim();};
   ['NQ','ES','YM'].forEach(k=>{const o=data[k]||data[k.toLowerCase()];if(!o||typeof o!=='object')return;
-    const before=['pdh','pdl','open','now','key'].some(f=>o[f]&&String(o[f]).trim()!=='');if(before)n++;
-    setIf('cb-pdh-'+k,o.pdh);setIf('cb-pdl-'+k,o.pdl);setIf('cb-open-'+k,o.open);setIf('cb-now-'+k,o.now);setIf('cb-key-'+k,o.key);
+    const before=['pdh','pdl','open','now','lonH','lonL','asiaH','asiaL','mid','key'].some(f=>o[f]&&String(o[f]).trim()!=='');if(before)n++;
+    setIf('cb-pdh-'+k,o.pdh);setIf('cb-pdl-'+k,o.pdl);setIf('cb-open-'+k,o.open);setIf('cb-now-'+k,o.now);setIf('cb-lonH-'+k,o.lonH);setIf('cb-lonL-'+k,o.lonL);setIf('cb-asiaH-'+k,o.asiaH);setIf('cb-asiaL-'+k,o.asiaL);setIf('cb-mid-'+k,o.mid);setIf('cb-key-'+k,o.key);
     const bb=cbEl('cb-bias-'+k),bw=data.bias&&(data.bias[k]||data.bias[k.toLowerCase()]);if(bb&&bw&&['bullish','bearish','neutral'].indexOf(String(bw).toLowerCase())>=0)bb.value=String(bw).toLowerCase();
   });
   if(data.draw&&cbEl('cb-draw')){const dv=String(data.draw).toUpperCase();if(['HIGHER','LOWER','TWO-SIDED'].indexOf(dv)>=0)cbEl('cb-draw').value=dv;}
