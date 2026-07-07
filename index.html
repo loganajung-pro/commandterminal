@@ -686,6 +686,9 @@ function renderLevels(){
 function biasWord(d){if(!d)return null;if(typeof d.priceAvg50==="number"&&typeof d.priceAvg200==="number"){if(d.price>d.priceAvg50&&d.priceAvg50>d.priceAvg200)return"bullish";if(d.price<d.priceAvg50&&d.priceAvg50<d.priceAvg200)return"bearish";return"mixed";}return d.change>0?"bullish":d.change<0?"bearish":"mixed";}
 function drawState(){const w={NQ:biasWord(LASTQ.NQUSD),ES:biasWord(LASTQ.ESUSD),YM:biasWord(LASTQ.YMUSD)};const b=Object.values(w).filter(x=>x==="bullish").length,be=Object.values(w).filter(x=>x==="bearish").length;let draw=b>=2&&be===0?"HIGHER":be>=2&&b===0?"LOWER":"TWO-SIDED";return{w,draw,b,be};}
 function todayHigh(){const td=etParts().date;return CAL.filter(e=>etDateStr(utcToEt(e.date))===td&&e.impact==="High").sort((a,b)=>utcToEt(a.date)-utcToEt(b.date));}
+/* composed-level helpers: when a briefing is manually composed, pull numeric levels from your typed marks */
+function parseLvlNum(s){if(s==null)return null;const n=parseFloat(String(s).replace(/[^0-9.\-]/g,''));return isNaN(n)?null:n;}
+function composedLvl(sh){if(!COMPOSED)return null;return (COMPOSED.levels||[]).find(l=>l.s===sh)||null;}
 
 /* ============================ NAV + CLOCK ============================ */
 const RENDERED={};
@@ -739,7 +742,7 @@ function renderOverview(){
 function renderCoach(){
   const q=LASTQ;if(!q.NQUSD){document.getElementById('coachDaily').textContent='Waiting on quotes…';return;}
   const {w,draw}=drawState();let stance=draw==='HIGHER'?'Favor <b>longs</b> from discount POIs. Hunt sellside sweeps + bullish SMT into a window.':draw==='LOWER'?'Favor <b>shorts</b> from premium POIs. Hunt buyside sweeps + bearish SMT into a window.':'Mixed triad — <span class="down">guardrail day</span>. Demand a clean SMT + CSD at time, or stand aside.';
-  const nq=q.NQUSD;let zone='n/a';if(typeof nq.dayHigh==='number'){const r=nq.dayHigh-nq.dayLow,pos=r>0?(nq.price-nq.dayLow)/r*100:50;zone=pos>66?'premium (upper third)':pos<33?'discount (lower third)':'equilibrium (mid-range)';}
+  const nq=q.NQUSD;let zone='n/a';const _cl=composedLvl('NQ');let _zh=_cl?parseLvlNum(_cl.pdh):null,_zl=_cl?parseLvlNum(_cl.pdl):null,_zp=_cl?parseLvlNum(_cl.now):null;if(_zh==null)_zh=nq.dayHigh;if(_zl==null)_zl=nq.dayLow;if(_zp==null)_zp=nq.price;if(typeof _zh==='number'&&typeof _zl==='number'&&typeof _zp==='number'){const r=_zh-_zl,pos=r>0?(_zp-_zl)/r*100:50;zone=pos>66?'premium (upper third)':pos<33?'discount (lower third)':'equilibrium (mid-range)';}
   const arr=[['NQ',q.NQUSD.changePercentage],['ES',q.ESUSD&&q.ESUSD.changePercentage],['YM',q.YMUSD&&q.YMUSD.changePercentage]].filter(x=>typeof x[1]==='number').sort((a,b)=>b[1]-a[1]);
   const div=new Set(arr.map(x=>Math.sign(x[1]))).size>1;const basis=RICH?'structure vs 50/200-day':'intraday proxy';
   document.getElementById('coachDaily').innerHTML=`<p><b>HTF draw:</b> ${draw} <span class="subtle">(NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM} · ${basis})</span><br><b>NQ zone:</b> ${zone}<br><b>SMT:</b> ${div?'<span class="down">Triad diverging — potential SMT building. Confirm at POI + time.</span>':'Triad in tandem — no clean SMT yet.'}</p><p><b>Play:</b> ${stance}</p>`;
@@ -804,7 +807,10 @@ function renderThesis(){
   const evs=todayHigh();
   el.innerHTML=SYMS.map(sy=>{const d=LASTQ[sy];if(!d)return'';
     const bw=biasWord(d);const bias=bw==='bullish'?'BULLISH':bw==='bearish'?'BEARISH':'NEUTRAL';const bt=bw==='bullish'?'bull':bw==='bearish'?'bear':'neut';const arrow=bw==='bullish'?'▲':bw==='bearish'?'▼':'•';
-    const hi=(d.pdh!=null)?d.pdh:d.dayHigh,lo=(d.pdl!=null)?d.pdl:d.dayLow,px=d.price,pv=d.previousClose;let entry,t1,t2,stop;
+    const _c=composedLvl(SHORT[sy]);let hi,lo,px,pv;
+    if(_c){hi=parseLvlNum(_c.pdh);lo=parseLvlNum(_c.pdl);px=parseLvlNum(_c.now);if(hi==null)hi=(d.pdh!=null)?d.pdh:d.dayHigh;if(lo==null)lo=(d.pdl!=null)?d.pdl:d.dayLow;if(px==null)px=d.price;pv=(d.previousClose!=null)?d.previousClose:((parseLvlNum(_c.open)!=null)?parseLvlNum(_c.open):px);}
+    else{hi=(d.pdh!=null)?d.pdh:d.dayHigh;lo=(d.pdl!=null)?d.pdl:d.dayLow;px=d.price;pv=d.previousClose;}
+    let entry,t1,t2,stop;
     if(bw==='bullish'&&lo!=null){entry=fmtN(lo)+'–'+fmtN(pv);t1=fmtN(hi);t2=fmtN(hi+(hi-lo));stop=fmtN(lo-(hi-lo)*0.25);}
     else if(bw==='bearish'&&hi!=null){entry=fmtN(pv)+'–'+fmtN(hi);t1=fmtN(lo);t2=fmtN(lo-(hi-lo));stop=fmtN(hi+(hi-lo)*0.25);}
     else{entry='wait';t1=fmtN(hi);t2=fmtN(lo);stop='—';}
@@ -816,6 +822,7 @@ function renderThesis(){
       <div class="sec" style="margin-top:10px">Risks</div><ul class="tight">${risk.map(c=>`<li>${c}</li>`).join('')}</ul>
       <div class="sec" style="margin-top:10px">Price Levels</div>
       <div class="lvlbar"><div><div class="l">Now</div><div class="n">${fmtN(px)}</div></div><div><div class="l">Entry</div><div class="n">${entry}</div></div><div><div class="l">T1</div><div class="n">${t1}</div></div><div><div class="l">T2</div><div class="n">${t2}</div></div><div><div class="l">Stop</div><div class="n down">${stop}</div></div></div>
+      ${(_c&&_c.key)?`<div class="subtle" style="margin-top:8px"><b>Your marks:</b> ${escH(_c.key)}</div>`:''}
       <div class="subtle" style="margin-top:8px"><b>Invalidation:</b> ${bw==='bullish'?'clean CSD back below '+fmtN(lo):bw==='bearish'?'clean CSD back above '+fmtN(hi):'range holds — no directional read'}. Entry only on POI + time + SMT + CSD.</div></div>`;
   }).join('');
 }
@@ -1009,9 +1016,9 @@ function buildComposedObject(){
   const gen=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual';
   return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],shots:cbShots.slice(),manual:true};
 }
-function doneCompose(){ COMPOSED=buildComposedObject(); closeCompose(); goBrief(); applyComposed(); }
+function doneCompose(){ COMPOSED=buildComposedObject(); try{localStorage.setItem('ct_composed',JSON.stringify(COMPOSED));}catch(e){} closeCompose(); goBrief(); applyComposed(); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
-function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);renderComposedCharts();}
+function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);safe(renderThesis);renderComposedCharts();}
 function renderComposedCharts(){
   const el=cbEl('composedCharts');if(!el)return;
   if(!COMPOSED){el.innerHTML='';return;}
@@ -1123,8 +1130,10 @@ function startDailySchedules(){
 try{const s=localStorage.getItem('ct_live_ms');LIVE_MS=(s!=null)?(+s||0):120000;}catch(e){LIVE_MS=120000;}
 document.getElementById('f-date').value=etParts().date;
 seedTrades();
+try{const _sc=localStorage.getItem('ct_composed');if(_sc){const _o=JSON.parse(_sc);if(_o&&_o.date===etParts().date)COMPOSED=_o;else localStorage.removeItem('ct_composed');}}catch(e){}
 tick();setInterval(tick,1000);
 loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
+if(COMPOSED)safe(renderComposedCharts);
 applyInterval();
 startDailySchedules();
 </script>
