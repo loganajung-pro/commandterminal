@@ -447,8 +447,7 @@ ul.tight li::marker{color:var(--org)}
     </div>
   </div>
   <div class="briefsec"><h4>Point of Interest</h4>
-    <table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th><th style="text-align:left">POI / key</th></tr></thead><tbody id="pm-lvl-body"></tbody></table>
-    <div class="subtle" style="margin-top:6px">PDH/PDL/Open prefill from live NQ when available.</div>
+    <div class="field"><input id="pm-key" placeholder="NQ POI / key level — OB · FVG · liquidity pool · price…" style="width:100%"></div>
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
     <div class="drop" id="pm-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
@@ -1044,27 +1043,22 @@ function pmHasContent(ex){return !!(ex&&((ex.scenario&&ex.scenario.length)||(ex.
 let pmShots=[];
 function pmRenderShots(){const c=cbEl('pm-shots');if(!c)return;c.innerHTML=pmShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{pmShots.splice(+x.dataset.i,1);pmRenderShots();}));}
 function pmAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{pmShots.push(u);pmRenderShots();});rd.readAsDataURL(file);}
-function pmBuildLevels(){const b=cbEl('pm-lvl-body');if(!b)return;b.innerHTML=`<tr><td>NQ</td><td><input id="pm-pdh" class="cbin"></td><td><input id="pm-pdl" class="cbin"></td><td><input id="pm-open" class="cbin"></td><td><input id="pm-now" class="cbin"></td><td><input id="pm-key" class="cbin" style="text-align:left" placeholder="OB · FVG · liquidity…"></td></tr>`;}
 function openPm(){
   if(!selDay){alert('Pick a day on the calendar first.');return;}
   cbEl('pmDayLbl').textContent='· '+fmtDayLong(selDay);
-  pmBuildLevels();
   const ex=loadPm()[selDay];
   if(ex){
-    cbEl('pm-dir').value=ex.dir||'—';const p=ex.poi||{};
-    cbEl('pm-pdh').value=p.pdh||'';cbEl('pm-pdl').value=p.pdl||'';cbEl('pm-open').value=p.open||'';cbEl('pm-now').value=p.now||'';cbEl('pm-key').value=p.key||'';
+    cbEl('pm-dir').value=ex.dir||'—';cbEl('pm-key').value=(ex.poi&&ex.poi.key)||'';
     cbEl('pm-scenario').value=(ex.scenario||[]).join('\n\n');pmShots=(ex.shots||[]).slice();
   }else{
-    cbEl('pm-dir').value='—';const d=(LASTQ&&LASTQ.NQUSD)?LASTQ.NQUSD:null;
-    if(d){const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;if(ph!=null)cbEl('pm-pdh').value=fmtN(ph);if(pl!=null)cbEl('pm-pdl').value=fmtN(pl);if(d.open!=null)cbEl('pm-open').value=fmtN(d.open);if(d.price!=null)cbEl('pm-now').value=fmtN(d.price);}
-    cbEl('pm-scenario').value='';pmShots=[];
+    cbEl('pm-dir').value='—';cbEl('pm-key').value='';cbEl('pm-scenario').value='';pmShots=[];
   }
   pmRenderShots();cbEl('pm-status').textContent='';cbEl('pmModal').classList.add('open');
 }
 function closePm(){cbEl('pmModal').classList.remove('open');}
 function savePm(){
   if(!selDay)return;const g=id=>cbEl(id)?cbEl(id).value.trim():'';
-  const obj={date:selDay,dir:g('pm-dir'),poi:{pdh:g('pm-pdh'),pdl:g('pm-pdl'),open:g('pm-open'),now:g('pm-now'),key:g('pm-key')},scenario:cbEl('pm-scenario').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean),shots:pmShots.slice()};
+  const obj={date:selDay,dir:g('pm-dir'),poi:{key:g('pm-key')},scenario:cbEl('pm-scenario').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean),shots:pmShots.slice()};
   const all=loadPm();if(pmHasContent(obj))all[selDay]=obj;else delete all[selDay];
   if(!savePmAll(all))return;
   closePm();renderPmView();ideasCalendar();
