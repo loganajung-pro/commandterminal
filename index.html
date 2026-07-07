@@ -267,10 +267,11 @@ ul.tight li::marker{color:var(--org)}
             <hr class="d"><div class="subtle">SMT → POI → Time → Displacement → CSD → M1</div></div>
         </div>
       </div>
+      <div id="composedCharts"></div>
       <hr class="d">
       <div style="text-align:center;padding:6px 0 12px">
         <button class="btn grn" id="composeBriefBtn" style="padding:13px 30px;font-size:14px">＋ Compose Daily Briefing</button>
-        <div class="subtle" style="margin-top:7px">Pop out a builder — attach annotated chart screenshots, mark your levels, and it saves as today's briefing on the Protocol Calendar.</div>
+        <div class="subtle" style="margin-top:7px">Pop out a builder — attach annotated charts, mark your levels. Hit <b>Done</b> and it fills this Market Brief. Save it with “Save today's brief” up top when you're ready.</div>
       </div>
     </section>
 
@@ -404,7 +405,7 @@ ul.tight li::marker{color:var(--org)}
 <div class="modal" id="composeModal"><div class="box" style="max-width:840px">
   <span class="x" id="composeX">✕</span>
   <h3>Compose Daily Briefing</h3>
-  <div class="subtle" id="composeDateLbl">Attach annotated charts, mark your levels, and save to the Protocol Calendar.</div>
+  <div class="subtle" id="composeDateLbl">Attach annotated charts, mark your levels, hit Done — it fills your Market Brief. Save it from there.</div>
   <div class="briefsec"><h4>Session Read</h4>
     <div class="row2">
       <div class="field"><label>Date</label><input type="date" id="cb-date"></div>
@@ -431,7 +432,7 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><textarea id="cb-themes" style="min-height:66px" placeholder="HTF draw higher across NQ/ES/YM&#10;One trade per focus window"></textarea></div></div>
   <div class="briefsec"><h4>Watch Today <span class="subtle">— one per line</span></h4>
     <div class="field"><textarea id="cb-watch" style="min-height:66px" placeholder="10:00 AM — ISM Services&#10;PDH sweep into NY AM"></textarea></div></div>
-  <button class="btn grn" id="cb-save" style="width:100%;margin-top:8px">Save Daily Briefing</button>
+  <button class="btn grn" id="cb-save" style="width:100%;margin-top:8px">Done → populate Market Brief</button>
   <div class="subtle" id="cb-status" style="margin-top:6px"></div>
 </div></div>
 <script>
@@ -536,7 +537,7 @@ const BRIEFS={
   events:[{t:"10:00 AM",name:"ISM Services PMI",impact:"High"},{t:"10:00 AM",name:"ISM Non-Manufacturing PMI",impact:"High"},{t:"10:00 AM",name:"ISM Non-Manufacturing Prices",impact:"High"}]}
 };
 /*BRIEFS_END*/
-let SNAPSHOT_MODE=false, LASTQ={}, RICH=false, CAL=[];
+let SNAPSHOT_MODE=false, LASTQ={}, RICH=false, CAL=[], COMPOSED=null;
 let LIVE_MS=10000, lastUpdate=Date.now();   // live quote refresh cadence (ms)
 function getBridge(){ try{ if(window.cowork&&window.cowork.callMcpTool)return window.cowork; if(typeof window.callMcpTool==="function")return window; }catch(e){} return null; }
 function waitForBridge(ms){return new Promise(r=>{if(getBridge())return r(true);const s=Date.now();const i=setInterval(()=>{if(getBridge()){clearInterval(i);r(true);}else if(Date.now()-s>ms){clearInterval(i);r(false);}},150);});}
@@ -651,6 +652,7 @@ function renderQuotes(){
 }
 function renderLevels(){
   const tb=document.querySelector("#lvlTable tbody");let h="";
+  if(COMPOSED){(COMPOSED.levels||[]).forEach(l=>{h+=`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`;});tb.innerHTML=h;return;}
   SYMS.forEach(sy=>{const d=LASTQ[sy];if(!d)return;
     const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;
     h+=`<tr><td>${SHORT[sy]}</td><td>${fmtN(ph)}</td><td>${fmtN(pl)}</td><td>${fmtN(d.open)}</td><td class="${d.change>=0?'up':'down'}">${fmtN(d.price)}</td></tr>`;});
@@ -702,6 +704,7 @@ function renderWindows(){const now=etParts().min,wins=todaysWindows();let ni=win
 
 /* ===== Brief narrative + coach + themes ===== */
 function renderOverview(){
+  if(COMPOSED){const el=document.getElementById('overview');el.innerHTML=(COMPOSED.overview&&COMPOSED.overview.length)?COMPOSED.overview.map(p=>'<p>'+escH(p)+'</p>').join(''):'<p class="subtle">No overview entered.</p>';return;}
   if(!LASTQ.NQUSD)return;const {w,draw}=drawState();const nq=LASTQ.NQUSD;const evs=todayHigh();
   const evTxt=evs.length?evs.map(e=>fmtEtTime(utcToEt(e.date))+' '+cleanEv(e.event)).join(', '):'no high-impact US prints — clean tape';
   const fomc=evs.some(e=>/FOMC|Interest Rate/i.test(e.event));
@@ -718,6 +721,11 @@ function renderCoach(){
   document.getElementById('coachDaily').innerHTML=`<p><b>HTF draw:</b> ${draw} <span class="subtle">(NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM} · ${basis})</span><br><b>NQ zone:</b> ${zone}<br><b>SMT:</b> ${div?'<span class="down">Triad diverging — potential SMT building. Confirm at POI + time.</span>':'Triad in tandem — no clean SMT yet.'}</p><p><b>Play:</b> ${stance}</p>`;
 }
 function renderKeyThemes(){
+  if(COMPOSED){
+    document.getElementById('keyThemes').innerHTML=(COMPOSED.themes&&COMPOSED.themes.length)?COMPOSED.themes.map(t=>`<li>${escH(t)}</li>`).join(''):'<li class="subtle">—</li>';
+    document.getElementById('watchToday').innerHTML=(COMPOSED.watch&&COMPOSED.watch.length)?COMPOSED.watch.map(t=>`<li>${escH(t)}</li>`).join(''):'<li class="subtle">—</li>';
+    return;
+  }
   if(!LASTQ.NQUSD)return;const evs=todayHigh();const {draw}=drawState();const themes=[];
   themes.push(`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw, not against it`);
   themes.push(evs.length?`${evs.length} high-impact US print(s) today — expect engineered volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact US prints today — structure leads, cleaner protocol tape');
@@ -903,6 +911,7 @@ document.getElementById('impFile').addEventListener('change',ev=>{const f=ev.tar
 function localBriefs(){try{return JSON.parse(localStorage.getItem('ct_briefs')||'{}');}catch(e){return {};}}
 function getBriefs(){return Object.assign({},BRIEFS,localBriefs());}
 function buildBriefObject(){
+  if(COMPOSED){return Object.assign({},COMPOSED,{gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual'});}
   if(!LASTQ.NQUSD)return null;const {w,draw}=drawState();const nq=LASTQ.NQUSD;
   let zone='equilibrium';if(typeof nq.dayHigh==='number'){const r=nq.dayHigh-nq.dayLow,pos=r>0?(nq.price-nq.dayLow)/r*100:50;zone=pos>66?'premium':pos<33?'discount':'equilibrium';}
   const evs=todayHigh();const dir=draw==='HIGHER'?'longs from discount POIs':draw==='LOWER'?'shorts from premium POIs':'standing down until the triad picks a side';
@@ -964,7 +973,7 @@ function cbLoad(b){
   cbShots=(b.shots||[]).slice();
 }
 function closeCompose(){cbEl('composeModal').classList.remove('open');}
-function saveComposedBrief(){
+function buildComposedObject(){
   const date=cbEl('cb-date').value||etParts().date;
   const draw=cbEl('cb-draw').value;
   const g=k=>cbEl(k)?cbEl(k).value.trim():'';
@@ -974,20 +983,30 @@ function saveComposedBrief(){
   const themes=cbEl('cb-themes').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const watch=cbEl('cb-watch').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const gen=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual';
-  const b={date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],shots:cbShots.slice(),manual:true};
-  const l=localBriefs();l[date]=b;
-  try{localStorage.setItem('ct_briefs',JSON.stringify(l));}
-  catch(e){cbEl('cb-status').innerHTML='<span class="down">Storage full — remove a screenshot or two and save again.</span>';return;}
-  closeCompose();if(RENDERED.calendar)safe(renderMonthPlan);
-  openBrief(date);
+  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],shots:cbShots.slice(),manual:true};
 }
+function doneCompose(){ COMPOSED=buildComposedObject(); closeCompose(); goBrief(); applyComposed(); }
+function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
+function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);renderComposedCharts();}
+function renderComposedCharts(){
+  const el=cbEl('composedCharts');if(!el)return;
+  if(!COMPOSED){el.innerHTML='';return;}
+  const hasKey=COMPOSED.levels&&COMPOSED.levels.some(l=>l.key);
+  const hasShots=COMPOSED.shots&&COMPOSED.shots.length;
+  if(!hasKey&&!hasShots){el.innerHTML='';return;}
+  let h='<hr class="d">';
+  if(hasKey)h+=`<div class="panel"><h2 class="sec">Key Levels — your marks</h2><ul class="tight">${COMPOSED.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${escH(l.key)}</li>`).join('')}</ul></div>`;
+  if(hasShots){if(hasKey)h+='<hr class="d">';h+=`<div class="panel"><h2 class="sec">Annotated Charts</h2>${COMPOSED.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`;}
+  el.innerHTML=h;
+}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 if(cbEl('composeBriefBtn')){
   cbEl('composeBriefBtn').addEventListener('click',openCompose);
   cbEl('composeX').addEventListener('click',closeCompose);
   cbEl('composeModal').addEventListener('click',e=>{if(e.target.id==='composeModal')closeCompose();});
   cbEl('cb-drop').addEventListener('click',()=>cbEl('cb-file').click());
   cbEl('cb-file').addEventListener('change',ev=>{[...ev.target.files].forEach(cbAddFile);ev.target.value='';});
-  cbEl('cb-save').addEventListener('click',saveComposedBrief);
+  cbEl('cb-save').addEventListener('click',doneCompose);
   document.addEventListener('paste',ev=>{if(!cbEl('composeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){cbAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCompose();});
 }
