@@ -337,8 +337,9 @@ ul.tight li::marker{color:var(--org)}
         <div class="panel" style="min-height:calc(100vh - 130px)">
           <div class="ph" style="border-bottom:1px solid var(--line);padding:0 0 12px;margin-bottom:12px">
             <div><h2 id="dayDetailTitle" style="font-size:16px;font-weight:600;margin:0">Day</h2><span class="subtle" id="fwDay"></span></div>
-            <button class="btn grn" id="fwSave" style="padding:7px 14px">＋ Save Framework</button>
+            <div style="display:flex;gap:8px"><button class="btn" id="pmOpen" style="padding:7px 14px">Pre Market Framework</button><button class="btn grn" id="fwSave" style="padding:7px 14px">＋ Save Framework</button></div>
           </div>
+          <div id="pmView"></div>
           <div class="row2"><div class="field"><label>Instrument</label><select id="fw-pair"><option>NQ</option><option>ES</option><option>YM</option></select></div>
             <div class="field"><label>Direction</label><select id="fw-dir"><option>—</option><option>Long</option><option>Short</option></select></div></div>
           <div class="field"><label>Framework / Plan</label><textarea id="fw-notes" style="min-height:130px" placeholder="HTF bias · draw on liquidity · POI · time window · scenario A→B · invalidation…"></textarea></div>
@@ -434,6 +435,30 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><textarea id="cb-watch" style="min-height:66px" placeholder="10:00 AM — ISM Services&#10;PDH sweep into NY AM"></textarea></div></div>
   <button class="btn grn" id="cb-save" style="width:100%;margin-top:8px">Done → populate Market Brief</button>
   <div class="subtle" id="cb-status" style="margin-top:6px"></div>
+</div></div>
+<div class="modal" id="pmModal"><div class="box" style="max-width:760px">
+  <span class="x" id="pmX">✕</span>
+  <h3>Pre Market Framework <span class="subtle" id="pmDayLbl"></span></h3>
+  <div class="subtle">NQ setup — mark your Point of Interest, attach annotated charts, write the participation scenario.</div>
+  <div class="briefsec"><h4>Session Read</h4>
+    <div class="row2">
+      <div class="field"><label>Instrument</label><input value="NQ" disabled style="opacity:.7"></div>
+      <div class="field"><label>Direction</label><select id="pm-dir"><option>—</option><option>Long</option><option>Short</option></select></div>
+    </div>
+  </div>
+  <div class="briefsec"><h4>Point of Interest</h4>
+    <table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th><th style="text-align:left">POI / key</th></tr></thead><tbody id="pm-lvl-body"></tbody></table>
+    <div class="subtle" style="margin-top:6px">PDH/PDL/Open prefill from live NQ when available.</div>
+  </div>
+  <div class="briefsec"><h4>Chart Screenshots</h4>
+    <div class="drop" id="pm-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
+    <input type="file" id="pm-file" accept="image/*" multiple style="display:none">
+    <div id="pm-shots"></div>
+  </div>
+  <div class="briefsec"><h4>Participation Scenario</h4>
+    <div class="field"><textarea id="pm-scenario" style="min-height:100px" placeholder="A→B scenario — draw on liquidity, POI, displacement, CSD, entry trigger, invalidation. Blank line = new paragraph."></textarea></div></div>
+  <button class="btn grn" id="pm-save" style="width:100%;margin-top:8px">Save Framework</button>
+  <div class="subtle" id="pm-status" style="margin-top:6px"></div>
 </div></div>
 <script>
 /* ============================ DATA LAYER ============================ */
@@ -849,11 +874,11 @@ function saveFwAll(o){try{localStorage.setItem(FKEY,JSON.stringify(o));return tr
 let selDay=etParts().date, fwShots=[];
 function fmtDayLong(ds){try{return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date(ds+'T12:00:00'));}catch(e){return ds;}}
 function ideasCalendar(){
-  const t=loadTrades(),fw=loadFw(),y=IV.y,m=IV.m;
+  const t=loadTrades(),fw=loadFw(),pm=loadPm(),y=IV.y,m=IV.m;
   document.getElementById('iCalHead').innerHTML=['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d=>`<div class="dow">${d}</div>`).join('');
   const first=new Date(Date.UTC(y,m-1,1)),sd=(first.getUTCDay()+6)%7,di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());
   let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';
-  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const framed=fw[ds]?'<span class="frm"></span>':'';
+  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const framed=(fw[ds]||pmHasContent(pm[ds]))?'<span class="frm"></span>':'';
     cells+=`<div class="cell iday ${ds===selDay?'sel':''} ${ds===td?'today':''}" data-d="${ds}" style="min-height:72px;cursor:pointer"><div class="dn">${d}${framed}</div><div>${dayDots(t,ds)}</div></div>`;}
   document.getElementById('iCalBody').innerHTML=cells;
   document.querySelectorAll('#iCalBody .iday').forEach(c=>c.addEventListener('click',()=>{selDay=c.dataset.d;renderIdeas();}));
@@ -878,7 +903,7 @@ function addShotFromFile(file){if(!file)return;const rd=new FileReader();rd.onlo
 function renderIdeas(){
   document.getElementById('ideasMonth').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(IV.y,IV.m-1,1)));
   const vk=`${IV.y}-${String(IV.m).padStart(2,'0')}`;if(selDay&&selDay.slice(0,7)!==vk)selDay=null;
-  ideasCalendar();renderDayDetail();loadFwEditor();
+  ideasCalendar();renderPmView();renderDayDetail();loadFwEditor();
   const mt=loadTrades().filter(x=>x.date.slice(0,7)===vk),s=computeStats(mt);
   document.getElementById('perfTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(IV.y,IV.m-1,1)))+' Performance';
   document.getElementById('ideasStat').innerHTML=`<div class="s"><div class="v">${s.n}</div><div class="l">Ideas</div></div><div class="s"><div class="v up">${s.wr}%</div><div class="l">Win rate</div></div><div class="s"><div class="v">${s.wins}</div><div class="l">Wins</div></div><div class="s"><div class="v down">${s.loss}</div><div class="l">Losses</div></div><div class="s"><div class="v ${s.avg>=0?'up':'down'}">${s.avg>=0?'+':''}${s.avg.toFixed(1)}R</div><div class="l">Avg R</div></div><div class="s"><div class="v ${s.totR>=0?'up':'down'}">${s.totR>=0?'+':''}${s.totR.toFixed(1)}R</div><div class="l">Total R</div></div>`;
@@ -1009,6 +1034,64 @@ if(cbEl('composeBriefBtn')){
   cbEl('cb-save').addEventListener('click',doneCompose);
   document.addEventListener('paste',ev=>{if(!cbEl('composeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){cbAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCompose();});
+}
+
+/* ===== Pre Market Framework (Trade Ideas · NQ) ===== */
+const PMKEY='ct_premarket';
+function loadPm(){try{return JSON.parse(localStorage.getItem(PMKEY)||'{}');}catch(e){return {};}}
+function savePmAll(o){try{localStorage.setItem(PMKEY,JSON.stringify(o));return true;}catch(e){cbEl('pm-status').innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
+function pmHasContent(ex){return !!(ex&&((ex.scenario&&ex.scenario.length)||(ex.shots&&ex.shots.length)||(ex.poi&&(ex.poi.key||ex.poi.pdh||ex.poi.pdl||ex.poi.open||ex.poi.now))||(ex.dir&&ex.dir!=='—')));}
+let pmShots=[];
+function pmRenderShots(){const c=cbEl('pm-shots');if(!c)return;c.innerHTML=pmShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{pmShots.splice(+x.dataset.i,1);pmRenderShots();}));}
+function pmAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{pmShots.push(u);pmRenderShots();});rd.readAsDataURL(file);}
+function pmBuildLevels(){const b=cbEl('pm-lvl-body');if(!b)return;b.innerHTML=`<tr><td>NQ</td><td><input id="pm-pdh" class="cbin"></td><td><input id="pm-pdl" class="cbin"></td><td><input id="pm-open" class="cbin"></td><td><input id="pm-now" class="cbin"></td><td><input id="pm-key" class="cbin" style="text-align:left" placeholder="OB · FVG · liquidity…"></td></tr>`;}
+function openPm(){
+  if(!selDay){alert('Pick a day on the calendar first.');return;}
+  cbEl('pmDayLbl').textContent='· '+fmtDayLong(selDay);
+  pmBuildLevels();
+  const ex=loadPm()[selDay];
+  if(ex){
+    cbEl('pm-dir').value=ex.dir||'—';const p=ex.poi||{};
+    cbEl('pm-pdh').value=p.pdh||'';cbEl('pm-pdl').value=p.pdl||'';cbEl('pm-open').value=p.open||'';cbEl('pm-now').value=p.now||'';cbEl('pm-key').value=p.key||'';
+    cbEl('pm-scenario').value=(ex.scenario||[]).join('\n\n');pmShots=(ex.shots||[]).slice();
+  }else{
+    cbEl('pm-dir').value='—';const d=(LASTQ&&LASTQ.NQUSD)?LASTQ.NQUSD:null;
+    if(d){const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;if(ph!=null)cbEl('pm-pdh').value=fmtN(ph);if(pl!=null)cbEl('pm-pdl').value=fmtN(pl);if(d.open!=null)cbEl('pm-open').value=fmtN(d.open);if(d.price!=null)cbEl('pm-now').value=fmtN(d.price);}
+    cbEl('pm-scenario').value='';pmShots=[];
+  }
+  pmRenderShots();cbEl('pm-status').textContent='';cbEl('pmModal').classList.add('open');
+}
+function closePm(){cbEl('pmModal').classList.remove('open');}
+function savePm(){
+  if(!selDay)return;const g=id=>cbEl(id)?cbEl(id).value.trim():'';
+  const obj={date:selDay,dir:g('pm-dir'),poi:{pdh:g('pm-pdh'),pdl:g('pm-pdl'),open:g('pm-open'),now:g('pm-now'),key:g('pm-key')},scenario:cbEl('pm-scenario').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean),shots:pmShots.slice()};
+  const all=loadPm();if(pmHasContent(obj))all[selDay]=obj;else delete all[selDay];
+  if(!savePmAll(all))return;
+  closePm();renderPmView();ideasCalendar();
+}
+function renderPmView(){
+  const el=cbEl('pmView');if(!el)return;
+  const ex=selDay?loadPm()[selDay]:null;
+  if(!pmHasContent(ex)){el.innerHTML='';return;}
+  const p=ex.poi||{};
+  const dirTag=(ex.dir&&ex.dir!=='—')?`<span class="tag ${ex.dir==='Long'?'bull':'bear'}">${ex.dir}</span>`:'';
+  let poi='';
+  if(p.key)poi+=`<div class="kv"><span class="k">POI</span><span class="v">${escH(p.key)}</span></div>`;
+  if(p.pdh||p.pdl)poi+=`<div class="kv"><span class="k">PDH / PDL</span><span class="v">${escH(p.pdh||'—')} / ${escH(p.pdl||'—')}</span></div>`;
+  if(p.open||p.now)poi+=`<div class="kv"><span class="k">Open / Now</span><span class="v">${escH(p.open||'—')} / ${escH(p.now||'—')}</span></div>`;
+  const scen=(ex.scenario&&ex.scenario.length)?`<div class="sec" style="margin-top:12px">Participation Scenario</div><div class="narr">${ex.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`:'';
+  const shots=(ex.shots&&ex.shots.length)?`<div class="sec" style="margin-top:12px">Annotated Charts</div>${ex.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}`:'';
+  el.innerHTML=`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec grn" style="margin:0">Pre Market Framework — NQ ${dirTag}</h2><span class="subtle">${fmtDay(selDay)}</span></div>${poi?`<div style="margin-top:8px">${poi}</div>`:''}${scen}${shots}</div><hr class="d">`;
+}
+if(cbEl('pmOpen')){
+  cbEl('pmOpen').addEventListener('click',openPm);
+  cbEl('pmX').addEventListener('click',closePm);
+  cbEl('pmModal').addEventListener('click',e=>{if(e.target.id==='pmModal')closePm();});
+  cbEl('pm-drop').addEventListener('click',()=>cbEl('pm-file').click());
+  cbEl('pm-file').addEventListener('change',ev=>{[...ev.target.files].forEach(pmAddFile);ev.target.value='';});
+  cbEl('pm-save').addEventListener('click',savePm);
+  document.addEventListener('paste',ev=>{if(!cbEl('pmModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){pmAddFile(f);ev.preventDefault();}}}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closePm();});
 }
 
 /* ===== Live auto-refresh (quotes only; light 1-call poll) ===== */
