@@ -522,19 +522,24 @@ async function fmpGet(path){
   return await r.json();
 }
 async function fmpRoute(tool,args){
-  if(tool==='quote'){
-    const j=await fmpGet('/api/v3/quote/'+SYMS.join(','));
-    return (Array.isArray(j)?j:[]).map(x=>({symbol:x.symbol,price:x.price,change:x.change,changePercentage:x.changesPercentage,dayHigh:x.dayHigh,dayLow:x.dayLow,open:x.open,previousClose:x.previousClose,priceAvg50:x.priceAvg50,priceAvg200:x.priceAvg200}));
+  if(tool==='quote'){ // STABLE api: one symbol per call
+    const out=[];
+    await Promise.all(SYMS.map(async sy=>{try{
+      const j=await fmpGet('/stable/quote?symbol='+encodeURIComponent(sy));
+      const x=Array.isArray(j)?j[0]:j;
+      if(x&&x.symbol)out.push({symbol:x.symbol,price:x.price,change:x.change,changePercentage:(x.changePercentage!=null?x.changePercentage:x.changesPercentage),dayHigh:x.dayHigh,dayLow:x.dayLow,open:x.open,previousClose:x.previousClose,priceAvg50:x.priceAvg50,priceAvg200:x.priceAvg200});
+    }catch(e){}}));
+    return out;
   }
-  if(tool==='histDaily'){ // real prior-day OHLC → previous-day high/low
+  if(tool==='histDaily'){ // STABLE api: real prior-day OHLC → previous-day high/low
     const to=ymd(new Date()),from=ymd(new Date(Date.now()-14*864e5));
-    const j=await fmpGet('/api/v3/historical-price-full/'+encodeURIComponent(args.symbol)+'?from='+from+'&to='+to);
-    return (j&&Array.isArray(j.historical))?j.historical:[];
+    const j=await fmpGet('/stable/historical-price-eod/full?symbol='+encodeURIComponent(args.symbol)+'&from='+from+'&to='+to);
+    return Array.isArray(j)?j:((j&&Array.isArray(j.historical))?j.historical:[]);
   }
   if(tool==='technicalIndicators')return []; // not needed — /quote already carries 50/200-day + range
   if(tool==='economics'){
-    if(args.endpoint==='treasury-rates'){const j=await fmpGet('/api/v4/treasury?from='+args.from_date+'&to='+args.to_date);const x=Array.isArray(j)?j[0]:null;return x?[{month3:x.month3,month6:x.month6,year1:x.year1,year2:x.year2,year3:x.year3,year5:x.year5,year7:x.year7,year10:x.year10,year20:x.year20,year30:x.year30}]:[];}
-    const j=await fmpGet('/api/v3/economic_calendar?from='+args.from_date+'&to='+args.to_date);
+    if(args.endpoint==='treasury-rates'){const j=await fmpGet('/stable/treasury-rates?from='+args.from_date+'&to='+args.to_date);const x=Array.isArray(j)?j[0]:null;return x?[{month3:x.month3,month6:x.month6,year1:x.year1,year2:x.year2,year3:x.year3,year5:x.year5,year7:x.year7,year10:x.year10,year20:x.year20,year30:x.year30}]:[];}
+    const j=await fmpGet('/stable/economic-calendar?from='+args.from_date+'&to='+args.to_date);
     return (Array.isArray(j)?j:[]).filter(e=>e.country==='US'||e.country==='United States'||e.currency==='USD');
   }
   if(tool==='news')return SNAP.news;
