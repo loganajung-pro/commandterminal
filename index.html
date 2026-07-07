@@ -526,6 +526,11 @@ async function fmpRoute(tool,args){
     const j=await fmpGet('/api/v3/quote/'+SYMS.join(','));
     return (Array.isArray(j)?j:[]).map(x=>({symbol:x.symbol,price:x.price,change:x.change,changePercentage:x.changesPercentage,dayHigh:x.dayHigh,dayLow:x.dayLow,open:x.open,previousClose:x.previousClose,priceAvg50:x.priceAvg50,priceAvg200:x.priceAvg200}));
   }
+  if(tool==='histDaily'){ // real prior-day OHLC → previous-day high/low
+    const to=ymd(new Date()),from=ymd(new Date(Date.now()-14*864e5));
+    const j=await fmpGet('/api/v3/historical-price-full/'+encodeURIComponent(args.symbol)+'?from='+from+'&to='+to);
+    return (j&&Array.isArray(j.historical))?j.historical:[];
+  }
   if(tool==='technicalIndicators')return []; // not needed — /quote already carries 50/200-day + range
   if(tool==='economics'){
     if(args.endpoint==='treasury-rates'){const j=await fmpGet('/api/v4/treasury?from='+args.from_date+'&to='+args.to_date);const x=Array.isArray(j)?j[0]:null;return x?[{month3:x.month3,month6:x.month6,year1:x.year1,year2:x.year2,year3:x.year3,year5:x.year5,year7:x.year7,year10:x.year10,year20:x.year20,year30:x.year30}]:[];}
@@ -541,7 +546,9 @@ async function mcp(tool,args){
   else {
     let b=getBridge();
     if(!b&&!SNAPSHOT_MODE){await waitForBridge(3000);b=getBridge();}
-    if(b){ try{ const r=await b.callMcpTool(FMP+tool,args); if(r&&!r.isError){ SNAPSHOT_MODE=false; hideSnap(); return unwrap(r); } }catch(e){} }
+    if(b){ let nm=FMP+tool,ba=args;
+      if(tool==='histDaily'){nm=FMP+'chart';ba={endpoint:'historical-price-eod-full',symbol:args.symbol,from_date:ymd(new Date(Date.now()-14*864e5)),to_date:ymd(new Date())};}
+      try{ const r=await b.callMcpTool(nm,ba); if(r&&!r.isError){ SNAPSHOT_MODE=false; hideSnap(); return unwrap(r); } }catch(e){} }
   }
   SNAPSHOT_MODE=true;showSnap();return snapshotFor(tool,args);
 }
@@ -573,20 +580,35 @@ async function loadQuotes(){
   if(!by.NQUSD){document.getElementById("qstrip").innerHTML='<div class="panel down">Quotes unavailable.</div>';return;}
   LASTQ=by;
   safe(renderQuotes);safe(renderLevels);safe(renderOverview);safe(renderCoach);safe(renderKeyThemes);safe(renderThesis);
+  loadPrevLevels();
+}
+/* ---- Real previous-day high/low (prior completed session, not today's running range) ---- */
+async function loadPrevLevels(){
+  const td=etParts().date;
+  await Promise.all(SYMS.map(async sy=>{try{
+    const bars=await mcp('histDaily',{symbol:sy});
+    if(!Array.isArray(bars)||!bars.length)return;
+    // bars are newest-first; take the most recent bar strictly before today (ET)
+    const prev=bars.find(b=>b&&b.date&&String(b.date).slice(0,10)<td)||bars.find(b=>b&&b.date&&String(b.date).slice(0,10)!==td)||bars[0];
+    if(prev&&LASTQ[sy]){LASTQ[sy].pdh=prev.high;LASTQ[sy].pdl=prev.low;LASTQ[sy].pdOpen=prev.open;LASTQ[sy].pdClose=prev.close;LASTQ[sy].pdDate=String(prev.date).slice(0,10);}
+  }catch(e){}}));
+  safe(renderLevels);safe(renderQuotes);safe(renderThesis);
 }
 function renderQuotes(){
   let h="";SYMS.forEach(sy=>{const d=LASTQ[sy];if(!d){h+='<div class="qcard down">No '+sy+'</div>';return;}const up=d.change>=0;
-    const rg=(typeof d.dayLow==="number")?`<div class="qrow"><span>Range</span><span>${fmtN(d.dayLow)}–${fmtN(d.dayHigh)}</span></div>`:"";
+    const rg=(typeof d.dayLow==="number")?`<div class="qrow"><span>Day range</span><span>${fmtN(d.dayLow)}–${fmtN(d.dayHigh)}</span></div>`:"";
+    const pv=(d.pdl!=null)?`<div class="qrow"><span>Prev H/L</span><span>${fmtN(d.pdh)}–${fmtN(d.pdl)}</span></div>`:"";
     const av=(typeof d.priceAvg50==="number")?`<div class="qrow"><span>50d / 200d</span><span>${fmtN(d.priceAvg50)} / ${fmtN(d.priceAvg200)}</span></div>`:"";
     h+=`<div class="qcard"><div class="nm">${NAMES[sy]}</div><div class="px">${fmtN(d.price)}</div>
       <div class="ch ${up?'up':'down'}">${up?'▲':'▼'} ${fmtN(d.change)} (${d.changePercentage>=0?'+':''}${(+d.changePercentage).toFixed(2)}%)</div>
-      <div style="margin-top:6px">${rg}<div class="qrow"><span>Prev close</span><span>${fmtN(d.previousClose)}</span></div>${av}</div></div>`;});
+      <div style="margin-top:6px">${pv}${rg}<div class="qrow"><span>Prev close</span><span>${fmtN(d.previousClose)}</span></div>${av}</div></div>`;});
   document.getElementById("qstrip").innerHTML=h;
 }
 function renderLevels(){
   const tb=document.querySelector("#lvlTable tbody");let h="";
   SYMS.forEach(sy=>{const d=LASTQ[sy];if(!d)return;
-    h+=`<tr><td>${SHORT[sy]}</td><td>${fmtN(d.dayHigh)}</td><td>${fmtN(d.dayLow)}</td><td>${fmtN(d.open)}</td><td class="${d.change>=0?'up':'down'}">${fmtN(d.price)}</td></tr>`;});
+    const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;
+    h+=`<tr><td>${SHORT[sy]}</td><td>${fmtN(ph)}</td><td>${fmtN(pl)}</td><td>${fmtN(d.open)}</td><td class="${d.change>=0?'up':'down'}">${fmtN(d.price)}</td></tr>`;});
   tb.innerHTML=h;
 }
 /* biasWord + coach reused across brief/thesis */
@@ -705,7 +727,7 @@ function renderThesis(){
   const evs=todayHigh();
   el.innerHTML=SYMS.map(sy=>{const d=LASTQ[sy];if(!d)return'';
     const bw=biasWord(d);const bias=bw==='bullish'?'BULLISH':bw==='bearish'?'BEARISH':'NEUTRAL';const bt=bw==='bullish'?'bull':bw==='bearish'?'bear':'neut';const arrow=bw==='bullish'?'▲':bw==='bearish'?'▼':'•';
-    const hi=d.dayHigh,lo=d.dayLow,px=d.price,pv=d.previousClose;let entry,t1,t2,stop;
+    const hi=(d.pdh!=null)?d.pdh:d.dayHigh,lo=(d.pdl!=null)?d.pdl:d.dayLow,px=d.price,pv=d.previousClose;let entry,t1,t2,stop;
     if(bw==='bullish'&&lo!=null){entry=fmtN(lo)+'–'+fmtN(pv);t1=fmtN(hi);t2=fmtN(hi+(hi-lo));stop=fmtN(lo-(hi-lo)*0.25);}
     else if(bw==='bearish'&&hi!=null){entry=fmtN(pv)+'–'+fmtN(hi);t1=fmtN(lo);t2=fmtN(lo-(hi-lo));stop=fmtN(hi+(hi-lo)*0.25);}
     else{entry='wait';t1=fmtN(hi);t2=fmtN(lo);stop='—';}
@@ -843,7 +865,7 @@ function buildBriefObject(){
     `Scheduled risk today: ${evs.length?evs.map(e=>fmtEtTime(utcToEt(e.date))+' '+cleanEv(e.event)).join(', '):'no high-impact US prints — clean tape'}. Until a POI meets a time window with a correlated SMT and a CSD, there is no trade.`];
   const themes=[`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw`, evs.length?`${evs.length} high-impact print(s) today — expect volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact prints — structure leads', 'One trade per focus window · protocol size'];
   const watch=evs.map(e=>`${fmtEtTime(utcToEt(e.date))} — ${cleanEv(e.event)}${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`);if(!watch.length)watch.push('PDH / PDL are the levels that matter for the sweep');
-  const levels=SYMS.map(sy=>{const d=LASTQ[sy];return {s:SHORT[sy],pdh:fmtN(d.dayHigh),pdl:fmtN(d.dayLow),open:fmtN(d.open),now:fmtN(d.price)};});
+  const levels=SYMS.map(sy=>{const d=LASTQ[sy];const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;return {s:SHORT[sy],pdh:fmtN(ph),pdl:fmtN(pl),open:fmtN(d.open),now:fmtN(d.price)};});
   const events=evs.map(e=>({t:fmtEtTime(utcToEt(e.date)),name:cleanEv(e.event),impact:'High'}));
   return {date:etParts().date,gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET',draw,zone,bias:w,overview,themes,watch,levels,events};
 }
@@ -884,13 +906,23 @@ document.getElementById('setX').addEventListener('click',()=>document.getElement
 document.getElementById('setModal').addEventListener('click',e=>{if(e.target.id==='setModal')e.currentTarget.classList.remove('open');});
 document.getElementById('setSave').addEventListener('click',()=>{const k=document.getElementById('setKey').value.trim();try{localStorage.setItem('ct_fmp_key',k);LIVE_MS=+document.getElementById('setInterval').value||0;localStorage.setItem('ct_live_ms',String(LIVE_MS));}catch(e){}document.getElementById('setStatus').innerHTML=k?'<span class="up">Saved — pulling live data…</span>':'<span class="mut">Key cleared — snapshot mode.</span>';refreshAll();applyInterval();setTimeout(()=>document.getElementById('setModal').classList.remove('open'),1000);});
 
+/* ===== Daily schedules (ET-anchored): 8:00 AM full refresh · 8:35 AM auto-save brief ===== */
+function msUntilEt(hh,mm){const p=etParts();const cur=((p.h*60+p.m)*60+p.s)*1000;let diff=((hh*60+mm)*60*1000)-cur;if(diff<=0)diff+=864e5;return diff;}
+function scheduleDailyAt(hh,mm,fn){function run(){try{fn();}catch(e){}setTimeout(run,864e5);}setTimeout(run,msUntilEt(hh,mm));}
+function saveTodayBriefSilent(){const b=buildBriefObject();if(!b)return;const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}if(RENDERED.calendar)safe(renderMonthPlan);}
+function startDailySchedules(){
+  scheduleDailyAt(8,0,refreshAll);          // pull fresh prev-day levels + quotes + calendar at 8:00 AM ET
+  scheduleDailyAt(8,35,saveTodayBriefSilent); // lock the brief to the Protocol Calendar at 8:35 AM ET
+}
+
 /* ===== Boot ===== */
 try{const s=localStorage.getItem('ct_live_ms');LIVE_MS=(s!=null)?(+s||0):120000;}catch(e){LIVE_MS=120000;}
 document.getElementById('f-date').value=etParts().date;
 seedTrades();
 tick();setInterval(tick,1000);
-loadQuotes();loadCalendar();
+loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
 applyInterval();
+startDailySchedules();
 </script>
 </body>
 </html>
