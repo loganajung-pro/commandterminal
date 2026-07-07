@@ -399,7 +399,13 @@ ul.tight li::marker{color:var(--org)}
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px"><span class="subtle">Auto-refresh:</span>
       <select id="setInterval" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:6px;font-family:var(--mono)"><option value="0">On open only</option><option value="60000">Every 60 sec</option><option value="120000">Every 2 min</option><option value="300000">Every 5 min</option></select></div>
     <div class="subtle" style="margin-top:8px">Free FMP tier is ~250 calls/day — pick a slower refresh (or "on open only") unless you have a paid plan.</div>
-    <button class="btn grn" id="setSave" style="width:100%;margin-top:12px">Save & Go Live</button>
+    <hr class="d">
+    <h4 style="font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--org);margin:0 0 6px">Vision — Anthropic API Key</h4>
+    <div class="subtle" style="margin-bottom:8px">Lets the composer read price levels off your chart screenshots. Stored only in this browser — never shared, never committed. Get a key at <b>console.anthropic.com → API Keys</b>. Reads cost a few cents each.</div>
+    <input id="setAnthKey" placeholder="Anthropic API key (sk-ant-…)" autocomplete="off" style="width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:9px;color:var(--ink);font-family:var(--mono);font-size:12px">
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span class="subtle">Vision model:</span>
+      <select id="setVisionModel" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:6px;font-family:var(--mono)"><option value="claude-sonnet-5">Sonnet — accurate (recommended)</option><option value="claude-haiku-4-5-20251001">Haiku — cheaper, faster</option></select></div>
+    <button class="btn grn" id="setSave" style="width:100%;margin-top:12px">Save</button>
     <div class="subtle" id="setStatus" style="margin-top:6px"></div>
   </div>
 </div></div>
@@ -426,6 +432,8 @@ ul.tight li::marker{color:var(--org)}
     <div class="drop" id="cb-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
     <input type="file" id="cb-file" accept="image/*" multiple style="display:none">
     <div id="cb-shots"></div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:10px"><button class="btn grn" id="cb-read" type="button">🔍 Read levels from chart</button><span class="subtle" id="cb-read-status"></span></div>
+    <div class="subtle" style="margin-top:5px">Reads your marked PDH / PDL / Open / Now + key levels off the screenshots and fills the fields above — you confirm before Done. Needs an Anthropic key (Settings ⚙).</div>
   </div>
   <div class="briefsec"><h4>Overview</h4>
     <div class="field"><textarea id="cb-overview" style="min-height:90px" placeholder="Framing for the session — HTF draw, where price sits, what you're hunting. Blank line = new paragraph."></textarea></div></div>
@@ -1023,20 +1031,69 @@ function renderComposedCharts(){
   const el=cbEl('composedCharts');if(!el)return;
   if(!COMPOSED){el.innerHTML='';return;}
   const hasKey=COMPOSED.levels&&COMPOSED.levels.some(l=>l.key);
-  const hasShots=COMPOSED.shots&&COMPOSED.shots.length;
-  if(!hasKey&&!hasShots){el.innerHTML='';return;}
+  if(!hasKey){el.innerHTML='';return;}
+  // Key-level text only on the main page. Chart screenshots live in the pop-outs (composer + brief review), never on the main brief.
   let h='<hr class="d">';
-  if(hasKey)h+=`<div class="panel"><h2 class="sec">Key Levels — your marks</h2><ul class="tight">${COMPOSED.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${escH(l.key)}</li>`).join('')}</ul></div>`;
-  if(hasShots){if(hasKey)h+='<hr class="d">';h+=`<div class="panel"><h2 class="sec">Annotated Charts</h2>${COMPOSED.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`;}
+  h+=`<div class="panel"><h2 class="sec">Key Levels — your marks</h2><ul class="tight">${COMPOSED.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${escH(l.key)}</li>`).join('')}</ul></div>`;
   el.innerHTML=h;
 }
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ===== Vision: read levels off chart screenshots (Anthropic API, your key, browser-side) ===== */
+function anthKey(){try{return (localStorage.getItem('ct_anthropic_key')||'').trim();}catch(e){return '';}}
+function visionModel(){try{return (localStorage.getItem('ct_vision_model')||'').trim()||'claude-sonnet-5';}catch(e){return 'claude-sonnet-5';}}
+function parseJsonLoose(t){if(!t)return null;let s=String(t).trim();s=s.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)s=s.slice(a,b+1);try{return JSON.parse(s);}catch(e){return null;}}
+const CHART_PROMPT=`You are reading annotated futures index charts (NQ = Nasdaq 100, ES = S&P 500, YM = Dow). Each image is one instrument with price levels the trader has marked. Identify the instrument from the ticker/title on the chart, then read the marked horizontal price levels and the current price.
+
+Return ONLY strict JSON — no prose, no code fences — in exactly this shape:
+{"NQ":{"pdh":"","pdl":"","open":"","now":"","key":""},"ES":{"pdh":"","pdl":"","open":"","now":"","key":""},"YM":{"pdh":"","pdl":"","open":"","now":"","key":""},"bias":{"NQ":"neutral","ES":"neutral","YM":"neutral"},"draw":"TWO-SIDED"}
+
+Rules:
+- Include an instrument object ONLY if that instrument appears in an image; omit the others entirely.
+- pdh = prior day high, pdl = prior day low, open = session/day open, now = current/last price (usually the highlighted price on the right axis).
+- Preserve the number formatting as shown (commas are fine). If a value is not marked or visible, use "".
+- key = any other marked levels as short text, e.g. "OB 29,650 · FVG 29,720 · equal lows 29,400". Use "" if none.
+- bias per instrument: bullish, bearish, or neutral — infer from structure/annotations only if clear, else neutral.
+- draw: HIGHER if the marks/bias skew long, LOWER if short, TWO-SIDED if mixed or unclear.`;
+async function cbReadChart(){
+  const st=cbEl('cb-read-status');
+  const say=(cls,msg)=>{if(st)st.innerHTML='<span class="'+cls+'">'+msg+'</span>';};
+  if(!cbShots.length){say('down','Add a chart screenshot first.');return;}
+  const key=anthKey();
+  if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
+  say('mut','Reading chart…');
+  const imgs=cbShots.map(s=>{const m=/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(s);return m?{media:m[1],data:m[2]}:null;}).filter(Boolean);
+  if(!imgs.length){say('down','Screenshots unreadable — re-add them.');return;}
+  const content=imgs.map(im=>({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
+  content.push({type:'text',text:CHART_PROMPT});
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:1024,messages:[{role:'user',content}]})});
+    if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
+    const j=await r.json();
+    const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
+    const data=parseJsonLoose(txt);
+    if(!data){throw new Error('Could not parse the model output.');}
+    const n=cbApplyRead(data);
+    say(n?'up':'down',n?('✓ Read '+n+' instrument'+(n>1?'s':'')+' — confirm the numbers, then Done.'):'No levels detected — mark them more clearly or type manually.');
+  }catch(e){say('down','Read failed: '+escH((e&&e.message)||'error'));}
+}
+function cbApplyRead(data){
+  let n=0;const setIf=(id,v)=>{const el=cbEl(id);if(el&&v!=null&&String(v).trim()!=='')el.value=String(v).trim();};
+  ['NQ','ES','YM'].forEach(k=>{const o=data[k]||data[k.toLowerCase()];if(!o||typeof o!=='object')return;
+    const before=['pdh','pdl','open','now','key'].some(f=>o[f]&&String(o[f]).trim()!=='');if(before)n++;
+    setIf('cb-pdh-'+k,o.pdh);setIf('cb-pdl-'+k,o.pdl);setIf('cb-open-'+k,o.open);setIf('cb-now-'+k,o.now);setIf('cb-key-'+k,o.key);
+    const bb=cbEl('cb-bias-'+k),bw=data.bias&&(data.bias[k]||data.bias[k.toLowerCase()]);if(bb&&bw&&['bullish','bearish','neutral'].indexOf(String(bw).toLowerCase())>=0)bb.value=String(bw).toLowerCase();
+  });
+  if(data.draw&&cbEl('cb-draw')){const dv=String(data.draw).toUpperCase();if(['HIGHER','LOWER','TWO-SIDED'].indexOf(dv)>=0)cbEl('cb-draw').value=dv;}
+  return n;
+}
 if(cbEl('composeBriefBtn')){
   cbEl('composeBriefBtn').addEventListener('click',openCompose);
   cbEl('composeX').addEventListener('click',closeCompose);
   cbEl('composeModal').addEventListener('click',e=>{if(e.target.id==='composeModal')closeCompose();});
   cbEl('cb-drop').addEventListener('click',()=>cbEl('cb-file').click());
   cbEl('cb-file').addEventListener('change',ev=>{[...ev.target.files].forEach(cbAddFile);ev.target.value='';});
+  if(cbEl('cb-read'))cbEl('cb-read').addEventListener('click',cbReadChart);
   cbEl('cb-save').addEventListener('click',doneCompose);
   document.addEventListener('paste',ev=>{if(!cbEl('composeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){cbAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCompose();});
@@ -1111,11 +1168,11 @@ async function refreshLight(){
 let liveTimer=null;
 function applyInterval(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}if(LIVE_MS>0)liveTimer=setInterval(refreshLight,LIVE_MS);}
 function refreshAll(){SNAPSHOT_MODE=false;hideSnap();loadQuotes();loadCalendar();if(RENDERED.macro)safe(renderMacro);if(RENDERED.calendar){MV=curMonth();safe(loadMonthView);}}
-function openSettings(){document.getElementById('setKey').value=fmpKey();document.getElementById('setInterval').value=String(LIVE_MS||0);document.getElementById('setStatus').textContent='';document.getElementById('setModal').classList.add('open');}
+function openSettings(){document.getElementById('setKey').value=fmpKey();document.getElementById('setInterval').value=String(LIVE_MS||0);const ak=document.getElementById('setAnthKey');if(ak)ak.value=anthKey();const vm=document.getElementById('setVisionModel');if(vm)vm.value=visionModel();document.getElementById('setStatus').textContent='';document.getElementById('setModal').classList.add('open');}
 document.getElementById('settingsBtn').addEventListener('click',openSettings);
 document.getElementById('setX').addEventListener('click',()=>document.getElementById('setModal').classList.remove('open'));
 document.getElementById('setModal').addEventListener('click',e=>{if(e.target.id==='setModal')e.currentTarget.classList.remove('open');});
-document.getElementById('setSave').addEventListener('click',()=>{const k=document.getElementById('setKey').value.trim();try{localStorage.setItem('ct_fmp_key',k);LIVE_MS=+document.getElementById('setInterval').value||0;localStorage.setItem('ct_live_ms',String(LIVE_MS));}catch(e){}document.getElementById('setStatus').innerHTML=k?'<span class="up">Saved — pulling live data…</span>':'<span class="mut">Key cleared — snapshot mode.</span>';refreshAll();applyInterval();setTimeout(()=>document.getElementById('setModal').classList.remove('open'),1000);});
+document.getElementById('setSave').addEventListener('click',()=>{const k=document.getElementById('setKey').value.trim();try{localStorage.setItem('ct_fmp_key',k);LIVE_MS=+document.getElementById('setInterval').value||0;localStorage.setItem('ct_live_ms',String(LIVE_MS));const ak=document.getElementById('setAnthKey');if(ak)localStorage.setItem('ct_anthropic_key',ak.value.trim());const vm=document.getElementById('setVisionModel');if(vm)localStorage.setItem('ct_vision_model',vm.value);}catch(e){}const hasAnth=(document.getElementById('setAnthKey')||{}).value;document.getElementById('setStatus').innerHTML=k?'<span class="up">Saved — pulling live data…</span>':(hasAnth&&hasAnth.trim()?'<span class="up">Saved. Vision key stored — snapshot mode for quotes.</span>':'<span class="mut">Key cleared — snapshot mode.</span>');refreshAll();applyInterval();setTimeout(()=>document.getElementById('setModal').classList.remove('open'),1000);});
 
 /* ===== Daily schedules (ET-anchored): 8:00 AM full refresh · 8:35 AM auto-save brief ===== */
 function msUntilEt(hh,mm){const p=etParts();const cur=((p.h*60+p.m)*60+p.s)*1000;let diff=((hh*60+mm)*60*1000)-cur;if(diff<=0)diff+=864e5;return diff;}
