@@ -1131,7 +1131,13 @@ Return ONLY strict JSON — no prose, no code fences — in exactly this shape:
 Rules:
 - Include an instrument object ONLY if that instrument appears in an image; omit the others entirely.
 - pdh = prior day high, pdl = prior day low, open = session/day open, now = current/last price (usually the highlighted price on the right axis).
-- lonH / lonL = London session high / low. asiaH / asiaL = Asia session high / low. mid = 00:00 midnight open price. Read these only if the trader marked them.
+- The trader marks session levels with these exact labels on the chart — map each to the matching field and read the price line it points to:
+    • "L.H." (also "LH" / "London High") -> lonH (London session high)
+    • "L.L." (also "LL" / "London Low") -> lonL (London session low)
+    • "A.H." (also "AH" / "Asia High") -> asiaH (Asia session high)
+    • "A.L." (also "AL" / "Asia Low") -> asiaL (Asia session low)
+    • "0:00" (also "00:00" / "Midnight" / "Midnight Open") -> mid (00:00 midnight open)
+  Capture the exact price for every one of these labels that appears in the image. Read these only if the trader marked them; if a label is absent, leave that field "".
 - Preserve the number formatting as shown (commas are fine). If a value is not marked or visible, use "".
 - key = any other marked levels as short text, e.g. "OB 29,650 · FVG 29,720 · equal lows 29,400". Use "" if none.
 - bias per instrument: bullish, bearish, or neutral — infer from structure/annotations only if clear, else neutral.
