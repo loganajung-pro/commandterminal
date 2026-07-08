@@ -266,15 +266,16 @@ ul.tight li::marker{color:var(--org)}
             <div class="calgrid" id="briefCalHead"></div><div class="calgrid" id="briefCalBody"></div>
             <div class="legend" style="margin-top:8px"><span class="lg"><span class="brdot">📄</span> Saved brief</span><span class="lg"><span class="sw" style="background:var(--blue)"></span>Today</span></div>
             <hr class="d">
-            <div class="subtle">Every brief you save lands here. Click any 📄 day to reopen it. Save with “Save today's brief” up top, or it auto-saves 8:35 AM ET.</div>
+            <div class="subtle"><b>📝 My brief</b> — click the day to expand it below. <b>📄 Generated</b> — click the icon to pop the full review. Save the generated brief up top; it also auto-saves 8:35 AM ET.</div>
           </div>
+          <div id="myBriefView"></div>
         </div>
       </div>
       <div id="composedCharts"></div>
       <hr class="d">
       <div style="text-align:center;padding:6px 0 12px">
-        <button class="btn grn" id="composeBriefBtn" style="padding:13px 30px;font-size:14px">＋ Compose Daily Briefing</button>
-        <div class="subtle" style="margin-top:7px">Pop out a builder — attach annotated charts, mark your levels. Hit <b>Done</b> and it fills this Market Brief. Save it with “Save today's brief” up top when you're ready.</div>
+        <button class="btn grn" id="composeBriefBtn" style="padding:13px 30px;font-size:14px">＋ Compose My Daily Brief</button>
+        <div class="subtle" style="margin-top:7px">Your own brief — attach annotated charts, mark your levels, write your read. Hit <b>Done</b> and it saves as a dated note (📝) in the Daily Briefings calendar, separate from the generated page brief.</div>
       </div>
     </section>
 
@@ -415,7 +416,7 @@ ul.tight li::marker{color:var(--org)}
 <div class="modal" id="composeModal"><div class="box" style="max-width:840px">
   <span class="x" id="composeX">✕</span>
   <h3>Compose Daily Briefing</h3>
-  <div class="subtle" id="composeDateLbl">Attach annotated charts, mark your levels, hit Done — it fills your Market Brief. Save it from there.</div>
+  <div class="subtle" id="composeDateLbl">Your own daily brief — attach annotated charts, mark your levels, write your read. Hit Done and it saves as a dated note in your Daily Briefings calendar (separate from the generated page brief).</div>
   <div class="briefsec"><h4>Session Read</h4>
     <div class="row2">
       <div class="field"><label>Date</label><input type="date" id="cb-date"></div>
@@ -444,7 +445,7 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><textarea id="cb-themes" style="min-height:66px" placeholder="HTF draw higher across NQ/ES/YM&#10;One trade per focus window"></textarea></div></div>
   <div class="briefsec"><h4>Watch Today <span class="subtle">— one per line</span></h4>
     <div class="field"><textarea id="cb-watch" style="min-height:66px" placeholder="10:00 AM — ISM Services&#10;PDH sweep into NY AM"></textarea></div></div>
-  <button class="btn grn" id="cb-save" style="width:100%;margin-top:8px">Done → populate Market Brief</button>
+  <button class="btn grn" id="cb-save" style="width:100%;margin-top:8px">Done → save my brief</button>
   <div class="subtle" id="cb-status" style="margin-top:6px"></div>
 </div></div>
 <div class="modal" id="pmModal"><div class="box" style="max-width:760px">
@@ -949,7 +950,7 @@ function renderShots(){const c=document.getElementById('fw-shots');c.innerHTML=f
 function loadFwEditor(){const fw=loadFw()[selDay]||{};fwShots=(fw.shots||[]).slice();
   document.getElementById('fw-pair').value=fw.pair||'NQ';document.getElementById('fw-dir').value=fw.dir||'—';document.getElementById('fw-notes').value=fw.notes||'';
   document.getElementById('fwStatus').textContent='';renderShots();}
-function shrinkImg(dataUrl,cb){try{const img=new Image();img.onload=()=>{const mx=1100;let w=img.width,hh=img.height;if(w>mx){hh=Math.round(hh*mx/w);w=mx;}const cv=document.createElement('canvas');cv.width=w;cv.height=hh;cv.getContext('2d').drawImage(img,0,0,w,hh);try{cb(cv.toDataURL('image/jpeg',0.72));}catch(e){cb(dataUrl);}};img.onerror=()=>cb(dataUrl);img.src=dataUrl;}catch(e){cb(dataUrl);}}
+function shrinkImg(dataUrl,cb){try{const img=new Image();img.onload=()=>{const mx=1920;let w=img.width,hh=img.height;if(w>mx){hh=Math.round(hh*mx/w);w=mx;}const cv=document.createElement('canvas');cv.width=w;cv.height=hh;const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,hh);try{cb(cv.toDataURL('image/jpeg',0.92));}catch(e){cb(dataUrl);}};img.onerror=()=>cb(dataUrl);img.src=dataUrl;}catch(e){cb(dataUrl);}}
 function addShotFromFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{fwShots.push(u);renderShots();});rd.readAsDataURL(file);}
 function renderIdeas(){
   document.getElementById('ideasMonth').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(IV.y,IV.m-1,1)));
@@ -999,16 +1000,25 @@ function buildBriefObject(){
   const events=evs.map(e=>({t:fmtEtTime(utcToEt(e.date)),name:cleanEv(e.event),impact:'High'}));
   return {date:etParts().date,gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET',draw,zone,bias:w,overview,themes,watch,levels,events};
 }
-function briefHtml(b){
+function briefHtml(b,hideShots){
   return `<div class="briefsec"><h4>Overview · HTF draw ${b.draw||''}</h4><div class="narr">${(b.overview||[]).map(p=>'<p>'+p+'</p>').join('')}</div></div>
   <div class="briefsec"><h4>Key Themes</h4><ul class="tight">${(b.themes||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
   <div class="briefsec"><h4>Watch Today</h4><ul class="tight">${(b.watch||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
   <div class="briefsec"><h4>Intraday Reversion Levels</h4><table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th></tr></thead><tbody>${(b.levels||[]).map(l=>`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`).join('')}</tbody></table></div>
   ${(b.levels&&b.levels.some(hasSess))?`<div class="briefsec"><h4>Session Levels</h4>${sessTable(b.levels)}</div>`:''}
   ${(b.levels&&b.levels.some(l=>l.key))?`<div class="briefsec"><h4>Key Levels</h4><ul class="tight">${b.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${String(l.key).replace(/</g,'&lt;')}</li>`).join('')}</ul></div>`:''}
-  ${(b.shots&&b.shots.length)?`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:''}
+  ${(b.shots&&b.shots.length)?(hideShots?`<div class="briefsec"><h4>Annotated Charts</h4><div class="subtle">📎 ${b.shots.length} chart${b.shots.length>1?'s':''} attached — Open full ↗ to view.</div></div>`:`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`):''}
   <div class="briefsec"><h4>High-Impact Events</h4>${(b.events&&b.events.length)?b.events.map(e=>`<div class="evrow"><span class="tm">${e.t}</span><span>${e.name}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`).join(''):'<div class="subtle">Clean tape — no high-impact prints.</div>'}</div>`;
 }
+/* My-brief inline expand (below the calendar) + full-review modal */
+function expandMyBrief(ds){
+  const el=document.getElementById('myBriefView');if(!el)return;
+  const b=myBriefs()[ds];if(!b){el.innerHTML='';return;}
+  el.innerHTML=`<hr class="d"><div class="panel"><div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec grn" style="margin:0">My Brief</h2><span class="subtle">${fmtDayLong(ds)}</span></div><div style="display:flex;gap:6px"><button class="btn" id="myBriefFull" style="padding:5px 10px">Open full ↗</button><button class="btn" id="myBriefClose" style="padding:5px 10px">✕</button></div></div>${briefHtml(b,true)}</div>`;
+  const f=document.getElementById('myBriefFull');if(f)f.addEventListener('click',()=>openMyBriefModal(ds));
+  const c=document.getElementById('myBriefClose');if(c)c.addEventListener('click',()=>{el.innerHTML='';});
+}
+function openMyBriefModal(ds){const b=myBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='My Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen||'')+' · your brief';document.getElementById('briefModalBody').innerHTML=briefHtml(b);document.getElementById('briefModal').classList.add('open');}
 function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent='Auto-saved '+(b.gen||'8:35 AM ET');document.getElementById('briefModalBody').innerHTML=briefHtml(b);document.getElementById('briefModal').classList.add('open');}
 function closeBrief(){document.getElementById('briefModal').classList.remove('open');}
 function saveTodayBrief(){const b=buildBriefObject();if(!b){alert('Market data still loading — try again in a moment.');return;}const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}alert("Saved today's brief ("+b.date+"). It's now in your Daily Briefings calendar — click the day (📄) to pop it out.");safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
@@ -1022,12 +1032,15 @@ function renderBriefCal(){
   const ttl=document.getElementById('briefCalTitle');if(ttl)ttl.textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1)));
   head.innerHTML=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');
   const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());
-  const briefs=getBriefs();let cells='';
-  for(let i=0;i<sd;i++)cells+='<div class="cell dim" style="min-height:42px"></div>';
-  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const hb=briefs[ds];
-    cells+=`<div class="cell ${ds===td?'today':''} ${hb?'hasbrief':''}" data-d="${ds}" style="min-height:42px;${hb?'cursor:pointer':''}"><div class="dn" style="font-size:11px">${d}${hb?' <span class="brdot" title="Brief saved — click to reopen">📄</span>':''}</div></div>`;}
+  const gen=getBriefs(),mine=myBriefs();let cells='';
+  for(let i=0;i<sd;i++)cells+='<div class="cell dim" style="min-height:46px"></div>';
+  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const hasG=!!gen[ds],hasM=!!mine[ds],active=hasG||hasM;
+    const marks=`${hasM?'<span class="brdot mybr" title="Your brief — click to expand below">📝</span>':''}${hasG?'<span class="brdot genbr" title="Generated brief — click to review">📄</span>':''}`;
+    cells+=`<div class="cell ${ds===td?'today':''} ${active?'dayb':''}" data-d="${ds}" style="min-height:46px;${active?'cursor:pointer':''}"><div class="dn" style="font-size:11px">${d}</div><div style="margin-top:1px;font-size:10px">${marks}</div></div>`;}
   body.innerHTML=cells;
-  body.querySelectorAll('.hasbrief').forEach(c=>c.addEventListener('click',()=>openBrief(c.dataset.d)));
+  body.querySelectorAll('.genbr').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();openBrief(x.closest('.cell').dataset.d);}));
+  body.querySelectorAll('.mybr').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();expandMyBrief(x.closest('.cell').dataset.d);}));
+  body.querySelectorAll('.dayb').forEach(c=>c.addEventListener('click',()=>{const ds=c.dataset.d;if(mine[ds])expandMyBrief(ds);else if(gen[ds])openBrief(ds);}));
 }
 function shiftBV(delta){let m=BV.m+delta,y=BV.y;if(m<1){m=12;y--;}if(m>12){m=1;y++;}BV={y,m};renderBriefCal();}
 if(document.getElementById('prevBV'))document.getElementById('prevBV').addEventListener('click',()=>shiftBV(-1));
@@ -1055,8 +1068,8 @@ function openCompose(){
       if(d.open!=null)cbEl('cb-open-'+k).value=fmtN(d.open);
       if(d.price!=null)cbEl('cb-now-'+k).value=fmtN(d.price);}});
   cbShots=[];['cb-overview','cb-themes','cb-watch'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
-  // Reopen keeps your work: prefer the live composed brief (screenshots + fields) for today, else a saved manual brief.
-  const existing=(COMPOSED&&COMPOSED.date===ds)?COMPOSED:getBriefs()[ds];if(existing&&existing.manual)cbLoad(existing);
+  // Reopen keeps your work: load your own saved brief for this day if you've made one.
+  const existing=myBriefs()[ds];if(existing)cbLoad(existing);
   cbRenderShots();cbEl('cb-status').textContent='';
   cbEl('composeModal').classList.add('open');
 }
@@ -1082,7 +1095,10 @@ function buildComposedObject(){
   const gen=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual';
   return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],shots:cbShots.slice(),manual:true};
 }
-function doneCompose(){ COMPOSED=buildComposedObject(); try{localStorage.setItem('ct_composed',JSON.stringify(COMPOSED));}catch(e){} closeCompose(); goBrief(); applyComposed(); }
+/* Compose now builds YOUR OWN brief — saved separately, it does NOT overwrite the generated page brief. */
+function myBriefs(){try{return JSON.parse(localStorage.getItem('ct_mybriefs')||'{}');}catch(e){return {};}}
+function saveMyBrief(b){const all=myBriefs();all[b.date]=b;try{localStorage.setItem('ct_mybriefs',JSON.stringify(all));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
+function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; closeCompose(); goBrief(); safe(renderBriefCal); expandMyBrief(b.date); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
 function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);safe(renderThesis);renderComposedCharts();}
 const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
@@ -1252,8 +1268,9 @@ function startDailySchedules(){
 try{const s=localStorage.getItem('ct_live_ms');LIVE_MS=(s!=null)?(+s||0):120000;}catch(e){LIVE_MS=120000;}
 document.getElementById('f-date').value=etParts().date;
 seedTrades();
-try{const _sc=localStorage.getItem('ct_composed');if(_sc){const _o=JSON.parse(_sc);if(_o&&_o.date===etParts().date)COMPOSED=_o;else localStorage.removeItem('ct_composed');}}catch(e){}
-// No saved composition yet? Fall back to a pre-authored brief for today (if one is seeded in BRIEFS).
+// Compose is now your own separate brief — it no longer drives this page. Purge any legacy composed state.
+try{localStorage.removeItem('ct_composed');}catch(e){}
+// The page shows the GENERATED brief: a pre-authored brief for today (if seeded in BRIEFS), else auto-built from live data.
 if(!COMPOSED){try{const _tb=BRIEFS[etParts().date];if(_tb&&_tb.manual)COMPOSED=_tb;}catch(e){}}
 tick();setInterval(tick,1000);
 loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
