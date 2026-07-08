@@ -236,9 +236,8 @@ ul.tight li::marker{color:var(--org)}
         <h1 class="h1" style="margin:0">Daily Brief <span class="subtle" id="briefDate"></span></h1>
         <div style="text-align:right"><button class="btn grn" id="saveBriefBtn" style="padding:7px 12px">Save today's brief</button><div class="subtle" style="margin-top:3px">Auto-saves 8:35 AM ET → Protocol Calendar</div></div>
       </div>
-      <div class="qstrip" id="qstrip"><div class="panel">Loading quotes…</div></div>
       <hr class="d">
-      <div class="grid" style="grid-template-columns:1.4fr .9fr">
+      <div class="grid" style="grid-template-columns:2fr 1fr">
         <div>
           <div class="panel"><h2 class="sec">Today's Overview</h2><div class="narr" id="overview">Framing…</div></div>
           <hr class="d">
@@ -248,14 +247,6 @@ ul.tight li::marker{color:var(--org)}
             <div class="panel"><h2 class="sec">Key Themes</h2><ul class="tight" id="keyThemes"><li>…</li></ul></div>
             <div class="panel"><h2 class="sec">Watch Today</h2><ul class="tight" id="watchToday"><li>…</li></ul></div>
           </div>
-        </div>
-        <div>
-          <div class="panel"><h2 class="sec grn">Protocol Windows — live</h2><div id="windows">…</div>
-            <div class="subtle" style="margin-top:6px">Primary 9:30–11:30 ET. FOMC days add 2:45–3:15.</div></div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec">Intraday Reversion Levels</h2>
-            <table class="lvl" id="lvlTable"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th></tr></thead><tbody></tbody></table>
-            <div class="subtle" style="margin-top:6px">PDH/PDL = prior day high/low. The two levels that matter for the sweep.</div></div>
           <hr class="d">
           <div class="panel"><h2 class="sec">Guardrails — No Trade</h2>
             <ul class="tight" style="color:var(--red)">
@@ -265,6 +256,18 @@ ul.tight li::marker{color:var(--org)}
               <li>SMTs both sides of range → NO TRADE</li>
             </ul>
             <hr class="d"><div class="subtle">SMT → POI → Time → Displacement → CSD → M1</div></div>
+        </div>
+        <div>
+          <div class="panel">
+            <div class="ph" style="border:0;padding:0 0 10px">
+              <h2 class="sec grn" id="briefCalTitle" style="margin:0">Daily Briefings</h2>
+              <div class="navbtns"><button class="btn" id="prevBV" style="padding:5px 10px">◄</button><button class="btn" id="nextBV" style="padding:5px 10px">►</button></div>
+            </div>
+            <div class="calgrid" id="briefCalHead"></div><div class="calgrid" id="briefCalBody"></div>
+            <div class="legend" style="margin-top:8px"><span class="lg"><span class="brdot">📄</span> Saved brief</span><span class="lg"><span class="sw" style="background:var(--blue)"></span>Today</span></div>
+            <hr class="d">
+            <div class="subtle">Every brief you save lands here. Click any 📄 day to reopen it. Save with “Save today's brief” up top, or it auto-saves 8:35 AM ET.</div>
+          </div>
         </div>
       </div>
       <div id="composedCharts"></div>
@@ -566,7 +569,14 @@ const BRIEFS={
   themes:["HTF draw is higher across NQ/ES/YM — trade with the draw, not against it","3 high-impact ISM prints at 10:00 AM ET — expect engineered volatility","One trade per focus window · size at protocol default · abundance is the default"],
   watch:["10:00 AM — ISM Services PMI (est 54, prev 54.5)","10:00 AM — ISM Non-Manufacturing PMI (est 54.2, prev 54.5)","Prime windows: 9:40 AM · 10:25 AM · 10:45 AM"],
   levels:[{s:"NQ",pdh:"30,011",pdl:"29,522",open:"29,930",now:"29,877"},{s:"ES",pdh:"7,574",pdl:"7,524",open:"7,562",now:"7,562"},{s:"YM",pdh:"53,400",pdl:"53,074",open:"53,230",now:"53,183"}],
-  events:[{t:"10:00 AM",name:"ISM Services PMI",impact:"High"},{t:"10:00 AM",name:"ISM Non-Manufacturing PMI",impact:"High"},{t:"10:00 AM",name:"ISM Non-Manufacturing Prices",impact:"High"}]}
+  events:[{t:"10:00 AM",name:"ISM Services PMI",impact:"High"},{t:"10:00 AM",name:"ISM Non-Manufacturing PMI",impact:"High"},{t:"10:00 AM",name:"ISM Non-Manufacturing Prices",impact:"High"}]},
+ "2026-07-07":{date:"2026-07-07",gen:"pre-market · coach",manual:true,draw:"LOWER",zone:"discount",bias:{NQ:"bearish",ES:"neutral",YM:"neutral"},
+  overview:["NQ opened and is trading below the prior day low — 29,642 sits under PDL 29,776, with the session open (29,669) also beneath it. That is displacement lower: price has left the prior day's range and is reaching for sellside liquidity. The broken PDL at 29,776 now flips to resistance, and the draw on liquidity stays LOWER until price reclaims that level with real intent.","Trade with the draw. Favor shorts on a retrace into a premium POI (toward 29,776 / the open) that prints a bearish SMT and a clean CSD inside a time window. Longs are counter-trend today — valid only on a genuine sellside sweep of the lows plus a bullish SMT and CSD from deep discount. No POI + time + SMT + CSD = no trade. Protocol first."],
+  coach:"<p><b>HTF draw:</b> LOWER <span class='subtle'>(NQ trading below PDL — displacement lower)</span><br><b>NQ zone:</b> discount (below the prior range)<br><b>SMT:</b> Watch NQ/ES/YM at the lows — a divergence there is your reversal tell.</p><p><b>Play:</b> Favor <b>shorts</b> from premium POIs into 29,776 / the open on a bearish SMT + CSD. Counter-trend longs only on a clean sellside sweep + bullish SMT + CSD from discount. One trade per window · protocol size · the account is already funded.</p>",
+  themes:["NQ below PDL 29,776 — draw on liquidity is LOWER; trade with it, not against it","Broken PDL (29,776) is now resistance — the prime premium POI for shorts","One trade per focus window · protocol size · counter-trend longs need a sweep + SMT + CSD"],
+  watch:["8:30 AM ET — Balance of Trade (Medium) — minor, let it pass","No high-impact US prints today — structure-led tape, cleaner protocol read","Prime windows: 9:40 AM · 10:25 AM · 10:45 AM"],
+  levels:[{s:"NQ",pdh:"30,094",pdl:"29,776",open:"29,669.25",now:"29,642.75",lonH:"—",lonL:"—",asiaH:"—",asiaL:"—",mid:"—",key:"Broken PDL 29,776 = resistance · downside draw toward sellside below 29,642"},{s:"ES",pdh:"—",pdl:"—",open:"—",now:"—",lonH:"—",lonL:"—",asiaH:"—",asiaL:"—",mid:"—",key:""},{s:"YM",pdh:"—",pdl:"—",open:"—",now:"—",lonH:"—",lonL:"—",asiaH:"—",asiaL:"—",mid:"—",key:""}],
+  events:[{t:"8:30 AM",name:"Balance of Trade",impact:"Medium"}],shots:[]}
 };
 /*BRIEFS_END*/
 let SNAPSHOT_MODE=false, LASTQ={}, RICH=false, CAL=[], COMPOSED=null;
@@ -655,7 +665,7 @@ async function loadQuotes(){
     if(a200[0]&&typeof a200[0].sma==="number")d.priceAvg200=a200[0].sma;
   }catch(e){}}));
   RICH=!!(by.NQUSD&&typeof by.NQUSD.priceAvg50==="number"&&typeof by.NQUSD.dayHigh==="number");
-  if(!by.NQUSD){document.getElementById("qstrip").innerHTML='<div class="panel down">Quotes unavailable.</div>';return;}
+  if(!by.NQUSD){const qs=document.getElementById("qstrip");if(qs)qs.innerHTML='<div class="panel down">Quotes unavailable.</div>';return;}
   LASTQ=by;
   safe(renderQuotes);safe(renderLevels);safe(renderOverview);safe(renderCoach);safe(renderKeyThemes);safe(renderThesis);
   loadPrevLevels();
@@ -673,6 +683,7 @@ async function loadPrevLevels(){
   safe(renderLevels);safe(renderQuotes);safe(renderThesis);
 }
 function renderQuotes(){
+  const qs=document.getElementById("qstrip");if(!qs)return;
   let h="";SYMS.forEach(sy=>{const d=LASTQ[sy];if(!d){h+='<div class="qcard down">No '+sy+'</div>';return;}const up=d.change>=0;
     const rg=(typeof d.dayLow==="number")?`<div class="qrow"><span>Day range</span><span>${fmtN(d.dayLow)}–${fmtN(d.dayHigh)}</span></div>`:"";
     const pv=(d.pdl!=null)?`<div class="qrow"><span>Prev H/L</span><span>${fmtN(d.pdh)}–${fmtN(d.pdl)}</span></div>`:"";
@@ -680,10 +691,10 @@ function renderQuotes(){
     h+=`<div class="qcard"><div class="nm">${NAMES[sy]}</div><div class="px">${fmtN(d.price)}</div>
       <div class="ch ${up?'up':'down'}">${up?'▲':'▼'} ${fmtN(d.change)} (${d.changePercentage>=0?'+':''}${(+d.changePercentage).toFixed(2)}%)</div>
       <div style="margin-top:6px">${pv}${rg}<div class="qrow"><span>Prev close</span><span>${fmtN(d.previousClose)}</span></div>${av}</div></div>`;});
-  document.getElementById("qstrip").innerHTML=h;
+  qs.innerHTML=h;
 }
 function renderLevels(){
-  const tb=document.querySelector("#lvlTable tbody");let h="";
+  const tb=document.querySelector("#lvlTable tbody");if(!tb)return;let h="";
   if(COMPOSED){(COMPOSED.levels||[]).forEach(l=>{h+=`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`;});tb.innerHTML=h;return;}
   SYMS.forEach(sy=>{const d=LASTQ[sy];if(!d)return;
     const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;
@@ -735,7 +746,7 @@ const BASE_WINDOWS=[{s:'09:40',e:'10:15',label:'Prime AM'},{s:'10:25',e:'10:35',
 const FOMC_WIN={s:'14:45',e:'15:15',label:'FOMC Window',fomc:true};
 function todaysWindows(){let w=BASE_WINDOWS.slice();const td=etParts().date;if(CAL.some(e=>etDateStr(utcToEt(e.date))===td&&/FOMC|Interest Rate|federal funds/i.test(e.event)))w=w.concat([FOMC_WIN]);return w;}
 function fmt12(x){let[h,m]=x.split(':').map(Number);const ap=h<12?'AM':'PM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+ap;}
-function renderWindows(){const now=etParts().min,wins=todaysWindows();let ni=wins.findIndex(w=>toMin(w.s)>now);let h='';wins.forEach((w,i)=>{const s=toMin(w.s),e=toMin(w.e);let c='win',bd='';if(now>=s&&now<=e){c+=' live';bd='<span class="bd">● LIVE</span>';}else if(i===ni){c+=' next';const mn=s-now;bd='<span class="bd">in '+(mn>=60?Math.floor(mn/60)+'h'+(mn%60)+'m':mn+'m')+'</span>';}h+=`<div class="${c}"><span>${w.label}${w.fomc?' <span class="tag med">FOMC</span>':''}</span><span class="mut">${fmt12(w.s)}–${fmt12(w.e)} ${bd}</span></div>`;});document.getElementById('windows').innerHTML=h;}
+function renderWindows(){const wEl=document.getElementById('windows');if(!wEl)return;const now=etParts().min,wins=todaysWindows();let ni=wins.findIndex(w=>toMin(w.s)>now);let h='';wins.forEach((w,i)=>{const s=toMin(w.s),e=toMin(w.e);let c='win',bd='';if(now>=s&&now<=e){c+=' live';bd='<span class="bd">● LIVE</span>';}else if(i===ni){c+=' next';const mn=s-now;bd='<span class="bd">in '+(mn>=60?Math.floor(mn/60)+'h'+(mn%60)+'m':mn+'m')+'</span>';}h+=`<div class="${c}"><span>${w.label}${w.fomc?' <span class="tag med">FOMC</span>':''}</span><span class="mut">${fmt12(w.s)}–${fmt12(w.e)} ${bd}</span></div>`;});document.getElementById('windows').innerHTML=h;}
 
 /* ===== Brief narrative + coach + themes ===== */
 function renderOverview(){
@@ -748,6 +759,7 @@ function renderOverview(){
   document.getElementById('overview').innerHTML=`<p>The NQ/ES/YM triad reads <b>${draw}</b> on HTF structure (NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM}). NQ is in <b>${zone}</b> of its daily range at ${fmtN(nq.price)}. Draw on liquidity favors ${dir}.</p><p>Scheduled risk today: ${evTxt}.${fomc?' FOMC on the docket — the 2:45–3:15 window is the tradeable read; let the release deliver, then trade the reaction.':''} Until a POI meets a time window with a correlated SMT and a CSD, there is no trade. Protocol first.</p>`;
 }
 function renderCoach(){
+  if(COMPOSED&&COMPOSED.coach){document.getElementById('coachDaily').innerHTML=COMPOSED.coach;return;}
   const q=LASTQ;if(!q.NQUSD){document.getElementById('coachDaily').textContent='Waiting on quotes…';return;}
   const {w,draw}=drawState();let stance=draw==='HIGHER'?'Favor <b>longs</b> from discount POIs. Hunt sellside sweeps + bullish SMT into a window.':draw==='LOWER'?'Favor <b>shorts</b> from premium POIs. Hunt buyside sweeps + bearish SMT into a window.':'Mixed triad — <span class="down">guardrail day</span>. Demand a clean SMT + CSD at time, or stand aside.';
   const nq=q.NQUSD;let zone='n/a';const _cl=composedLvl('NQ');let _zh=_cl?parseLvlNum(_cl.pdh):null,_zl=_cl?parseLvlNum(_cl.pdl):null,_zp=_cl?parseLvlNum(_cl.now):null;if(_zh==null)_zh=nq.dayHigh;if(_zl==null)_zl=nq.dayLow;if(_zp==null)_zp=nq.price;if(typeof _zh==='number'&&typeof _zl==='number'&&typeof _zp==='number'){const r=_zh-_zl,pos=r>0?(_zp-_zl)/r*100:50;zone=pos>66?'premium (upper third)':pos<33?'discount (lower third)':'equilibrium (mid-range)';}
@@ -812,11 +824,13 @@ function renderCal72(){
 /* ===== Thesis ===== */
 function sessLevels(_c){if(!_c)return{lonH:null,lonL:null,asiaH:null,asiaL:null,mid:null};return{lonH:parseLvlNum(_c.lonH),lonL:parseLvlNum(_c.lonL),asiaH:parseLvlNum(_c.asiaH),asiaL:parseLvlNum(_c.asiaL),mid:parseLvlNum(_c.mid)};}
 function renderThesis(){
-  const el=document.getElementById('thesisCards');if(!el)return;if(!LASTQ.NQUSD){el.innerHTML='<div class="panel">Loading…</div>';return;}
+  const el=document.getElementById('thesisCards');if(!el)return;if(!LASTQ.NQUSD&&!COMPOSED){el.innerHTML='<div class="panel">Loading…</div>';return;}
   const evs=todayHigh();
-  el.innerHTML=SYMS.map(sy=>{const d=LASTQ[sy];if(!d)return'';
-    const bw=biasWord(d);const bias=bw==='bullish'?'BULLISH':bw==='bearish'?'BEARISH':'NEUTRAL';const bt=bw==='bullish'?'bull':bw==='bearish'?'bear':'neut';const arrow=bw==='bullish'?'▲':bw==='bearish'?'▼':'•';
-    const _c=composedLvl(SHORT[sy]);let hi,lo,px,pv;
+  el.innerHTML=SYMS.map(sy=>{const d=LASTQ[sy]||{};const _c=composedLvl(SHORT[sy]);if(!LASTQ[sy]&&!_c)return'';
+    const cbias=(COMPOSED&&COMPOSED.bias&&COMPOSED.bias[SHORT[sy]])||null;
+    let bw=LASTQ[sy]?biasWord(d):null;if((!bw||bw==='mixed')&&cbias)bw=cbias;if(!bw)bw='mixed';
+    const bias=bw==='bullish'?'BULLISH':bw==='bearish'?'BEARISH':'NEUTRAL';const bt=bw==='bullish'?'bull':bw==='bearish'?'bear':'neut';const arrow=bw==='bullish'?'▲':bw==='bearish'?'▼':'•';
+    let hi,lo,px,pv;
     if(_c){hi=parseLvlNum(_c.pdh);lo=parseLvlNum(_c.pdl);px=parseLvlNum(_c.now);if(hi==null)hi=(d.pdh!=null)?d.pdh:d.dayHigh;if(lo==null)lo=(d.pdl!=null)?d.pdl:d.dayLow;if(px==null)px=d.price;pv=(d.previousClose!=null)?d.previousClose:((parseLvlNum(_c.open)!=null)?parseLvlNum(_c.open):px);}
     else{hi=(d.pdh!=null)?d.pdh:d.dayHigh;lo=(d.pdl!=null)?d.pdl:d.dayLow;px=d.price;pv=d.previousClose;}
     let entry,t1,t2,stop;
@@ -997,8 +1011,27 @@ function briefHtml(b){
 }
 function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent='Auto-saved '+(b.gen||'8:35 AM ET');document.getElementById('briefModalBody').innerHTML=briefHtml(b);document.getElementById('briefModal').classList.add('open');}
 function closeBrief(){document.getElementById('briefModal').classList.remove('open');}
-function saveTodayBrief(){const b=buildBriefObject();if(!b){alert('Market data still loading — try again in a moment.');return;}const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}alert("Saved today's brief ("+b.date+"). It's now on the Protocol Calendar — click the day (📄) to pop it out.");if(RENDERED.calendar)safe(renderMonthPlan);}
+function saveTodayBrief(){const b=buildBriefObject();if(!b){alert('Market data still loading — try again in a moment.');return;}const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}alert("Saved today's brief ("+b.date+"). It's now in your Daily Briefings calendar — click the day (📄) to pop it out.");safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
 document.getElementById('saveBriefBtn').addEventListener('click',saveTodayBrief);
+
+/* ===== Daily Briefings calendar (right column of Market Brief) ===== */
+let BV=curMonth();
+function renderBriefCal(){
+  const head=document.getElementById('briefCalHead'),body=document.getElementById('briefCalBody');if(!head||!body)return;
+  const y=BV.y,m=BV.m;
+  const ttl=document.getElementById('briefCalTitle');if(ttl)ttl.textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1)));
+  head.innerHTML=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');
+  const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());
+  const briefs=getBriefs();let cells='';
+  for(let i=0;i<sd;i++)cells+='<div class="cell dim" style="min-height:42px"></div>';
+  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const hb=briefs[ds];
+    cells+=`<div class="cell ${ds===td?'today':''} ${hb?'hasbrief':''}" data-d="${ds}" style="min-height:42px;${hb?'cursor:pointer':''}"><div class="dn" style="font-size:11px">${d}${hb?' <span class="brdot" title="Brief saved — click to reopen">📄</span>':''}</div></div>`;}
+  body.innerHTML=cells;
+  body.querySelectorAll('.hasbrief').forEach(c=>c.addEventListener('click',()=>openBrief(c.dataset.d)));
+}
+function shiftBV(delta){let m=BV.m+delta,y=BV.y;if(m<1){m=12;y--;}if(m>12){m=1;y++;}BV={y,m};renderBriefCal();}
+if(document.getElementById('prevBV'))document.getElementById('prevBV').addEventListener('click',()=>shiftBV(-1));
+if(document.getElementById('nextBV'))document.getElementById('nextBV').addEventListener('click',()=>shiftBV(1));
 document.getElementById('briefModalX').addEventListener('click',closeBrief);
 document.getElementById('briefModal').addEventListener('click',e=>{if(e.target.id==='briefModal')closeBrief();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBrief();});
@@ -1209,7 +1242,7 @@ document.getElementById('setSave').addEventListener('click',()=>{const k=documen
 /* ===== Daily schedules (ET-anchored): 8:00 AM full refresh · 8:35 AM auto-save brief ===== */
 function msUntilEt(hh,mm){const p=etParts();const cur=((p.h*60+p.m)*60+p.s)*1000;let diff=((hh*60+mm)*60*1000)-cur;if(diff<=0)diff+=864e5;return diff;}
 function scheduleDailyAt(hh,mm,fn){function run(){try{fn();}catch(e){}setTimeout(run,864e5);}setTimeout(run,msUntilEt(hh,mm));}
-function saveTodayBriefSilent(){const b=buildBriefObject();if(!b)return;const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}if(RENDERED.calendar)safe(renderMonthPlan);}
+function saveTodayBriefSilent(){const b=buildBriefObject();if(!b)return;const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
 function startDailySchedules(){
   scheduleDailyAt(8,0,refreshAll);          // pull fresh prev-day levels + quotes + calendar at 8:00 AM ET
   scheduleDailyAt(8,35,saveTodayBriefSilent); // lock the brief to the Protocol Calendar at 8:35 AM ET
@@ -1220,8 +1253,11 @@ try{const s=localStorage.getItem('ct_live_ms');LIVE_MS=(s!=null)?(+s||0):120000;
 document.getElementById('f-date').value=etParts().date;
 seedTrades();
 try{const _sc=localStorage.getItem('ct_composed');if(_sc){const _o=JSON.parse(_sc);if(_o&&_o.date===etParts().date)COMPOSED=_o;else localStorage.removeItem('ct_composed');}}catch(e){}
+// No saved composition yet? Fall back to a pre-authored brief for today (if one is seeded in BRIEFS).
+if(!COMPOSED){try{const _tb=BRIEFS[etParts().date];if(_tb&&_tb.manual)COMPOSED=_tb;}catch(e){}}
 tick();setInterval(tick,1000);
 loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
+safe(renderBriefCal);
 if(COMPOSED)safe(renderComposedCharts);
 applyInterval();
 startDailySchedules();
