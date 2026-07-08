@@ -241,7 +241,7 @@ ul.tight li::marker{color:var(--org)}
         <div>
           <div class="panel"><h2 class="sec">Today's Overview</h2><div class="narr" id="overview">Framing…</div></div>
           <hr class="d">
-          <div class="panel"><h2 class="sec">Coach's HTF Bias — Daily</h2><div id="coachDaily" class="narr">Reading…</div></div>
+          <div class="panel"><h2 class="sec">Coaches Framework</h2><div id="coachDaily" class="narr">Reading…</div></div>
           <hr class="d">
           <div class="grid" style="grid-template-columns:1fr 1fr">
             <div class="panel"><h2 class="sec">Key Themes</h2><ul class="tight" id="keyThemes"><li>…</li></ul></div>
@@ -759,14 +759,19 @@ function renderOverview(){
   const dir=draw==='HIGHER'?'longs from discount POIs':draw==='LOWER'?'shorts from premium POIs':'standing down until the triad picks a side';
   document.getElementById('overview').innerHTML=`<p>The NQ/ES/YM triad reads <b>${draw}</b> on HTF structure (NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM}). NQ is in <b>${zone}</b> of its daily range at ${fmtN(nq.price)}. Draw on liquidity favors ${dir}.</p><p>Scheduled risk today: ${evTxt}.${fomc?' FOMC on the docket — the 2:45–3:15 window is the tradeable read; let the release deliver, then trade the reaction.':''} Until a POI meets a time window with a correlated SMT and a CSD, there is no trade. Protocol first.</p>`;
 }
-function renderCoach(){
-  if(COMPOSED&&COMPOSED.coach){document.getElementById('coachDaily').innerHTML=COMPOSED.coach;return;}
-  const q=LASTQ;if(!q.NQUSD){document.getElementById('coachDaily').textContent='Waiting on quotes…';return;}
+function coachHtmlAuto(){
+  const q=LASTQ;if(!q.NQUSD)return '';
   const {w,draw}=drawState();let stance=draw==='HIGHER'?'Favor <b>longs</b> from discount POIs. Hunt sellside sweeps + bullish SMT into a window.':draw==='LOWER'?'Favor <b>shorts</b> from premium POIs. Hunt buyside sweeps + bearish SMT into a window.':'Mixed triad — <span class="down">guardrail day</span>. Demand a clean SMT + CSD at time, or stand aside.';
   const nq=q.NQUSD;let zone='n/a';const _cl=composedLvl('NQ');let _zh=_cl?parseLvlNum(_cl.pdh):null,_zl=_cl?parseLvlNum(_cl.pdl):null,_zp=_cl?parseLvlNum(_cl.now):null;if(_zh==null)_zh=nq.dayHigh;if(_zl==null)_zl=nq.dayLow;if(_zp==null)_zp=nq.price;if(typeof _zh==='number'&&typeof _zl==='number'&&typeof _zp==='number'){const r=_zh-_zl,pos=r>0?(_zp-_zl)/r*100:50;zone=pos>66?'premium (upper third)':pos<33?'discount (lower third)':'equilibrium (mid-range)';}
   const arr=[['NQ',q.NQUSD.changePercentage],['ES',q.ESUSD&&q.ESUSD.changePercentage],['YM',q.YMUSD&&q.YMUSD.changePercentage]].filter(x=>typeof x[1]==='number').sort((a,b)=>b[1]-a[1]);
   const div=new Set(arr.map(x=>Math.sign(x[1]))).size>1;const basis=RICH?'structure vs 50/200-day':'intraday proxy';
-  document.getElementById('coachDaily').innerHTML=`<p><b>HTF draw:</b> ${draw} <span class="subtle">(NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM} · ${basis})</span><br><b>NQ zone:</b> ${zone}<br><b>SMT:</b> ${div?'<span class="down">Triad diverging — potential SMT building. Confirm at POI + time.</span>':'Triad in tandem — no clean SMT yet.'}</p><p><b>Play:</b> ${stance}</p>`;
+  return `<p><b>HTF draw:</b> ${draw} <span class="subtle">(NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM} · ${basis})</span><br><b>NQ zone:</b> ${zone}<br><b>SMT:</b> ${div?'<span class="down">Triad diverging — potential SMT building. Confirm at POI + time.</span>':'Triad in tandem — no clean SMT yet.'}</p><p><b>Play:</b> ${stance}</p>`;
+}
+function renderCoach(){
+  const el=document.getElementById('coachDaily');if(!el)return;
+  if(COMPOSED&&COMPOSED.coach){el.innerHTML=COMPOSED.coach;return;}
+  if(!LASTQ.NQUSD){el.textContent='Waiting on quotes…';return;}
+  el.innerHTML=coachHtmlAuto();
 }
 function renderKeyThemes(){
   if(COMPOSED){
@@ -988,7 +993,7 @@ document.getElementById('impFile').addEventListener('change',ev=>{const f=ev.tar
 function localBriefs(){try{return JSON.parse(localStorage.getItem('ct_briefs')||'{}');}catch(e){return {};}}
 function getBriefs(){return Object.assign({},BRIEFS,localBriefs());}
 function buildBriefObject(){
-  if(COMPOSED){return Object.assign({},COMPOSED,{gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual'});}
+  if(COMPOSED){const o=Object.assign({},COMPOSED,{gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual'});if(!o.coach)o.coach=coachHtmlAuto();return o;}
   if(!LASTQ.NQUSD)return null;const {w,draw}=drawState();const nq=LASTQ.NQUSD;
   let zone='equilibrium';if(typeof nq.dayHigh==='number'){const r=nq.dayHigh-nq.dayLow,pos=r>0?(nq.price-nq.dayLow)/r*100:50;zone=pos>66?'premium':pos<33?'discount':'equilibrium';}
   const evs=todayHigh();const dir=draw==='HIGHER'?'longs from discount POIs':draw==='LOWER'?'shorts from premium POIs':'standing down until the triad picks a side';
@@ -998,10 +1003,11 @@ function buildBriefObject(){
   const watch=evs.map(e=>`${fmtEtTime(utcToEt(e.date))} — ${cleanEv(e.event)}${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`);if(!watch.length)watch.push('PDH / PDL are the levels that matter for the sweep');
   const levels=SYMS.map(sy=>{const d=LASTQ[sy];const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;return {s:SHORT[sy],pdh:fmtN(ph),pdl:fmtN(pl),open:fmtN(d.open),now:fmtN(d.price)};});
   const events=evs.map(e=>({t:fmtEtTime(utcToEt(e.date)),name:cleanEv(e.event),impact:'High'}));
-  return {date:etParts().date,gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET',draw,zone,bias:w,overview,themes,watch,levels,events};
+  return {date:etParts().date,gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET',draw,zone,bias:w,coach:coachHtmlAuto(),overview,themes,watch,levels,events};
 }
 function briefHtml(b,hideShots){
   return `<div class="briefsec"><h4>Overview · HTF draw ${b.draw||''}</h4><div class="narr">${(b.overview||[]).map(p=>'<p>'+p+'</p>').join('')}</div></div>
+  ${b.coach?`<div class="briefsec"><h4>Coaches Framework</h4><div class="narr">${b.coach}</div></div>`:''}
   <div class="briefsec"><h4>Key Themes</h4><ul class="tight">${(b.themes||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
   <div class="briefsec"><h4>Watch Today</h4><ul class="tight">${(b.watch||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
   <div class="briefsec"><h4>Intraday Reversion Levels</h4><table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th></tr></thead><tbody>${(b.levels||[]).map(l=>`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`).join('')}</tbody></table></div>
