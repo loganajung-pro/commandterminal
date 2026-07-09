@@ -1013,7 +1013,21 @@ function renderDayDetail(){
   h+=t.map(x=>{const rt=x.res==='Open'?'tag blue':x.res==='Win'?'tag bull':x.res==='Loss'?'tag bear':'tag neut';return `<div class="tl"><div><b>${x.pair}</b> <span class="tag ${x.dir==='Long'?'bull':'bear'}">${x.dir}</span> <span class="${rt}">${x.res}${x.r?' '+(+x.r>0?'+':'')+x.r+'R':''}</span><br><span class="subtle">${x.model||''} · ${x.sess||''}</span>${x.notes?`<br><span class="subtle">${(x.notes+'').replace(/</g,'&lt;')}</span>`:''}</div></div>`;}).join('');
   el.innerHTML=h;
 }
-function renderShots(){const c=document.getElementById('fw-shots');c.innerHTML=fwShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{fwShots.splice(+x.dataset.i,1);renderShots();}));}
+/* Shared draggable-to-reorder screenshot strip (used by every editable chart section) */
+function renderShotStrip(containerId,arr,rerender){
+  const c=document.getElementById(containerId);if(!c)return;
+  c.innerHTML=arr.map((s,i)=>`<div class="fwshot" draggable="true" data-i="${i}" title="Drag to reorder" style="cursor:grab"><img src="${s}" draggable="false"><span class="rm" data-i="${i}">✕</span></div>`).join('');
+  c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();arr.splice(+x.dataset.i,1);rerender();}));
+  let dragI=null;
+  c.querySelectorAll('.fwshot').forEach(el=>{
+    el.addEventListener('dragstart',e=>{dragI=+el.dataset.i;el.style.opacity='.4';try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(dragI));}catch(_){}});
+    el.addEventListener('dragend',()=>{el.style.opacity='';c.querySelectorAll('.fwshot').forEach(n=>n.style.outline='');});
+    el.addEventListener('dragover',e=>{e.preventDefault();try{e.dataTransfer.dropEffect='move';}catch(_){}el.style.outline='2px dashed var(--grn-dim)';});
+    el.addEventListener('dragleave',()=>{el.style.outline='';});
+    el.addEventListener('drop',e=>{e.preventDefault();el.style.outline='';const to=+el.dataset.i;if(dragI==null||dragI===to)return;const m=arr.splice(dragI,1)[0];arr.splice(to,0,m);dragI=null;rerender();});
+  });
+}
+function renderShots(){renderShotStrip('fw-shots',fwShots,renderShots);}
 function loadFwEditor(){const fw=loadFw()[selDay]||{};fwShots=(fw.shots||[]).slice();
   document.getElementById('fw-pair').value=fw.pair||'NQ';document.getElementById('fw-dir').value=fw.dir||'—';document.getElementById('fw-notes').value=fw.notes||'';
   document.getElementById('fwStatus').textContent='';renderShots();}
@@ -1122,7 +1136,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBrief();});
 /* ===== Daily Briefing Composer (manual: screenshots + annotated levels) ===== */
 let cbShots=[];
 function cbEl(id){return document.getElementById(id);}
-function cbRenderShots(){const c=cbEl('cb-shots');if(!c)return;c.innerHTML=cbShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{cbShots.splice(+x.dataset.i,1);cbRenderShots();}));}
+function cbRenderShots(){renderShotStrip('cb-shots',cbShots,cbRenderShots);}
 function cbAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{cbShots.push(u);cbRenderShots();});rd.readAsDataURL(file);}
 function cbBuildLevels(){const body=cbEl('cb-lvl-body');if(!body)return;body.innerHTML=['NQ','ES','YM'].map(k=>`<tr><td>${k}</td><td><input id="cb-pdh-${k}" class="cbin"></td><td><input id="cb-pdl-${k}" class="cbin"></td><td><input id="cb-open-${k}" class="cbin"></td><td><input id="cb-now-${k}" class="cbin"></td><td><input id="cb-lonH-${k}" class="cbin"></td><td><input id="cb-lonL-${k}" class="cbin"></td><td><input id="cb-asiaH-${k}" class="cbin"></td><td><input id="cb-asiaL-${k}" class="cbin"></td><td><input id="cb-mid-${k}" class="cbin"></td><td><input id="cb-key-${k}" class="cbin" style="text-align:left" placeholder="OB · FVG · equal highs…"></td></tr>`).join('');}
 function openCompose(){
@@ -1262,7 +1276,7 @@ function loadPm(){try{return JSON.parse(localStorage.getItem(PMKEY)||'{}');}catc
 function savePmAll(o){try{localStorage.setItem(PMKEY,JSON.stringify(o));return true;}catch(e){cbEl('pm-status').innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
 function pmHasContent(ex){return !!(ex&&((ex.scenario&&ex.scenario.length)||(ex.shots&&ex.shots.length)||(ex.poi&&(ex.poi.key||ex.poi.pdh||ex.poi.pdl||ex.poi.open||ex.poi.now))||(ex.dir&&ex.dir!=='—')));}
 let pmShots=[];
-function pmRenderShots(){const c=cbEl('pm-shots');if(!c)return;c.innerHTML=pmShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{pmShots.splice(+x.dataset.i,1);pmRenderShots();}));}
+function pmRenderShots(){renderShotStrip('pm-shots',pmShots,pmRenderShots);}
 function pmAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{pmShots.push(u);pmRenderShots();});rd.readAsDataURL(file);}
 function openPm(){
   if(!selDay){alert('Pick a day on the calendar first.');return;}
@@ -1444,7 +1458,7 @@ function renderPmr(){
 }
 if(document.getElementById('prevPV'))document.getElementById('prevPV').addEventListener('click',()=>{let m=PV.m-1,y=PV.y;if(m<1){m=12;y--;}PV={y,m};renderPmr();});
 if(document.getElementById('nextPV'))document.getElementById('nextPV').addEventListener('click',()=>{let m=PV.m+1,y=PV.y;if(m>12){m=1;y++;}PV={y,m};renderPmr();});
-function pmrRenderShots(){const c=cbEl('pmr-shots');if(!c)return;c.innerHTML=pmrShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{pmrShots.splice(+x.dataset.i,1);pmrRenderShots();}));}
+function pmrRenderShots(){renderShotStrip('pmr-shots',pmrShots,pmrRenderShots);}
 function pmrAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{pmrShots.push(u);pmrRenderShots();});rd.readAsDataURL(file);}
 function openPmrModal(){
   if(!selPmrDay){alert('Pick a day on the calendar first.');return;}
@@ -1514,7 +1528,7 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
   document.getElementById('tradeModal').classList.add('open');}
 function openDayTrades(ds){curTradeId=null;const body=dayTradesHtml(ds);const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · click a trade in the log to add charts';document.getElementById('tradeModalBody').innerHTML=body;curPrint={title:'Trades · '+fmtDayLong(ds),body};document.getElementById('tradeModal').classList.add('open');}
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
-function renderTradeShots(){const c=document.getElementById('tr-shots');if(!c)return;c.innerHTML=tradeShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{tradeShots.splice(+x.dataset.i,1);renderTradeShots();}));}
+function renderTradeShots(){renderShotStrip('tr-shots',tradeShots,renderTradeShots);}
 function trAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{tradeShots.push(u);renderTradeShots();});rd.readAsDataURL(file);}
 function saveTradeCharts(){if(curTradeId==null)return;const t=loadTrades();const i=t.findIndex(x=>x.id===curTradeId);if(i<0)return;t[i].shots=tradeShots.slice();saveTrades(t);const st=document.getElementById('tr-charts-status');if(st)st.innerHTML='<span class="up">✓ Charts saved — in the calendar & PDF</span>';renderJournal();safe(renderIdeas);}
 if(document.getElementById('tradeModalX')){
@@ -1526,7 +1540,7 @@ if(document.getElementById('tradeModalX')){
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTradeModal();});
 }
 /* Trade entry pop-out (fields + 1080p charts) */
-function teRenderShots(){const c=document.getElementById('te-shots');if(!c)return;c.innerHTML=teShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teShots.splice(+x.dataset.i,1);teRenderShots();}));}
+function teRenderShots(){renderShotStrip('te-shots',teShots,teRenderShots);}
 function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{teShots.push(u);teRenderShots();});rd.readAsDataURL(file);}
 function openLogModal(){teShots=[];['f-model','f-r','f-state','f-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;teRenderShots();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');}
 function closeLogModal(){document.getElementById('tradeEntryModal').classList.remove('open');}
