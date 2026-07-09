@@ -422,7 +422,7 @@ ul.tight li::marker{color:var(--org)}
   </main>
 </div>
 <div class="modal" id="briefModal"><div class="box"><span class="x" id="briefModalX">✕</span><button class="btn" id="briefModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="briefModalTitle">Daily Brief</h3><div class="subtle" id="briefModalGen"></div><div id="briefModalBody"></div></div></div>
-<div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><div id="tradeModalBody"></div></div></div>
+<div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><input type="file" id="tr-file" accept="image/*" multiple style="display:none"><div id="tradeModalBody"></div></div></div>
 <div class="modal" id="setModal"><div class="box" style="max-width:540px"><span class="x" id="setX">✕</span><h3>Settings</h3>
   <div class="briefsec"><h4>Live Data — FMP API Key</h4>
     <div class="subtle" style="margin-bottom:8px">Paste your Financial Modeling Prep API key to pull live data <b>directly</b> — no Claude required. Stored only in this browser (not shared, not committed to your repo). Get a key free at financialmodelingprep.com → Dashboard → API Keys.</div>
@@ -1465,7 +1465,7 @@ if(cbEl('pmrOpen')){
 }
 
 /* ===== PDF export (print-to-PDF; embeds screenshots natively) + Trade review pop-out ===== */
-let curPrint={title:'',body:''};
+let curPrint={title:'',body:''},tradeShots=[],curTradeId=null;
 const PRINT_CSS=`*{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;margin:30px;line-height:1.5}h1{font-size:22px;margin:0 0 6px}h2,.sec{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px;font-weight:700}h3,h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px}.subtle,.sub,.mut,.faint{color:#666;font-size:12px}.narr p{margin:0 0 8px}ul{margin:6px 0;padding-left:18px}li{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}th:first-child,td:first-child{text-align:left}.tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#eee;color:#333;margin:0 2px}.kv{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:3px 0;font-size:13px}img{max-width:100%;height:auto;border:1px solid #ddd;border-radius:6px;margin:8px 0;display:block}.fwshot{margin:8px 0}hr{border:0;border-top:1px solid #ddd;margin:12px 0}.briefsec{margin:12px 0}.evrow{display:flex;gap:10px;font-size:12px;padding:2px 0}.panel{border:1px solid #eee;border-radius:8px;padding:12px;margin:10px 0}@media print{a{color:#111;text-decoration:none}}`;
 function printDoc(title,innerHtml){
   const w=window.open('','_blank');
@@ -1474,7 +1474,7 @@ function printDoc(title,innerHtml){
   w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+escH(title)+'</title><style>'+PRINT_CSS+'</style></head><body><h1>'+escH(title)+'</h1>'+innerHtml+'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.focus();window.print();},400);};<\/scr'+'ipt></body></html>');
   w.document.close();
 }
-function tradeDetailHtml(tr){
+function tradeFieldsHtml(tr){
   const rt=tr.res==='Open'?'tag blue':tr.res==='Win'?'tag bull':tr.res==='Loss'?'tag bear':'tag neut';
   const rr=tr.r?((+tr.r>0?'+':'')+tr.r+'R'):'—';
   return `<div class="briefsec"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><b style="font-size:15px">${tr.pair}</b> <span class="tag ${tr.dir==='Long'?'bull':'bear'}">${tr.dir}</span> <span class="${rt}">${tr.res}</span> <span class="tag">${rr}</span></div>
@@ -1485,14 +1485,33 @@ function tradeDetailHtml(tr){
     <div class="kv"><span class="k">Mindset / State</span><span class="v">${escH(tr.state||'—')}</span></div></div>
     ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr"><p>${escH(tr.notes)}</p></div></div>`:''}`;
 }
+function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:'';}
+function tradeDetailHtml(tr){return tradeFieldsHtml(tr)+shotsArrHtml(tr.shots);}
 function dayTradesHtml(ds){const list=loadTrades().filter(t=>t.date===ds);if(!list.length)return '<div class="subtle">No trades this day.</div>';return list.map(tradeDetailHtml).join('<hr class="d">');}
-function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)return;const body=tradeDetailHtml(tr);document.getElementById('tradeModalTitle').textContent=tr.pair+' · '+tr.dir+' — '+fmtDayLong(tr.date);document.getElementById('tradeModalSub').textContent=(tr.model||'')+' · '+(tr.sess||'');document.getElementById('tradeModalBody').innerHTML=body;curPrint={title:'Trade · '+tr.pair+' '+tr.dir+' · '+fmtDayLong(tr.date),body};document.getElementById('tradeModal').classList.add('open');}
-function openDayTrades(ds){const body=dayTradesHtml(ds);const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'');document.getElementById('tradeModalBody').innerHTML=body;curPrint={title:'Trades · '+fmtDayLong(ds),body};document.getElementById('tradeModal').classList.add('open');}
+function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)return;
+  curTradeId=id;tradeShots=(tr.shots||[]).slice();
+  document.getElementById('tradeModalTitle').textContent=tr.pair+' · '+tr.dir+' — '+fmtDayLong(tr.date);
+  document.getElementById('tradeModalSub').textContent=(tr.model||'')+' · '+(tr.sess||'');
+  const editor=`<div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
+    <div class="drop" id="tr-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
+    <div id="tr-shots"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button class="btn grn" id="tr-savecharts" style="padding:6px 12px">Save charts</button><span class="subtle" id="tr-charts-status"></span></div></div>`;
+  document.getElementById('tradeModalBody').innerHTML=tradeFieldsHtml(tr)+editor;
+  renderTradeShots();
+  const dr=document.getElementById('tr-drop');if(dr)dr.addEventListener('click',()=>{const fi=document.getElementById('tr-file');if(fi)fi.click();});
+  const sv=document.getElementById('tr-savecharts');if(sv)sv.addEventListener('click',saveTradeCharts);
+  document.getElementById('tradeModal').classList.add('open');}
+function openDayTrades(ds){curTradeId=null;const body=dayTradesHtml(ds);const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · click a trade in the log to add charts';document.getElementById('tradeModalBody').innerHTML=body;curPrint={title:'Trades · '+fmtDayLong(ds),body};document.getElementById('tradeModal').classList.add('open');}
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
+function renderTradeShots(){const c=document.getElementById('tr-shots');if(!c)return;c.innerHTML=tradeShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{tradeShots.splice(+x.dataset.i,1);renderTradeShots();}));}
+function trAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{tradeShots.push(u);renderTradeShots();});rd.readAsDataURL(file);}
+function saveTradeCharts(){if(curTradeId==null)return;const t=loadTrades();const i=t.findIndex(x=>x.id===curTradeId);if(i<0)return;t[i].shots=tradeShots.slice();saveTrades(t);const st=document.getElementById('tr-charts-status');if(st)st.innerHTML='<span class="up">✓ Charts saved — in the calendar & PDF</span>';renderJournal();safe(renderIdeas);}
 if(document.getElementById('tradeModalX')){
   document.getElementById('tradeModalX').addEventListener('click',closeTradeModal);
   document.getElementById('tradeModal').addEventListener('click',e=>{if(e.target.id==='tradeModal')closeTradeModal();});
-  document.getElementById('tradeModalPdf').addEventListener('click',()=>printDoc(curPrint.title,curPrint.body));
+  document.getElementById('tradeModalPdf').addEventListener('click',()=>{if(curTradeId!=null){const tr=loadTrades().find(t=>t.id===curTradeId);if(tr)printDoc('Trade · '+tr.pair+' '+tr.dir+' · '+fmtDayLong(tr.date),tradeFieldsHtml(tr)+shotsArrHtml(tradeShots));}else printDoc(curPrint.title,curPrint.body);});
+  const trf=document.getElementById('tr-file');if(trf)trf.addEventListener('change',ev=>{[...ev.target.files].forEach(trAddFile);ev.target.value='';});
+  document.addEventListener('paste',ev=>{if(!document.getElementById('tradeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){trAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTradeModal();});
 }
 if(document.getElementById('briefModalPdf'))document.getElementById('briefModalPdf').addEventListener('click',()=>printDoc(curPrint.title,curPrint.body));
