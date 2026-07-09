@@ -365,17 +365,9 @@ ul.tight li::marker{color:var(--org)}
       <div class="crumb">Matrix / <b>Trade Journal</b></div>
       <h1 class="h1">Trade Journal</h1>
       <div class="jgrid">
-        <div class="panel"><h2 class="sec grn">Log a Trade</h2>
-          <div class="field"><label>Date</label><input type="date" id="f-date"></div>
-          <div class="row2"><div class="field"><label>Instrument</label><select id="f-pair"><option>NQ</option><option>ES</option><option>YM</option></select></div>
-            <div class="field"><label>Direction</label><select id="f-dir"><option>Long</option><option>Short</option></select></div></div>
-          <div class="row2"><div class="field"><label>Model / Strategy</label><input id="f-model" placeholder="Matrix / SMT+CSD"></div>
-            <div class="field"><label>Session</label><select id="f-sess"><option>NY AM</option><option>NY PM</option><option>London</option><option>Asia</option></select></div></div>
-          <div class="row2"><div class="field"><label>Result</label><select id="f-res"><option>Open</option><option>Win</option><option>Loss</option><option>BE</option></select></div>
-            <div class="field"><label>R multiple</label><input id="f-r" placeholder="e.g. 2.0"></div></div>
-          <div class="field"><label>Mindset / State</label><input id="f-state" placeholder="Settled Authority?"></div>
-          <div class="field"><label>Setup / Notes</label><textarea id="f-notes" placeholder="HTF bias, POI, SMT, time, CSD, invalidation…"></textarea></div>
-          <button class="btn grn" id="logBtn" style="width:100%">+ Log Trade</button>
+        <div class="panel"><h2 class="sec grn">Trade Journal</h2>
+          <button class="btn grn" id="openLogBtn" style="width:100%;padding:11px">＋ Log a Trade</button>
+          <div class="subtle" style="margin-top:6px">Pops out an entry form — fill the details and drop in your annotated charts (1080p). Saves to the calendar for review &amp; PDF.</div>
           <hr class="d">
           <div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec">Trade Log <span class="mut" id="tlCount"></span></h2>
             <div style="display:flex;gap:6px"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">Import</button></div></div>
@@ -423,6 +415,25 @@ ul.tight li::marker{color:var(--org)}
 </div>
 <div class="modal" id="briefModal"><div class="box"><span class="x" id="briefModalX">✕</span><button class="btn" id="briefModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="briefModalTitle">Daily Brief</h3><div class="subtle" id="briefModalGen"></div><div id="briefModalBody"></div></div></div>
 <div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><input type="file" id="tr-file" accept="image/*" multiple style="display:none"><div id="tradeModalBody"></div></div></div>
+<div class="modal" id="tradeEntryModal"><div class="box" style="max-width:620px">
+  <span class="x" id="teX">✕</span>
+  <h3>Log a Trade</h3>
+  <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+  <div class="row2"><div class="field"><label>Instrument</label><select id="f-pair"><option>NQ</option><option>ES</option><option>YM</option></select></div>
+    <div class="field"><label>Direction</label><select id="f-dir"><option>Long</option><option>Short</option></select></div></div>
+  <div class="row2"><div class="field"><label>Model / Strategy</label><input id="f-model" placeholder="Matrix / SMT+CSD"></div>
+    <div class="field"><label>Session</label><select id="f-sess"><option>NY AM</option><option>NY PM</option><option>London</option><option>Asia</option></select></div></div>
+  <div class="row2"><div class="field"><label>Result</label><select id="f-res"><option>Open</option><option>Win</option><option>Loss</option><option>BE</option></select></div>
+    <div class="field"><label>R multiple</label><input id="f-r" placeholder="e.g. 2.0"></div></div>
+  <div class="field"><label>Mindset / State</label><input id="f-state" placeholder="Settled Authority?"></div>
+  <div class="field"><label>Setup / Notes</label><textarea id="f-notes" placeholder="HTF bias, POI, SMT, time, CSD, invalidation…"></textarea></div>
+  <div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
+    <div class="drop" id="te-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
+    <input type="file" id="te-file" accept="image/*" multiple style="display:none">
+    <div id="te-shots"></div></div>
+  <button class="btn grn" id="logBtn" style="width:100%">+ Log Trade</button>
+  <div class="subtle" id="te-status" style="margin-top:6px"></div>
+</div></div>
 <div class="modal" id="setModal"><div class="box" style="max-width:540px"><span class="x" id="setX">✕</span><h3>Settings</h3>
   <div class="briefsec"><h4>Live Data — FMP API Key</h4>
     <div class="subtle" style="margin-bottom:8px">Paste your Financial Modeling Prep API key to pull live data <b>directly</b> — no Claude required. Stored only in this browser (not shared, not committed to your repo). Get a key free at financialmodelingprep.com → Dashboard → API Keys.</div>
@@ -1035,7 +1046,7 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const tr={id:nextTid(),date,pair:g('f-pair'),dir:g('f-dir'),model:g('f-model'),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),state:g('f-state'),notes:g('f-notes')};const t=loadTrades();t.push(tr);saveTrades(t);['f-model','f-r','f-state','f-notes'].forEach(id=>document.getElementById(id).value='');renderJournal();safe(renderIdeas);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const tr={id:nextTid(),date,pair:g('f-pair'),dir:g('f-dir'),model:g('f-model'),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),state:g('f-state'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();t.push(tr);saveTrades(t);teShots=[];['f-model','f-r','f-state','f-notes'].forEach(id=>document.getElementById(id).value='');const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
@@ -1465,7 +1476,7 @@ if(cbEl('pmrOpen')){
 }
 
 /* ===== PDF export (print-to-PDF; embeds screenshots natively) + Trade review pop-out ===== */
-let curPrint={title:'',body:''},tradeShots=[],curTradeId=null;
+let curPrint={title:'',body:''},tradeShots=[],curTradeId=null,teShots=[];
 const PRINT_CSS=`*{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;margin:30px;line-height:1.5}h1{font-size:22px;margin:0 0 6px}h2,.sec{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px;font-weight:700}h3,h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px}.subtle,.sub,.mut,.faint{color:#666;font-size:12px}.narr p{margin:0 0 8px}ul{margin:6px 0;padding-left:18px}li{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}th:first-child,td:first-child{text-align:left}.tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#eee;color:#333;margin:0 2px}.kv{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:3px 0;font-size:13px}img{max-width:100%;height:auto;border:1px solid #ddd;border-radius:6px;margin:8px 0;display:block}.fwshot{margin:8px 0}hr{border:0;border-top:1px solid #ddd;margin:12px 0}.briefsec{margin:12px 0}.evrow{display:flex;gap:10px;font-size:12px;padding:2px 0}.panel{border:1px solid #eee;border-radius:8px;padding:12px;margin:10px 0}@media print{a{color:#111;text-decoration:none}}`;
 function printDoc(title,innerHtml){
   const w=window.open('','_blank');
@@ -1513,6 +1524,20 @@ if(document.getElementById('tradeModalX')){
   const trf=document.getElementById('tr-file');if(trf)trf.addEventListener('change',ev=>{[...ev.target.files].forEach(trAddFile);ev.target.value='';});
   document.addEventListener('paste',ev=>{if(!document.getElementById('tradeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){trAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTradeModal();});
+}
+/* Trade entry pop-out (fields + 1080p charts) */
+function teRenderShots(){const c=document.getElementById('te-shots');if(!c)return;c.innerHTML=teShots.map((s,i)=>`<div class="fwshot"><img src="${s}"><span class="rm" data-i="${i}">✕</span></div>`).join('');c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teShots.splice(+x.dataset.i,1);teRenderShots();}));}
+function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{teShots.push(u);teRenderShots();});rd.readAsDataURL(file);}
+function openLogModal(){teShots=[];['f-model','f-r','f-state','f-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;teRenderShots();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');}
+function closeLogModal(){document.getElementById('tradeEntryModal').classList.remove('open');}
+if(document.getElementById('openLogBtn')){
+  document.getElementById('openLogBtn').addEventListener('click',openLogModal);
+  document.getElementById('teX').addEventListener('click',closeLogModal);
+  document.getElementById('tradeEntryModal').addEventListener('click',e=>{if(e.target.id==='tradeEntryModal')closeLogModal();});
+  document.getElementById('te-drop').addEventListener('click',()=>document.getElementById('te-file').click());
+  document.getElementById('te-file').addEventListener('change',ev=>{[...ev.target.files].forEach(teAddFile);ev.target.value='';});
+  document.addEventListener('paste',ev=>{if(!document.getElementById('tradeEntryModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){teAddFile(f);ev.preventDefault();}}}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLogModal();});
 }
 if(document.getElementById('briefModalPdf'))document.getElementById('briefModalPdf').addEventListener('click',()=>printDoc(curPrint.title,curPrint.body));
 if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventListener('click',()=>{const t=loadTrades().slice().sort((a,b)=>b.date.localeCompare(a.date));const body=t.length?t.map(tradeDetailHtml).join('<hr class="d">'):'<div class="subtle">No trades.</div>';printDoc('Trade Journal — All Trades',body);});
