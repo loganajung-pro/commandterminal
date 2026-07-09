@@ -428,6 +428,10 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><label>Result</label><select id="f-res"><option>Open</option><option>Win</option><option>Loss</option><option>BE</option></select></div></div>
   <div class="row2"><div class="field"><label>R multiple</label><input id="f-r" placeholder="e.g. 2.0"></div>
     <div class="field"><label>Mindset / State</label><input id="f-state" placeholder="Settled Authority?"></div></div>
+  <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="field"><label>Profit Grade</label><select id="f-pgrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
+    <div class="field"><label>Entry Grade</label><select id="f-egrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
+    <div class="field"><label>Trade Management</label><select id="f-mgrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div></div>
   <div class="field"><label>Setup / Notes</label><textarea id="f-notes" placeholder="HTF bias, POI, SMT, time, CSD, invalidation…"></textarea></div>
   <div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
     <div class="drop" id="te-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
@@ -1062,7 +1066,7 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const tr={id:nextTid(),date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),state:g('f-state'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();t.push(tr);saveTrades(t);teShots=[];teSeq=[];['f-r','f-state','f-notes'].forEach(id=>document.getElementById(id).value='');const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const tr={id:nextTid(),date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();t.push(tr);saveTrades(t);teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>document.getElementById(id).value='');const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
@@ -1509,7 +1513,10 @@ function tradeFieldsHtml(tr){
     <div class="kv"><span class="k">Model / Protocol Sequences</span><span class="v">${tr.model?String(tr.model).split(' · ').map(x=>`<span class="tag" style="margin:1px">${escH(x)}</span>`).join(' '):'—'}</span></div>
     <div class="kv"><span class="k">Session</span><span class="v">${escH(tr.sess||'—')}</span></div>
     <div class="kv"><span class="k">Result / R</span><span class="v">${tr.res} · ${rr}</span></div>
-    <div class="kv"><span class="k">Mindset / State</span><span class="v">${escH(tr.state||'—')}</span></div></div>
+    <div class="kv"><span class="k">Mindset / State</span><span class="v">${escH(tr.state||'—')}</span></div>
+    <div class="kv"><span class="k">Profit Grade</span><span class="v">${escH(tr.pgrade||'—')}</span></div>
+    <div class="kv"><span class="k">Entry Grade</span><span class="v">${escH(tr.egrade||'—')}</span></div>
+    <div class="kv"><span class="k">Trade Management</span><span class="v">${escH(tr.mgrade||'—')}</span></div></div>
     ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr"><p>${escH(tr.notes)}</p></div></div>`:''}`;
 }
 function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:'';}
@@ -1545,7 +1552,7 @@ if(document.getElementById('tradeModalX')){
 function teRenderShots(){renderShotStrip('te-shots',teShots,teRenderShots);}
 function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{teShots.push(u);teRenderShots();});rd.readAsDataURL(file);}
 function teSeqRender(){const c=document.getElementById('f-seq-chips');if(!c)return;c.innerHTML=teSeq.length?teSeq.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="rm" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">None selected — pick sequences above (add as many as you want).</span>';c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teSeq.splice(+x.dataset.i,1);teSeqRender();}));}
-function openLogModal(){teShots=[];teSeq=[];['f-r','f-state','f-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;teRenderShots();teSeqRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');}
+function openLogModal(){teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;teRenderShots();teSeqRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');}
 function closeLogModal(){document.getElementById('tradeEntryModal').classList.remove('open');}
 if(document.getElementById('openLogBtn')){
   document.getElementById('openLogBtn').addEventListener('click',openLogModal);
