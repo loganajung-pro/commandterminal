@@ -235,7 +235,6 @@ ul.tight li::marker{color:var(--org)}
       <div class="crumb">Matrix / <b>Market Brief</b></div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h1 class="h1" style="margin:0">Daily Brief <span class="subtle" id="briefDate"></span></h1>
-        <div style="text-align:right"><button class="btn grn" id="saveBriefBtn" style="padding:7px 12px">Save today's brief</button><div class="subtle" style="margin-top:3px">Auto-saves 8:35 AM ET → Protocol Calendar</div></div>
       </div>
       <hr class="d">
       <div class="grid" style="grid-template-columns:2fr 1fr">
@@ -274,10 +273,11 @@ ul.tight li::marker{color:var(--org)}
       </div>
       <div id="composedCharts"></div>
       <hr class="d">
-      <div style="text-align:center;padding:6px 0 12px">
-        <button class="btn grn" id="composeBriefBtn" style="padding:13px 30px;font-size:14px">＋ Compose My Daily Brief</button>
-        <div class="subtle" style="margin-top:7px">Your own brief — attach annotated charts, mark your levels, write your read. Hit <b>Done</b> and it saves as a dated note (📝) in the Daily Briefings calendar, separate from the generated page brief.</div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 4px">
+        <button class="btn grn" id="saveBriefBtn" style="padding:13px 24px;font-size:14px">Save today's brief</button>
+        <button class="btn grn" id="composeBriefBtn" style="padding:13px 24px;font-size:14px">＋ Compose My Daily Brief</button>
       </div>
+      <div class="subtle" style="text-align:center;padding:0 0 14px">Save today's generated brief (📄 · auto-saves 8:35 AM ET) · Compose saves your own dated brief (📝) — both land in the Daily Briefings calendar.</div>
     </section>
 
     <!-- ===== MACRO ===== -->
