@@ -417,7 +417,7 @@ ul.tight li::marker{color:var(--org)}
 <div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><input type="file" id="tr-file" accept="image/*" multiple style="display:none"><div id="tradeModalBody"></div></div></div>
 <div class="modal" id="tradeEntryModal"><div class="box" style="max-width:620px">
   <span class="x" id="teX">✕</span>
-  <h3>Log a Trade</h3>
+  <h3 id="teTitle">Log a Trade</h3>
   <div class="field"><label>Date</label><input type="date" id="f-date"></div>
   <div class="row2"><div class="field"><label>Instrument</label><select id="f-pair"><option>NQ</option><option>ES</option><option>YM</option></select></div>
     <div class="field"><label>Direction</label><select id="f-dir"><option>Long</option><option>Short</option></select></div></div>
@@ -1066,7 +1066,7 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const tr={id:nextTid(),date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();t.push(tr);saveTrades(t);teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>document.getElementById(id).value='');const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>document.getElementById(id).value='');const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
@@ -1496,7 +1496,7 @@ if(cbEl('pmrOpen')){
 }
 
 /* ===== PDF export (print-to-PDF; embeds screenshots natively) + Trade review pop-out ===== */
-let curPrint={title:'',body:''},tradeShots=[],curTradeId=null,teShots=[],teSeq=[];
+let curPrint={title:'',body:''},tradeShots=[],curTradeId=null,teShots=[],teSeq=[],editingTradeId=null;
 const PRINT_CSS=`*{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;margin:30px;line-height:1.5}h1{font-size:22px;margin:0 0 6px}h2,.sec{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px;font-weight:700}h3,h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px}.subtle,.sub,.mut,.faint{color:#666;font-size:12px}.narr p{margin:0 0 8px}ul{margin:6px 0;padding-left:18px}li{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}th:first-child,td:first-child{text-align:left}.tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#eee;color:#333;margin:0 2px}.kv{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:3px 0;font-size:13px}img{max-width:100%;height:auto;border:1px solid #ddd;border-radius:6px;margin:8px 0;display:block}.fwshot{margin:8px 0}hr{border:0;border-top:1px solid #ddd;margin:12px 0}.briefsec{margin:12px 0}.evrow{display:flex;gap:10px;font-size:12px;padding:2px 0}.panel{border:1px solid #eee;border-radius:8px;padding:12px;margin:10px 0}@media print{a{color:#111;text-decoration:none}}`;
 function printDoc(title,innerHtml){
   const w=window.open('','_blank');
@@ -1530,8 +1530,10 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
     <div class="drop" id="tr-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
     <div id="tr-shots"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button class="btn grn" id="tr-savecharts" style="padding:6px 12px">Save charts</button><span class="subtle" id="tr-charts-status"></span></div></div>`;
-  document.getElementById('tradeModalBody').innerHTML=tradeFieldsHtml(tr)+editor;
+  const editBtn=`<div style="text-align:right;margin-bottom:8px"><button class="btn grn" id="tr-edit" style="padding:5px 12px">✎ Edit trade</button></div>`;
+  document.getElementById('tradeModalBody').innerHTML=editBtn+tradeFieldsHtml(tr)+editor;
   renderTradeShots();
+  const eb=document.getElementById('tr-edit');if(eb)eb.addEventListener('click',()=>{const t=loadTrades().find(x=>x.id===id);closeTradeModal();openLogModal(t);});
   const dr=document.getElementById('tr-drop');if(dr)dr.addEventListener('click',()=>{const fi=document.getElementById('tr-file');if(fi)fi.click();});
   const sv=document.getElementById('tr-savecharts');if(sv)sv.addEventListener('click',saveTradeCharts);
   document.getElementById('tradeModal').classList.add('open');}
@@ -1552,10 +1554,16 @@ if(document.getElementById('tradeModalX')){
 function teRenderShots(){renderShotStrip('te-shots',teShots,teRenderShots);}
 function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{teShots.push(u);teRenderShots();});rd.readAsDataURL(file);}
 function teSeqRender(){const c=document.getElementById('f-seq-chips');if(!c)return;c.innerHTML=teSeq.length?teSeq.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="rm" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">None selected — pick sequences above (add as many as you want).</span>';c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teSeq.splice(+x.dataset.i,1);teSeqRender();}));}
-function openLogModal(){teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;teRenderShots();teSeqRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');}
+function setTradeFields(tr){const setv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();}
+function openLogModal(trade){
+  const tt=document.getElementById('teTitle'),lb=document.getElementById('logBtn');
+  if(trade&&trade.id!=null){editingTradeId=trade.id;setTradeFields(trade);if(tt)tt.textContent='Edit Trade';if(lb)lb.textContent='Save changes';}
+  else{editingTradeId=null;teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;if(tt)tt.textContent='Log a Trade';if(lb)lb.textContent='+ Log Trade';}
+  teRenderShots();teSeqRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');
+}
 function closeLogModal(){document.getElementById('tradeEntryModal').classList.remove('open');}
 if(document.getElementById('openLogBtn')){
-  document.getElementById('openLogBtn').addEventListener('click',openLogModal);
+  document.getElementById('openLogBtn').addEventListener('click',()=>openLogModal());
   const sp=document.getElementById('f-seq-pick');if(sp)sp.addEventListener('change',e=>{const v=e.target.value;if(v){teSeq.push(v);teSeqRender();}e.target.value='';});
   document.getElementById('teX').addEventListener('click',closeLogModal);
   document.getElementById('tradeEntryModal').addEventListener('click',e=>{if(e.target.id==='tradeEntryModal')closeLogModal();});
