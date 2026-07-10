@@ -541,6 +541,27 @@ const SYMS=["NQUSD","ESUSD","YMUSD"];
 const NAMES={NQUSD:"NQ · NASDAQ 100",ESUSD:"ES · S&P 500",YMUSD:"YM · DOW"};
 const SHORT={NQUSD:"NQ",ESUSD:"ES",YMUSD:"YM"};
 
+/* ===== Persistent storage: IndexedDB-backed KV with in-memory cache =====
+   localStorage caps at ~5MB — far too small for many 1080p screenshots, which made
+   saves fail silently. IndexedDB has a much larger quota. Reads stay synchronous
+   against an in-memory cache loaded at boot; writes persist through to IndexedDB. */
+const LS=(function(){try{return window.localStorage;}catch(e){return null;}})();
+const MEM={}; let IDB=null;
+function idbOpen(){return new Promise(res=>{try{const r=indexedDB.open('ct_store',1);r.onupgradeneeded=()=>{try{r.result.createObjectStore('kv');}catch(e){}};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null);}catch(e){res(null);}});}
+function idbLoadAll(db){return new Promise(res=>{try{const tx=db.transaction('kv','readonly'),st=tx.objectStore('kv'),kq=st.getAllKeys(),vq=st.getAll();let K=null,V=null;const done=()=>{const o={};(K||[]).forEach((k,i)=>o[k]=V[i]);res(o);};kq.onsuccess=()=>{K=kq.result;if(V!=null)done();};vq.onsuccess=()=>{V=vq.result;if(K!=null)done();};tx.onerror=()=>res({});}catch(e){res({});}});}
+function idbPut(k,v){if(!IDB)return;try{IDB.transaction('kv','readwrite').objectStore('kv').put(v,k);}catch(e){}}
+function idbDelKey(k){if(!IDB)return;try{IDB.transaction('kv','readwrite').objectStore('kv').delete(k);}catch(e){}}
+function lsGet(k){return (k in MEM)?MEM[k]:null;}
+function lsSet(k,v){MEM[k]=v;if(IDB)idbPut(k,v);else if(LS){try{LS.setItem(k,v);}catch(e){}}}
+function lsDel(k){delete MEM[k];if(IDB)idbDelKey(k);else if(LS){try{LS.removeItem(k);}catch(e){}}}
+async function initStore(){
+  try{IDB=await idbOpen();}catch(e){IDB=null;}
+  let loaded={};
+  if(IDB){try{loaded=await idbLoadAll(IDB);}catch(e){loaded={};}}
+  if(LS){try{for(let i=0;i<LS.length;i++){const k=LS.key(i);if(k&&k.indexOf('ct_')===0&&!(k in loaded)){const v=LS.getItem(k);loaded[k]=v;if(IDB)idbPut(k,v);}}}catch(e){}}
+  Object.assign(MEM,loaded);
+}
+
 const SNAP={
   asOf:"Jul 6, 2026",
   commodities:[{symbol:"NQUSD",price:29877,change:321},{symbol:"ESUSD",price:7562.5,change:34.25},{symbol:"YMUSD",price:53183,change:0}],
@@ -660,7 +681,7 @@ function pickArr(o){if(Array.isArray(o))return o;if(o&&typeof o==="object")for(c
 function unwrap(r){if(!r)return null;let t=null;if(r.content&&r.content.length){const s=r.content.map(c=>(c&&typeof c.text==="string")?c.text:"").join("");if(s){try{t=JSON.parse(s);}catch(e){t=s;}}}let a=pickArr(t);if(a)return a;a=pickArr(r.structuredContent);if(a)return a;return t!=null?t:r.structuredContent;}
 function hideSnap(){const el=document.getElementById('diag');if(el){el.style.display='none';el.dataset.s='';}}
 /* ---- Direct FMP REST (independent of Claude; uses your own API key) ---- */
-function fmpKey(){try{return (localStorage.getItem('ct_fmp_key')||'').trim();}catch(e){return '';}}
+function fmpKey(){try{return (lsGet('ct_fmp_key')||'').trim();}catch(e){return '';}}
 async function fmpGet(path){
   const key=fmpKey();if(!key)throw new Error('nokey');
   const sep=path.indexOf('?')>=0?'&':'?';
@@ -978,15 +999,15 @@ document.getElementById('nextM').addEventListener('click',()=>shiftM(1));
 /* ===== Ideas + Journal ===== */
 const TKEY='ct_trades';
 let LAST_TID=0;function nextTid(){LAST_TID=Math.max(Date.now(),LAST_TID+1);return LAST_TID;} // strictly-increasing unique numeric id
-function loadTrades(){try{return JSON.parse(localStorage.getItem(TKEY)||'[]');}catch(e){return [];}}
-function saveTrades(t){try{localStorage.setItem(TKEY,JSON.stringify(t));}catch(e){}}
+function loadTrades(){try{return JSON.parse(lsGet(TKEY)||'[]');}catch(e){return [];}}
+function saveTrades(t){try{lsSet(TKEY,JSON.stringify(t));}catch(e){}}
 function seedTrades(){let t=loadTrades();if(t.length)return t;
   // Seed the sample trades ONCE only. If you later delete everything, it stays empty across reloads.
-  try{if(localStorage.getItem('ct_trades_seeded'))return t;}catch(e){}
+  try{if(lsGet('ct_trades_seeded'))return t;}catch(e){}
   t=[
   {id:1,date:'2026-07-04',pair:'NQ',dir:'Short',model:'Matrix / SMT+CSD',sess:'NY AM',res:'Win',r:11,state:'Settled Authority',notes:'PDH SMT + P90M & P30M cycle SMT. CSD below orderblock, SIBI retest entry, double M1 SMT. Targets 7AM equal lows + London lows. Risk $277 / +$3000. Model executed clean.'},
   {id:2,date:'2026-05-13',pair:'NQ',dir:'Long',model:'Matrix / H1 OB',sess:'NY PM',res:'Win',r:5,state:'Grounded',notes:'HTF bullish (HH+HL). H1 OB POI + HTF SMT at POI. CSD through SIBI, BISI entry. Trailed stop to each SMT. Targets flush equal highs → PCH → AM buyside. Closed 4pm.'}
-];saveTrades(t);try{localStorage.setItem('ct_trades_seeded','1');}catch(e){}return t;}
+];saveTrades(t);try{lsSet('ct_trades_seeded','1');}catch(e){}return t;}
 function fmtDay(ds){try{return new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric'}).format(new Date(ds+'T12:00:00'));}catch(e){return ds;}}
 function computeStats(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE');const wins=closed.filter(t=>t.res==='Win').length,loss=closed.filter(t=>t.res==='Loss').length;const totR=closed.reduce((a,t)=>a+(+t.r||0),0);const wr=closed.length?Math.round(wins/closed.length*100):0;const avg=closed.length?(totR/closed.length):0;return{n:trades.length,closed:closed.length,wins,loss,wr,totR,avg};}
 function equitySvg(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE').slice().sort((a,b)=>a.date.localeCompare(b.date));if(!closed.length)return '<div class="subtle">No closed trades yet.</div>';let cum=0;const pts=[0];closed.forEach(t=>{cum+=(+t.r||0);pts.push(cum);});const W=100,H=40,mn=Math.min(...pts,0),mx=Math.max(...pts,1);const X=i=>i/(pts.length-1)*W,Y=v=>H-(v-mn)/(mx-mn||1)*H;const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p).toFixed(1)).join(' ');const z=Y(0).toFixed(1);return `<svg viewBox="0 0 100 44" style="width:100%;height:110px"><line x1="0" y1="${z}" x2="100" y2="${z}" stroke="var(--line2)" stroke-width="0.5"/><path d="${d}" fill="none" stroke="var(--grn)" stroke-width="1.3"/></svg><div class="subtle">Cumulative: ${cum>=0?'+':''}${cum.toFixed(1)}R over ${closed.length} closed</div>`;}
@@ -994,8 +1015,8 @@ function dayDots(trades,ds){const dl=trades.filter(t=>t.date===ds);let d='';dl.f
 function monthCal(prefix,view,trades){const y=view.y,m=view.m;document.getElementById(prefix+'CalHead').innerHTML=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;cells+=`<div class="cell ${ds===td?'today':''}" data-d="${ds}" style="min-height:52px"><div class="dn">${d}</div><div>${dayDots(trades,ds)}</div></div>`;}document.getElementById(prefix+'CalBody').innerHTML=cells;}
 let IV=curMonth(),JV=curMonth();
 const FKEY='ct_frameworks';
-function loadFw(){try{return JSON.parse(localStorage.getItem(FKEY)||'{}');}catch(e){return {};}}
-function saveFwAll(o){try{localStorage.setItem(FKEY,JSON.stringify(o));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
+function loadFw(){try{return JSON.parse(lsGet(FKEY)||'{}');}catch(e){return {};}}
+function saveFwAll(o){try{lsSet(FKEY,JSON.stringify(o));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
 let selDay=etParts().date, fwShots=[];
 function fmtDayLong(ds){try{return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date(ds+'T12:00:00'));}catch(e){return ds;}}
 function ideasCalendar(){
@@ -1074,7 +1095,7 @@ document.getElementById('impJson').addEventListener('click',()=>document.getElem
 document.getElementById('impFile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(Array.isArray(arr)){saveTrades(arr);renderJournal();safe(renderIdeas);}}catch(e){alert('Invalid JSON');}};rd.readAsText(f);});
 
 /* ===== Daily Brief archive + pop-out ===== */
-function localBriefs(){try{return JSON.parse(localStorage.getItem('ct_briefs')||'{}');}catch(e){return {};}}
+function localBriefs(){try{return JSON.parse(lsGet('ct_briefs')||'{}');}catch(e){return {};}}
 function getBriefs(){return Object.assign({},BRIEFS,localBriefs());}
 function buildBriefObject(){
   if(COMPOSED){const o=Object.assign({},COMPOSED,{gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual'});if(!o.coach)o.coach=coachHtmlAuto();return o;}
@@ -1111,7 +1132,7 @@ function expandMyBrief(ds){
 function openMyBriefModal(ds){const b=myBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='My Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen||'')+' · your brief';document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'My Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent='Auto-saved '+(b.gen||'8:35 AM ET');document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'Daily Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function closeBrief(){document.getElementById('briefModal').classList.remove('open');}
-function saveTodayBrief(){const b=buildBriefObject();if(!b){alert('Market data still loading — try again in a moment.');return;}const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}alert("Saved today's brief ("+b.date+"). It's now in your Daily Briefings calendar — click the day (📄) to pop it out.");safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
+function saveTodayBrief(){const b=buildBriefObject();if(!b){alert('Market data still loading — try again in a moment.');return;}const l=localBriefs();l[b.date]=b;try{lsSet('ct_briefs',JSON.stringify(l));}catch(e){}alert("Saved today's brief ("+b.date+"). It's now in your Daily Briefings calendar — click the day (📄) to pop it out.");safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
 document.getElementById('saveBriefBtn').addEventListener('click',saveTodayBrief);
 
 /* ===== Daily Briefings calendar (right column of Market Brief) ===== */
@@ -1186,8 +1207,8 @@ function buildComposedObject(){
   return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],shots:cbShots.slice(),manual:true};
 }
 /* Compose now builds YOUR OWN brief — saved separately, it does NOT overwrite the generated page brief. */
-function myBriefs(){try{return JSON.parse(localStorage.getItem('ct_mybriefs')||'{}');}catch(e){return {};}}
-function saveMyBrief(b){const all=myBriefs();all[b.date]=b;try{localStorage.setItem('ct_mybriefs',JSON.stringify(all));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
+function myBriefs(){try{return JSON.parse(lsGet('ct_mybriefs')||'{}');}catch(e){return {};}}
+function saveMyBrief(b){const all=myBriefs();all[b.date]=b;try{lsSet('ct_mybriefs',JSON.stringify(all));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
 function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; closeCompose(); goBrief(); safe(renderBriefCal); expandMyBrief(b.date); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
 function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);safe(renderThesis);renderComposedCharts();}
@@ -1210,8 +1231,8 @@ function renderComposedCharts(){
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 /* ===== Vision: read levels off chart screenshots (Anthropic API, your key, browser-side) ===== */
-function anthKey(){try{return (localStorage.getItem('ct_anthropic_key')||'').trim();}catch(e){return '';}}
-function visionModel(){try{return (localStorage.getItem('ct_vision_model')||'').trim()||'claude-sonnet-5';}catch(e){return 'claude-sonnet-5';}}
+function anthKey(){try{return (lsGet('ct_anthropic_key')||'').trim();}catch(e){return '';}}
+function visionModel(){try{return (lsGet('ct_vision_model')||'').trim()||'claude-sonnet-5';}catch(e){return 'claude-sonnet-5';}}
 function parseJsonLoose(t){if(!t)return null;let s=String(t).trim();s=s.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)s=s.slice(a,b+1);try{return JSON.parse(s);}catch(e){return null;}}
 const CHART_PROMPT=`You are reading annotated futures index charts (NQ = Nasdaq 100, ES = S&P 500, YM = Dow). Each image is one instrument with price levels the trader has marked. Identify the instrument from the ticker/title on the chart, then read the marked horizontal price levels and the current price.
 
@@ -1278,8 +1299,8 @@ if(cbEl('composeBriefBtn')){
 
 /* ===== Pre Market Framework (Trade Ideas · NQ) ===== */
 const PMKEY='ct_premarket';
-function loadPm(){try{return JSON.parse(localStorage.getItem(PMKEY)||'{}');}catch(e){return {};}}
-function savePmAll(o){try{localStorage.setItem(PMKEY,JSON.stringify(o));return true;}catch(e){cbEl('pm-status').innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
+function loadPm(){try{return JSON.parse(lsGet(PMKEY)||'{}');}catch(e){return {};}}
+function savePmAll(o){try{lsSet(PMKEY,JSON.stringify(o));return true;}catch(e){cbEl('pm-status').innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
 function pmHasContent(ex){return !!(ex&&((ex.scenario&&ex.scenario.length)||(ex.shots&&ex.shots.length)||(ex.poi&&(ex.poi.key||ex.poi.pdh||ex.poi.pdl||ex.poi.open||ex.poi.now))||(ex.dir&&ex.dir!=='—')));}
 let pmShots=[];
 function pmRenderShots(){renderShotStrip('pm-shots',pmShots,pmRenderShots);}
@@ -1361,12 +1382,12 @@ function openSettings(){document.getElementById('setKey').value=fmpKey();documen
 document.getElementById('settingsBtn').addEventListener('click',openSettings);
 document.getElementById('setX').addEventListener('click',()=>document.getElementById('setModal').classList.remove('open'));
 document.getElementById('setModal').addEventListener('click',e=>{if(e.target.id==='setModal')e.currentTarget.classList.remove('open');});
-document.getElementById('setSave').addEventListener('click',()=>{const k=document.getElementById('setKey').value.trim();try{localStorage.setItem('ct_fmp_key',k);LIVE_MS=+document.getElementById('setInterval').value||0;localStorage.setItem('ct_live_ms',String(LIVE_MS));const ak=document.getElementById('setAnthKey');if(ak)localStorage.setItem('ct_anthropic_key',ak.value.trim());const vm=document.getElementById('setVisionModel');if(vm)localStorage.setItem('ct_vision_model',vm.value);}catch(e){}const hasAnth=(document.getElementById('setAnthKey')||{}).value;document.getElementById('setStatus').innerHTML=k?'<span class="up">Saved — pulling live data…</span>':(hasAnth&&hasAnth.trim()?'<span class="up">Saved. Vision key stored — snapshot mode for quotes.</span>':'<span class="mut">Key cleared — snapshot mode.</span>');refreshAll();applyInterval();setTimeout(()=>document.getElementById('setModal').classList.remove('open'),1000);});
+document.getElementById('setSave').addEventListener('click',()=>{const k=document.getElementById('setKey').value.trim();try{lsSet('ct_fmp_key',k);LIVE_MS=+document.getElementById('setInterval').value||0;lsSet('ct_live_ms',String(LIVE_MS));const ak=document.getElementById('setAnthKey');if(ak)lsSet('ct_anthropic_key',ak.value.trim());const vm=document.getElementById('setVisionModel');if(vm)lsSet('ct_vision_model',vm.value);}catch(e){}const hasAnth=(document.getElementById('setAnthKey')||{}).value;document.getElementById('setStatus').innerHTML=k?'<span class="up">Saved — pulling live data…</span>':(hasAnth&&hasAnth.trim()?'<span class="up">Saved. Vision key stored — snapshot mode for quotes.</span>':'<span class="mut">Key cleared — snapshot mode.</span>');refreshAll();applyInterval();setTimeout(()=>document.getElementById('setModal').classList.remove('open'),1000);});
 
 /* ===== Daily schedules (ET-anchored): 8:00 AM full refresh · 8:35 AM auto-save brief ===== */
 function msUntilEt(hh,mm){const p=etParts();const cur=((p.h*60+p.m)*60+p.s)*1000;let diff=((hh*60+mm)*60*1000)-cur;if(diff<=0)diff+=864e5;return diff;}
 function scheduleDailyAt(hh,mm,fn){function run(){try{fn();}catch(e){}setTimeout(run,864e5);}setTimeout(run,msUntilEt(hh,mm));}
-function saveTodayBriefSilent(){const b=buildBriefObject();if(!b)return;const l=localBriefs();l[b.date]=b;try{localStorage.setItem('ct_briefs',JSON.stringify(l));}catch(e){}safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
+function saveTodayBriefSilent(){const b=buildBriefObject();if(!b)return;const l=localBriefs();l[b.date]=b;try{lsSet('ct_briefs',JSON.stringify(l));}catch(e){}safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
 function startDailySchedules(){
   scheduleDailyAt(8,0,refreshAll);          // pull fresh prev-day levels + quotes + calendar at 8:00 AM ET
   scheduleDailyAt(8,35,saveTodayBriefSilent); // lock the brief to the Protocol Calendar at 8:35 AM ET
@@ -1374,8 +1395,8 @@ function startDailySchedules(){
 
 /* ===== Post Market Review journal ===== */
 const PMRKEY='ct_pmr';
-function loadPmr(){try{return JSON.parse(localStorage.getItem(PMRKEY)||'{}');}catch(e){return {};}}
-function savePmrAll(o){try{localStorage.setItem(PMRKEY,JSON.stringify(o));return true;}catch(e){const st=cbEl('pmr-status');if(st)st.innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
+function loadPmr(){try{return JSON.parse(lsGet(PMRKEY)||'{}');}catch(e){return {};}}
+function savePmrAll(o){try{lsSet(PMRKEY,JSON.stringify(o));return true;}catch(e){const st=cbEl('pmr-status');if(st)st.innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
 function pmrHasContent(x){return !!(x&&(['surface','inner','risk','framework','technical','market'].some(k=>x[k]&&String(x[k]).trim())||(x.shots&&x.shots.length)));}
 let PV=curMonth(), selPmrDay=etParts().date, pmrShots=[], pmrDebriefData=null;
 const COACH_DEBRIEF_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro layers L1–L4 + Execution Protocol Framework).
@@ -1576,19 +1597,22 @@ if(document.getElementById('briefModalPdf'))document.getElementById('briefModalP
 if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventListener('click',()=>{const t=loadTrades().slice().sort((a,b)=>b.date.localeCompare(a.date));const body=t.length?t.map(tradeDetailHtml).join('<hr class="d">'):'<div class="subtle">No trades.</div>';printDoc('Trade Journal — All Trades',body);});
 
 /* ===== Boot ===== */
-try{const s=localStorage.getItem('ct_live_ms');LIVE_MS=(s!=null)?(+s||0):120000;}catch(e){LIVE_MS=120000;}
-document.getElementById('f-date').value=etParts().date;
-seedTrades();
-// Compose is now your own separate brief — it no longer drives this page. Purge any legacy composed state.
-try{localStorage.removeItem('ct_composed');}catch(e){}
-// The page shows the GENERATED brief: a pre-authored brief for today (if seeded in BRIEFS), else auto-built from live data.
-if(!COMPOSED){try{const _tb=BRIEFS[etParts().date];if(_tb&&_tb.manual)COMPOSED=_tb;}catch(e){}}
-tick();setInterval(tick,1000);
-loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
-safe(renderBriefCal);
-if(COMPOSED)safe(renderComposedCharts);
-applyInterval();
-startDailySchedules();
+(async function boot(){
+  await initStore();   // load persisted data (IndexedDB) into the cache BEFORE anything reads it
+  try{const s=lsGet('ct_live_ms');LIVE_MS=(s!=null)?(+s||0):120000;}catch(e){LIVE_MS=120000;}
+  const _fd=document.getElementById('f-date');if(_fd)_fd.value=etParts().date;
+  seedTrades();
+  // Compose is now your own separate brief — it no longer drives this page. Purge any legacy composed state.
+  try{lsDel('ct_composed');}catch(e){}
+  // The page shows the GENERATED brief: a pre-authored brief for today (if seeded in BRIEFS), else auto-built from live data.
+  if(!COMPOSED){try{const _tb=BRIEFS[etParts().date];if(_tb&&_tb.manual)COMPOSED=_tb;}catch(e){}}
+  tick();setInterval(tick,1000);
+  loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
+  safe(renderBriefCal);
+  if(COMPOSED)safe(renderComposedCharts);
+  applyInterval();
+  startDailySchedules();
+})();
 </script>
 </body>
 </html>
