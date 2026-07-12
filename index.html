@@ -790,15 +790,20 @@ async function loadQuotes(){
 }
 /* ---- Real previous-day high/low (prior completed session, not today's running range) ---- */
 async function loadPrevLevels(){
-  const td=etParts().date;
+  const td=etParts().date, wkStart=_mostRecentSunday(td);
   await Promise.all(SYMS.map(async sy=>{try{
     const bars=await mcp('histDaily',{symbol:sy});
-    if(!Array.isArray(bars)||!bars.length)return;
-    // bars are newest-first; take the most recent bar strictly before today (ET)
-    const prev=bars.find(b=>b&&b.date&&String(b.date).slice(0,10)<td)||bars.find(b=>b&&b.date&&String(b.date).slice(0,10)!==td)||bars[0];
-    if(prev&&LASTQ[sy]){LASTQ[sy].pdh=prev.high;LASTQ[sy].pdl=prev.low;LASTQ[sy].pdOpen=prev.open;LASTQ[sy].pdClose=prev.close;LASTQ[sy].pdDate=String(prev.date).slice(0,10);}
+    if(Array.isArray(bars)&&bars.length&&LASTQ[sy]){
+      // bars are newest-first; take the most recent bar strictly before today (ET)
+      const prev=bars.find(b=>b&&b.date&&String(b.date).slice(0,10)<td)||bars.find(b=>b&&b.date&&String(b.date).slice(0,10)!==td)||bars[0];
+      if(prev){LASTQ[sy].pdh=prev.high;LASTQ[sy].pdl=prev.low;LASTQ[sy].pdOpen=prev.open;LASTQ[sy].pdClose=prev.close;LASTQ[sy].pdDate=String(prev.date).slice(0,10);}
+      // Week High/Low (Sunday -> now) from daily bars — reliable on any tier
+      const wkb=bars.filter(b=>b&&b.date&&String(b.date).slice(0,10)>=wkStart&&isFinite(b.high)&&isFinite(b.low));
+      if(wkb.length){LASTQ[sy].wkH=Math.max.apply(null,wkb.map(b=>+b.high));LASTQ[sy].wkL=Math.min.apply(null,wkb.map(b=>+b.low));}
+    }
+    await computeAutoLevels(sy); // intraday: Asia/London/Mid/NDOG/NWOG (+ precise Week) when available
   }catch(e){}}));
-  safe(renderLevels);safe(renderQuotes);safe(renderThesis);
+  safe(renderLevels);safe(renderQuotes);safe(renderThesis);safe(renderCoach);
 }
 function renderQuotes(){
   const qs=document.getElementById("qstrip");if(!qs)return;
@@ -943,7 +948,7 @@ function coachHtmlAuto(){
   const nq=q.NQUSD;let zone='n/a';const _cl=composedLvl('NQ');let _zh=_cl?parseLvlNum(_cl.pdh):null,_zl=_cl?parseLvlNum(_cl.pdl):null,_zp=_cl?parseLvlNum(_cl.now):null;if(_zh==null)_zh=nq.dayHigh;if(_zl==null)_zl=nq.dayLow;if(_zp==null)_zp=nq.price;if(typeof _zh==='number'&&typeof _zl==='number'&&typeof _zp==='number'){const r=_zh-_zl,pos=r>0?(_zp-_zl)/r*100:50;zone=pos>66?'premium (upper third)':pos<33?'discount (lower third)':'equilibrium (mid-range)';}
   const arr=[['NQ',q.NQUSD.changePercentage],['ES',q.ESUSD&&q.ESUSD.changePercentage],['YM',q.YMUSD&&q.YMUSD.changePercentage]].filter(x=>typeof x[1]==='number').sort((a,b)=>b[1]-a[1]);
   const div=new Set(arr.map(x=>Math.sign(x[1]))).size>1;const basis=RICH?'structure vs 50/200-day':'intraday proxy';
-  return `<p><b>HTF draw:</b> ${draw} <span class="subtle">(NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM} · ${basis})</span><br><b>NQ zone:</b> ${zone}<br><b>SMT:</b> ${div?'<span class="down">Triad diverging — potential SMT building. Confirm at POI + time.</span>':'Triad in tandem — no clean SMT yet.'}</p><p><b>Play:</b> ${stance}</p>`;
+  return `<p><b>HTF draw:</b> ${draw} <span class="subtle">(NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM} · ${basis})</span><br><b>NQ zone:</b> ${zone}<br><b>SMT:</b> ${div?'<span class="down">Triad diverging — potential SMT building. Confirm at POI + time.</span>':'Triad in tandem — no clean SMT yet.'}</p>${levelsNarr('NQUSD')}<p><b>Play:</b> ${stance}</p>`;
 }
 function techReadHtml(){
   if(COMPOSED&&COMPOSED.coach)return COMPOSED.coach;
@@ -951,6 +956,55 @@ function techReadHtml(){
   return coachHtmlAuto();
 }
 function techDivider(){return '<div style="border-top:1px dashed var(--line2);margin:15px 0 11px"></div><div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Technical Read</div>';}
+/* ===== Auto session / gap / weekly levels (8AM engine) — best-effort overnight intraday, graceful fallback ===== */
+function _hm(hm){const p=String(hm).split(':');return (+p[0])*60+(+p[1]);}          // "HH:MM" -> minutes
+function _dow(y){const p=String(y).split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2])).getUTCDay();} // 0=Sun
+function _shiftYmd(y,n){const p=String(y).split('-');const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function _mostRecentSunday(y){const p=String(y).split('-');const d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));d.setUTCDate(d.getUTCDate()-d.getUTCDay());return d.toISOString().slice(0,10);}
+function _mx(a){a=a.filter(isFinite);return a.length?Math.max.apply(null,a):null;}
+function _mn(a){a=a.filter(isFinite);return a.length?Math.min.apply(null,a):null;}
+async function fetchIntraday(sym,daysBack){
+  const to=ymd(new Date()),from=ymd(new Date(Date.now()-(daysBack||7)*864e5));let raw=null;const key=fmpKey();
+  if(key){try{raw=await fmpGet('/stable/historical-chart/5min?symbol='+encodeURIComponent(sym)+'&from='+from+'&to='+to);}catch(e){}}
+  if(!raw){let b=getBridge();if(b){try{const r=await b.callMcpTool(FMP+'chart',{endpoint:'intraday-5-min',symbol:sym,from_date:from,to_date:to});if(r&&!r.isError)raw=unwrap(r);}catch(e){}}}
+  if(!Array.isArray(raw)||!raw.length)return null;
+  return raw.map(x=>{const s=String(x.date||x.datetime||'');return{ymd:s.slice(0,10),hm:s.slice(11,16),o:+x.open,h:+x.high,l:+x.low,c:+x.close};}).filter(b=>b.ymd&&b.hm&&isFinite(b.h)&&isFinite(b.l));
+}
+/* Windows (ET): Asia 18:00(prev)->02:29 · London 02:30->06:59 · Midnight open 00:00 · NDOG=prev 16:59 close<->prev 18:00 open · NWOG=Fri 16:59 close<->Sun 18:00 open · Week=Sun 18:00->now */
+async function computeAutoLevels(sym){
+  const d=LASTQ[sym];if(!d)return;
+  const bars=await fetchIntraday(sym,7);
+  if(!bars)return; // no intraday on this tier -> leave session/gap blank for manual TradingView entry
+  const td=etParts().date,prev=_shiftYmd(td,-1);
+  const asia=bars.filter(b=>(b.ymd===prev&&_hm(b.hm)>=1080)||(b.ymd===td&&_hm(b.hm)<=149));
+  d.asiaH=_mx(asia.map(x=>x.h));d.asiaL=_mn(asia.map(x=>x.l));
+  const lon=bars.filter(b=>b.ymd===td&&_hm(b.hm)>=150&&_hm(b.hm)<=419);
+  d.lonH=_mx(lon.map(x=>x.h));d.lonL=_mn(lon.map(x=>x.l));
+  const midB=bars.find(b=>b.ymd===td&&b.hm==='00:00');if(midB)d.mid=midB.o;
+  const preClose=bars.filter(b=>b.ymd===prev&&_hm(b.hm)<=1019).sort((a,b)=>_hm(b.hm)-_hm(a.hm))[0];
+  const ndOpen=bars.find(b=>b.ymd===prev&&b.hm==='18:00');
+  if(preClose&&ndOpen){d.ndogH=Math.max(preClose.c,ndOpen.o);d.ndogL=Math.min(preClose.c,ndOpen.o);}
+  const sun=bars.filter(b=>_dow(b.ymd)===0&&b.hm==='18:00').sort((a,b)=>a.ymd<b.ymd?1:-1)[0];
+  if(sun){const friYmd=_shiftYmd(sun.ymd,-2);const friClose=bars.filter(b=>b.ymd===friYmd&&_hm(b.hm)<=1019).sort((a,b)=>_hm(b.hm)-_hm(a.hm))[0];if(friClose){d.nwogH=Math.max(friClose.c,sun.o);d.nwogL=Math.min(friClose.c,sun.o);}}
+  const wkStart=sun?sun.ymd:_mostRecentSunday(td);
+  const wk=bars.filter(b=>b.ymd>wkStart||(b.ymd===wkStart&&_hm(b.hm)>=1080));
+  const wh=_mx(wk.map(x=>x.h)),wl=_mn(wk.map(x=>x.l));
+  if(wh!=null)d.wkH=wh;if(wl!=null)d.wkL=wl;
+}
+/* Level-aware narrative — where price sits vs the marked levels */
+function levelsNarr(sym){
+  const d=LASTQ[sym];if(!d)return '';const px=d.price;if(!isFinite(px))return '';
+  let s='';
+  if(isFinite(d.mid))s+=`Price ${fmtN(px)} is <b>${px>=d.mid?'above':'below'}</b> midnight open ${fmtN(d.mid)} (${px>=d.mid?'intraday premium':'intraday discount'}). `;
+  const above=[],below=[];
+  [['Asia H',d.asiaH],['London H',d.lonH],['PDH',d.pdh],['Week H',d.wkH]].forEach(x=>{if(isFinite(x[1])&&x[1]>=px)above.push(x[0]+' '+fmtN(x[1]));});
+  [['Asia L',d.asiaL],['London L',d.lonL],['PDL',d.pdl],['Week L',d.wkL]].forEach(x=>{if(isFinite(x[1])&&x[1]<=px)below.push(x[0]+' '+fmtN(x[1]));});
+  if(above.length)s+=`Buyside overhead: ${above.join(' · ')}. `;
+  if(below.length)s+=`Sellside below: ${below.join(' · ')}. `;
+  if(isFinite(d.ndogH))s+=`NDOG ${fmtN(d.ndogL)}–${fmtN(d.ndogH)}. `;
+  if(isFinite(d.nwogH))s+=`NWOG ${fmtN(d.nwogL)}–${fmtN(d.nwogH)}.`;
+  return s?`<p><b>Key levels (NQ):</b> <span class="subtle">${s}</span></p>`:'';
+}
 /* ===== Time Theory — HTF AMD engine (live, self-updating). Time leads the technical read. ===== */
 function ttPhase(f){return f<0.382?['Accumulation','acc']:f<0.618?['Manipulation','man']:['Distribution','dist'];}
 function ttTag(c){return c==='man'?'med':c==='dist'?'bull':'neut';}
@@ -1284,7 +1338,7 @@ function buildBriefObject(){
     `Scheduled risk today: ${evs.length?evs.map(e=>fmtEtTime(utcToEt(e.date))+' '+cleanEv(e.event)).join(', '):'no high-impact US prints — clean tape'}. Until a POI meets a time window with a correlated SMT and a CSD, there is no trade.`];
   const themes=[`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw`, evs.length?`${evs.length} high-impact print(s) today — expect volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact prints — structure leads', 'One trade per focus window · protocol size'];
   const watch=evs.map(e=>`${fmtEtTime(utcToEt(e.date))} — ${cleanEv(e.event)}${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`);if(!watch.length)watch.push('PDH / PDL are the levels that matter for the sweep');
-  const levels=SYMS.map(sy=>{const d=LASTQ[sy];const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;return {s:SHORT[sy],pdh:fmtN(ph),pdl:fmtN(pl),open:fmtN(d.open),now:fmtN(d.price)};});
+  const levels=SYMS.map(sy=>{const d=LASTQ[sy];const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;const F=v=>(v==null||!isFinite(v))?'—':fmtN(v);return {s:SHORT[sy],pdh:fmtN(ph),pdl:fmtN(pl),open:fmtN(d.open),now:fmtN(d.price),lonH:F(d.lonH),lonL:F(d.lonL),asiaH:F(d.asiaH),asiaL:F(d.asiaL),mid:F(d.mid),ndogH:F(d.ndogH),ndogL:F(d.ndogL),nwogH:F(d.nwogH),nwogL:F(d.nwogL),wkH:F(d.wkH),wkL:F(d.wkL)};});
   const events=evs.map(e=>({t:fmtEtTime(utcToEt(e.date)),name:cleanEv(e.event),impact:'High'}));
   return {date:etParts().date,gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET',draw,zone,bias:w,coach:coachHtmlAuto(),overview,themes,watch,levels,events};
 }
@@ -1295,6 +1349,7 @@ function briefHtml(b,hideShots){
   <div class="briefsec"><h4>Watch Today</h4><ul class="tight">${(b.watch||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
   <div class="briefsec"><h4>Intraday Reversion Levels</h4><table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th></tr></thead><tbody>${(b.levels||[]).map(l=>`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`).join('')}</tbody></table></div>
   ${(b.levels&&b.levels.some(hasSess))?`<div class="briefsec"><h4>Session Levels</h4>${sessTable(b.levels)}</div>`:''}
+  ${(b.levels&&b.levels.some(hasGapRange))?`<div class="briefsec"><h4>Gaps &amp; Weekly Range</h4>${gapTable(b.levels)}</div>`:''}
   ${(b.levels&&b.levels.some(l=>l.key))?`<div class="briefsec"><h4>Key Levels</h4><ul class="tight">${b.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${String(l.key).replace(/</g,'&lt;')}</li>`).join('')}</ul></div>`:''}
   ${(b.shots&&b.shots.length)?(hideShots?`<div class="briefsec"><h4>Annotated Charts</h4><div class="subtle">📎 ${b.shots.length} chart${b.shots.length>1?'s':''} attached — Open full ↗ to view.</div></div>`:`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`):''}
   <div class="briefsec"><h4>High-Impact Events</h4>${(b.events&&b.events.length)?b.events.map(e=>`<div class="evrow"><span class="tm">${e.t}</span><span>${e.name}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`).join(''):'<div class="subtle">Clean tape — no high-impact prints.</div>'}</div>`;
@@ -1394,6 +1449,9 @@ const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
 function lvlShow(v){return (v&&v!=='—')?escH(v):'—';}
 function hasSess(l){return SESS_FIELDS.some(f=>l[f]&&l[f]!=='—');}
 function sessTable(levels){const rows=(levels||[]).filter(hasSess);if(!rows.length)return'';return `<table class="lvl"><thead><tr><th></th><th>London H</th><th>London L</th><th>Asia H</th><th>Asia L</th><th>Mid Open</th></tr></thead><tbody>${rows.map(l=>`<tr><td>${l.s}</td><td>${lvlShow(l.lonH)}</td><td>${lvlShow(l.lonL)}</td><td>${lvlShow(l.asiaH)}</td><td>${lvlShow(l.asiaL)}</td><td>${lvlShow(l.mid)}</td></tr>`).join('')}</tbody></table>`;}
+const GAP_FIELDS=['ndogH','ndogL','nwogH','nwogL','wkH','wkL'];
+function hasGapRange(l){return GAP_FIELDS.some(f=>l[f]&&l[f]!=='—');}
+function gapTable(levels){const rows=(levels||[]).filter(hasGapRange);if(!rows.length)return'';return `<table class="lvl"><thead><tr><th></th><th>NDOG H</th><th>NDOG L</th><th>NWOG H</th><th>NWOG L</th><th>Week H</th><th>Week L</th></tr></thead><tbody>${rows.map(l=>`<tr><td>${l.s}</td><td>${lvlShow(l.ndogH)}</td><td>${lvlShow(l.ndogL)}</td><td>${lvlShow(l.nwogH)}</td><td>${lvlShow(l.nwogL)}</td><td>${lvlShow(l.wkH)}</td><td>${lvlShow(l.wkL)}</td></tr>`).join('')}</tbody></table>`;}
 function renderComposedCharts(){
   const el=cbEl('composedCharts');if(!el)return;
   if(!COMPOSED){el.innerHTML='';return;}
@@ -1567,8 +1625,8 @@ function msUntilEt(hh,mm){const p=etParts();const cur=((p.h*60+p.m)*60+p.s)*1000
 function scheduleDailyAt(hh,mm,fn){function run(){try{fn();}catch(e){}setTimeout(run,864e5);}setTimeout(run,msUntilEt(hh,mm));}
 function saveTodayBriefSilent(){const b=buildBriefObject();if(!b)return;const l=localBriefs();l[b.date]=b;try{lsSet('ct_briefs',JSON.stringify(l));}catch(e){}safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
 function startDailySchedules(){
-  scheduleDailyAt(8,0,refreshAll);          // pull fresh prev-day levels + quotes + calendar at 8:00 AM ET
-  scheduleDailyAt(8,35,saveTodayBriefSilent); // lock the brief to the Protocol Calendar at 8:35 AM ET
+  scheduleDailyAt(8,0,async()=>{try{await refreshAll();}catch(e){}setTimeout(saveTodayBriefSilent,20000);}); // 8:00 AM ET: pull quotes + prev-day/week + intraday session/gap levels, then auto-save the brief
+  scheduleDailyAt(8,35,saveTodayBriefSilent); // 8:35 AM ET backstop — re-lock brief once all levels have settled
 }
 
 /* ===== Post Market Review journal ===== */
