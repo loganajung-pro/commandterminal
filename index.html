@@ -248,26 +248,7 @@ ul.tight li::marker{color:var(--org)}
       <hr class="d">
       <div class="grid" style="grid-template-columns:2fr 1fr">
         <div>
-          <div class="panel"><h2 class="sec">Today's Overview</h2><div class="narr" id="overview">Framing…</div></div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec">Coaches Framework</h2><div id="coachDaily" class="narr">Reading…</div></div>
-          <hr class="d">
-          <div class="panel">
-            <div class="ph" style="border:0;padding:0 0 10px">
-              <h2 class="sec grn" style="margin:0">Time Theory — HTF AMD Frame</h2>
-              <span class="meta" id="ttStamp">Sun · Jul 12 · weekend HTF read</span>
-            </div>
-            <div class="kv"><span class="k">Yearly (0.529)</span><span class="v"><span class="tag med">MANIPULATION</span> 0.382 May 19 &rarr; 0.618 Aug 14 · real distribution ~mid-Aug</span></div>
-            <div class="kv"><span class="k">Monthly (0.387)</span><span class="v"><span class="tag med">MANIPULATION</span> just flipped 0.382 · manip &rarr; Jul 19 · dist Jul 19 &rarr; EOM</span></div>
-            <div class="kv"><span class="k">Weekly (opens Mon)</span><span class="v"><span class="tag neut">PRE-OPEN</span> Acc Mon&rarr;Tue 18:47 · Manip &rarr;Wed 21:12 · Dist &rarr;Fri</span></div>
-            <hr class="d">
-            <div class="narr" style="margin:0">
-              <p><b>Regime: Manipulation across all three HTFs.</b> Year trapping, month just entering its trap, week opens fresh. <b>Patience week</b> — expect stop raids and false moves early. Don't marry a bias until the weekly manipulation completes ~Wednesday. Higher-probability delivery (weekly + monthly distribution) lines up for the back half of the week and back half of July, front-running the yearly distribution that ignites mid-August.</p>
-              <p class="subtle" style="margin:0">Posture: <b>Settled Authority</b> — fewer, cleaner trades. Let manipulation trap the crowd, then position for distribution.</p>
-            </div>
-            <hr class="d">
-            <div class="subtle"><b>Weekday session read:</b> Asia accumulates (00:00–06:07) &rarr; London manipulates (06:07–09:53, raids one side of Asian range = judas) &rarr; NY distributes toward the opposite draw. Entry cycle <b>C7 09:00–10:30</b> (NY judas · 0.618 flip 09:53). London raids Asian High &rarr; NY Short toward PDL · raids Asian Low &rarr; NY Long toward PDH.</div>
-          </div>
+          <div class="panel"><h2 class="sec">Coaches Technical Read</h2><div id="coachDaily" class="narr">Reading…</div></div>
           <hr class="d">
           <div class="grid" style="grid-template-columns:1fr 1fr">
             <div class="panel"><h2 class="sec">Key Themes</h2><ul class="tight" id="keyThemes"><li>…</li></ul></div>
@@ -888,6 +869,7 @@ function renderWindows(){const wEl=document.getElementById('windows');if(!wEl)re
 
 /* ===== Brief narrative + coach + themes ===== */
 function renderOverview(){
+  if(!document.getElementById('overview'))return; /* Today's Overview panel removed from Market Brief */
   if(COMPOSED){const el=document.getElementById('overview');el.innerHTML=(COMPOSED.overview&&COMPOSED.overview.length)?COMPOSED.overview.map(p=>'<p>'+escH(p)+'</p>').join(''):'<p class="subtle">No overview entered.</p>';return;}
   if(!LASTQ.NQUSD)return;const {w,draw}=drawState();const nq=LASTQ.NQUSD;const evs=todayHigh();
   const evTxt=evs.length?evs.map(e=>fmtEtTime(utcToEt(e.date))+' '+cleanEv(e.event)).join(', '):'no high-impact US prints — clean tape';
@@ -969,9 +951,47 @@ function techReadHtml(){
   return coachHtmlAuto();
 }
 function techDivider(){return '<div style="border-top:1px dashed var(--line2);margin:15px 0 11px"></div><div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Technical Read</div>';}
+/* ===== Time Theory — HTF AMD engine (live, self-updating). Time leads the technical read. ===== */
+function ttPhase(f){return f<0.382?['Accumulation','acc']:f<0.618?['Manipulation','man']:['Distribution','dist'];}
+function ttTag(c){return c==='man'?'med':c==='dist'?'bull':'neut';}
+function ttEtNow(){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+  const g=t=>(p.find(x=>x.type===t)||{}).value;
+  const wd={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[g('weekday')];
+  let hr=+g('hour'); if(hr===24)hr=0;
+  return {y:+g('year'),mo:+g('month'),d:+g('day'),dow:wd,hr,min:+g('minute')};
+}
+function timeFrameHtml(){
+  const n=ttEtNow();
+  const leap=(n.y%4===0&&n.y%100!==0)||n.y%400===0, diy=leap?366:365;
+  const doy=Math.round((Date.UTC(n.y,n.mo-1,n.d)-Date.UTC(n.y,0,1))/86400000)+1;
+  const yf=doy/diy, [yp,yc]=ttPhase(yf);
+  const bd=fr=>{const dd=new Date(Date.UTC(n.y,0,1));dd.setUTCDate(dd.getUTCDate()+Math.round(fr*diy)-1);return new Intl.DateTimeFormat('en-US',{timeZone:'UTC',month:'short',day:'numeric'}).format(dd);};
+  const dim=new Date(n.y,n.mo,0).getDate(), mf=n.d/dim, [mp,mc]=ttPhase(mf);
+  let wf=null,wp='Weekend',wc='pre';
+  if(n.dow>=1&&n.dow<=5){const hin=(n.dow-1)*24+n.hr+n.min/60; if(hin<=112){wf=hin/112;const r=ttPhase(wf);wp=r[0];wc=r[1];}else{wp='Closed';wc='pre';wf=1;}}
+  else if(n.dow===0){wp='Pre-open';wc='pre';}
+  const dh=n.hr+n.min/60; let df=Math.min(dh/16,1),dp,dc;
+  if(dh>16){dp='Closed';dc='pre';df=1;}else{const r=ttPhase(df);dp=r[0];dc=r[1];}
+  const row=(k,f,p,c,x)=>`<div class="kv"><span class="k">${k}</span><span class="v"><span class="tag ${ttTag(c)}">${p.toUpperCase()}</span> <span class="subtle">${x}</span></span></div>`;
+  const ph=[yp,mp,(wp==='Pre-open'||wp==='Weekend'||wp==='Closed')?'':wp].map(s=>s.toLowerCase());
+  const cnt=k=>ph.filter(s=>s.includes(k)).length;
+  let net;
+  if(cnt('manip')>=2)net='HTF regime is <b>manipulation-weighted</b> — expect stop raids and false moves. Let the trap spring, then position for distribution. Patience over aggression.';
+  else if(cnt('distrib')>=2)net='HTF regime is <b>distribution-weighted</b> — trend delivery is live. Trade with the draw and hold the winners.';
+  else net='HTF regime is <b>mixed / building</b> — ranges accumulating. Wait for the manipulation before committing size.';
+  return `<div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--grn);margin:0 0 9px">⏱ Time leads — HTF AMD</div>`
+    +row('Yearly',yf,yp,yc,`Manip ${bd(0.382)} · Dist ${bd(0.618)}`)
+    +row('Monthly',mf,mp,mc,`day ${n.d}/${dim} · manip→${Math.round(0.382*dim)} · dist→${Math.round(0.618*dim)}`)
+    +row('Weekly',wf,wp,wc,'Acc Mon→Tue 18:47 · Manip→Wed 21:12 · Dist→Fri 16:00')
+    +row('Daily',df,dp,dc,'Asia→06:07 · London→09:53 · NY dist→16:00')
+    +`<p class="narr" style="margin:9px 0 0">${net}</p>`
+    +`<p class="subtle" style="margin:6px 0 0">Session map: Asia accumulates → London manipulates (raids one side of Asian range = judas) → NY distributes to the opposite draw. Entry cycle <b>C7 09:00–10:30</b> (NY judas · flip 09:53). London raids Asian High → NY short to PDL · raids Asian Low → NY long to PDH.</p>`
+    +`<div style="border-top:1px dashed var(--line2);margin:13px 0 10px"></div><div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Price Read</div>`;
+}
 function renderCoach(){
   const el=document.getElementById('coachDaily');if(!el)return;
-  el.innerHTML=consciousHtml()+techDivider()+techReadHtml();
+  el.innerHTML=consciousHtml()+techDivider()+timeFrameHtml()+techReadHtml();
 }
 function renderKeyThemes(){
   if(COMPOSED){
