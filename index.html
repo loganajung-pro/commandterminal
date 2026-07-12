@@ -1103,6 +1103,7 @@ function geoRow(n){
     <span class="${cls}" style="flex:none">${n.k||(n.g?'Geo':'Mkt')}</span>
   </div>`;
 }
+function geoWindow(){const p=etParts();return p.h>=9&&p.h<12;} // 9:00–11:59 AM ET — reload re-pulls the wire
 async function renderGeoNews(){
   const el=document.getElementById('geoNews');if(!el)return;
   let items=[];
@@ -1679,7 +1680,7 @@ async function refreshLight(){
 /* ===== Settings (API key + live) ===== */
 let liveTimer=null;
 function applyInterval(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}if(LIVE_MS>0)liveTimer=setInterval(refreshLight,LIVE_MS);}
-function refreshAll(){SNAPSHOT_MODE=false;hideSnap();loadQuotes();loadCalendar();if(RENDERED.macro)safe(renderMacro);if(RENDERED.calendar){MV=curMonth();safe(loadMonthView);}}
+function refreshAll(){SNAPSHOT_MODE=false;hideSnap();loadQuotes();loadCalendar();if(RENDERED.macro)safe(renderMacro);else safe(renderGeoNews);/* geo folded into 8AM refresh unconditionally */if(RENDERED.calendar){MV=curMonth();safe(loadMonthView);}}
 function openSettings(){document.getElementById('setKey').value=fmpKey();document.getElementById('setInterval').value=String(LIVE_MS||0);const ak=document.getElementById('setAnthKey');if(ak)ak.value=anthKey();const vm=document.getElementById('setVisionModel');if(vm)vm.value=visionModel();document.getElementById('setStatus').textContent='';document.getElementById('setModal').classList.add('open');}
 document.getElementById('settingsBtn').addEventListener('click',openSettings);
 document.getElementById('setX').addEventListener('click',()=>document.getElementById('setModal').classList.remove('open'));
@@ -1926,6 +1927,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   if(!COMPOSED){try{const _tb=BRIEFS[etParts().date];if(_tb&&_tb.manual)COMPOSED=_tb;}catch(e){}}
   tick();setInterval(tick,1000);
   loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
+  if(geoWindow())safe(renderGeoNews);   // 9AM–12PM ET: every reload re-pulls the geopolitical wire
   safe(renderBriefCal);
   if(COMPOSED)safe(renderComposedCharts);
   applyInterval();
