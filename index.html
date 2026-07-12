@@ -1198,6 +1198,16 @@ function renderThesis(){
 /* ===== Protocol Calendar (month plan) ===== */
 let MV=curMonth(),MONTHCAL=[];
 function classifyDay(evs){const hi=evs.filter(e=>e.impact==='High');const jobs=evs.some(e=>/(non.?farm|nonfarm|payroll|\bADP\b|unemployment rate|employment change)/i.test(e.event));const fomc=evs.some(e=>/(FOMC|federal funds|interest rate decision|rate decision)/i.test(e.event));let cls=jobs?'skip':(hi.length?'caution':'trade');let smr=cls==='skip'?{t:'SMR --',na:1}:fomc?{t:'SMR 2:45–3:15'}:{t:'SMR 9:45–10:15'};return{cls,smr,hi};}
+/* ===== Time-cycle overlay for the Protocol Calendar — weekly + monthly AMD phase per day ===== */
+function amdCyclePhase(y,m,d){
+  const dow=new Date(Date.UTC(y,m-1,d)).getUTCDay();               // 0=Sun..6=Sat
+  const dim=new Date(Date.UTC(y,m,0)).getUTCDate();
+  const wk=dow<=2?'ACC':dow===3?'MAN':'DIST';                      // weekly AMD: Mon/Tue accumulate · Wed manipulate (judas) · Thu/Fri distribute
+  const f=d/dim, mo=f<0.382?'ACC':f<0.618?'MAN':'DIST';           // monthly AMD by fib fraction (0.382 / 0.618)
+  return {wk,mo,aplus:wk==='DIST'&&mo==='DIST',trap:wk==='MAN'&&mo==='MAN'};
+}
+const PHT={ACC:'neut',MAN:'med',DIST:'bull'};                      // tag class per phase
+const PHCOL={ACC:'var(--faint)',MAN:'var(--amber)',DIST:'var(--grn)'}; // left-edge color per monthly phase
 async function loadMonthView(){
   const first=new Date(Date.UTC(MV.y,MV.m-1,1)),last=new Date(Date.UTC(MV.y,MV.m,0));
   document.getElementById('calBody').innerHTML='<div class="subtle" style="padding:10px">Loading…</div>';
@@ -1212,17 +1222,23 @@ function renderMonthPlan(){
   const briefs=getBriefs();
   const cnt={trade:0,caution:0,skip:0};let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';
   for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,dow=new Date(Date.UTC(y,m-1,d)).getUTCDay();
-    if(dow===0||dow===6){cells+=`<div class="cell dim"><div class="dn">${d}</div></div>`;continue;}
+    const ph=amdCyclePhase(y,m,d);
+    if(dow===0||dow===6){cells+=`<div class="cell dim" style="border-left:3px solid ${PHCOL[ph.mo]}"><div class="dn">${d}</div></div>`;continue;}
     const evs=(byDay[ds]||[]).sort((a,b)=>utcToEt(a.date)-utcToEt(b.date));const{cls,smr,hi}=classifyDay(evs);cnt[cls]++;
     const seen=new Set();const evList=[];evs.forEach(e=>{const nm=cleanEv(e.event);if((e.impact==='High'||e.impact==='Medium')&&!seen.has(nm)){seen.add(nm);evList.push({nm,hi:e.impact==='High'});}});
     evList.sort((a,b)=>(b.hi?1:0)-(a.hi?1:0));
     const evHtml=evList.slice(0,3).map(e=>`<div class="evln"><span class="edot ${e.hi?'hi':'md'}"></span><span class="ent" title="${e.nm}">${e.nm}</span></div>`).join('');
     const lab={trade:'TRADE',caution:'CAUTION',skip:'NO TRADE'}[cls];
     const hb=briefs[ds];
-    cells+=`<div class="cell ${cls} ${ds===td?'today':''} ${hb?'hasbrief':''}" data-d="${ds}"><div class="dn">${d}${hb?'<span class="brdot" title="Daily brief saved — click to review">📄</span>':''}</div><div class="evwrap">${evHtml}</div><div class="smr ${smr.na?'mut':''}">${smr.t}</div><div class="cls">${lab}</div></div>`;}
+    cells+=`<div class="cell ${cls} ${ds===td?'today':''} ${hb?'hasbrief':''}" data-d="${ds}" style="border-left:3px solid ${PHCOL[ph.mo]}"><div class="dn">${d} <span class="tag ${PHT[ph.wk]}" style="font-size:8px;padding:1px 4px;vertical-align:middle" title="Weekly AMD: ${ph.wk==='ACC'?'Accumulation':ph.wk==='MAN'?'Manipulation (judas)':'Distribution'} · Monthly AMD: ${ph.mo}">${ph.wk}</span>${ph.aplus?' <span title="A+ delivery — weekly & monthly distribution align" style="color:var(--grn)">★</span>':ph.trap?' <span title="Trap risk — weekly & monthly manipulation align" style="color:var(--amber)">⚠</span>':''}${hb?'<span class="brdot" title="Daily brief saved — click to review">📄</span>':''}</div><div class="evwrap">${evHtml}</div><div class="smr ${smr.na?'mut':''}">${smr.t}</div><div class="cls">${lab}</div></div>`;}
   document.getElementById('calBody').innerHTML=cells;
   document.querySelectorAll('#calBody .hasbrief').forEach(c=>c.addEventListener('click',()=>openBrief(c.dataset.d)));
-  document.getElementById('monthSummary').innerHTML=`<div class="sumcard trade"><div class="n">${cnt.trade}</div><div class="l">Trade</div></div><div class="sumcard caution"><div class="n">${cnt.caution}</div><div class="l">Caution</div></div><div class="sumcard skip"><div class="n">${cnt.skip}</div><div class="l">Skip</div></div>`;
+  const msEl=document.getElementById('monthSummary');
+  msEl.innerHTML=`<div class="sumcard trade"><div class="n">${cnt.trade}</div><div class="l">Trade</div></div><div class="sumcard caution"><div class="n">${cnt.caution}</div><div class="l">Caution</div></div><div class="sumcard skip"><div class="n">${cnt.skip}</div><div class="l">Skip</div></div>`;
+  const dimM=new Date(Date.UTC(y,m,0)).getUTCDate(),a2=Math.round(0.382*dimM),b2=Math.round(0.618*dimM);
+  let strip=document.getElementById('cyclePhaseStrip');
+  if(!strip){strip=document.createElement('div');strip.id='cyclePhaseStrip';strip.className='legend';strip.style.marginTop='10px';msEl.parentNode.insertBefore(strip,msEl.nextSibling);}
+  strip.innerHTML=`<span class="lg"><b style="color:var(--org);letter-spacing:.06em">MONTHLY AMD:</b></span><span class="lg"><span class="tag neut">ACC</span> days 1–${a2}</span><span class="lg"><span class="tag med">MAN</span> ${a2+1}–${b2}</span><span class="lg"><span class="tag bull">DIST</span> ${b2+1}–${dimM}</span><span class="lg subtle">left edge = monthly phase · cell tag = weekly phase (Wed = judas) · ★ A+ delivery (wk+mo distribution) · ⚠ trap (wk+mo manipulation)</span>`;
 }
 function shiftM(delta){let m=MV.m+delta,y=MV.y;if(m<1){m=12;y--;}if(m>12){m=1;y++;}MV={y,m};loadMonthView();}
 document.getElementById('prevM').addEventListener('click',()=>shiftM(-1));
@@ -1624,9 +1640,19 @@ document.getElementById('setSave').addEventListener('click',()=>{const k=documen
 function msUntilEt(hh,mm){const p=etParts();const cur=((p.h*60+p.m)*60+p.s)*1000;let diff=((hh*60+mm)*60*1000)-cur;if(diff<=0)diff+=864e5;return diff;}
 function scheduleDailyAt(hh,mm,fn){function run(){try{fn();}catch(e){}setTimeout(run,864e5);}setTimeout(run,msUntilEt(hh,mm));}
 function saveTodayBriefSilent(){const b=buildBriefObject();if(!b)return;const l=localBriefs();l[b.date]=b;try{lsSet('ct_briefs',JSON.stringify(l));}catch(e){}safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
+function nextMonthMV(mv){let m=mv.m+1,y=mv.y;if(m>12){m=1;y++;}return{y,m};}
+function weeklyMaintenance(){
+  const n=ttEtNow(); if(n.dow!==0)return;                 // Sundays only
+  loadCalendar();                                          // #1 — refresh the economic calendar for the new week
+  const chk=new Date(Date.UTC(n.y,n.mo-1,n.d)); chk.setUTCDate(chk.getUTCDate()+7);
+  if(chk.getUTCMonth()!==(n.mo-1)){                        // #2 — last Sunday of the month → roll Protocol Calendar to the coming month
+    MV=nextMonthMV({y:n.y,m:n.mo}); safe(loadMonthView);
+  }
+}
 function startDailySchedules(){
   scheduleDailyAt(8,0,async()=>{try{await refreshAll();}catch(e){}setTimeout(saveTodayBriefSilent,20000);}); // 8:00 AM ET: pull quotes + prev-day/week + intraday session/gap levels, then auto-save the brief
   scheduleDailyAt(8,35,saveTodayBriefSilent); // 8:35 AM ET backstop — re-lock brief once all levels have settled
+  scheduleDailyAt(17,0,weeklyMaintenance);    // 5:00 PM ET daily check → fires only on Sundays (new-week calendar + last-Sunday month roll)
 }
 
 /* ===== Post Market Review journal ===== */
