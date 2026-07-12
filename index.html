@@ -429,6 +429,7 @@ ul.tight li::marker{color:var(--org)}
   </main>
 </div>
 <div class="modal" id="briefModal"><div class="box"><span class="x" id="briefModalX">✕</span><button class="btn" id="briefModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="briefModalTitle">Daily Brief</h3><div class="subtle" id="briefModalGen"></div><div id="briefModalBody"></div></div></div>
+<div class="modal" id="dayModal"><div class="box" style="max-width:640px"><span class="x" id="dayModalX">✕</span><h3 id="dayModalTitle">Day</h3><div class="subtle" id="dayModalSub"></div><div id="dayModalBody" style="margin-top:12px"></div></div></div>
 <div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><input type="file" id="tr-file" accept="image/*" multiple style="display:none"><div id="tradeModalBody"></div></div></div>
 <div class="modal" id="tradeEntryModal"><div class="box" style="max-width:620px">
   <span class="x" id="teX">✕</span>
@@ -1230,9 +1231,9 @@ function renderMonthPlan(){
     const evHtml=evList.slice(0,3).map(e=>`<div class="evln"><span class="edot ${e.hi?'hi':'md'}"></span><span class="ent" title="${e.nm}">${e.nm}</span></div>`).join('');
     const lab={trade:'TRADE',caution:'CAUTION',skip:'NO TRADE'}[cls];
     const hb=briefs[ds];
-    cells+=`<div class="cell ${cls} ${ds===td?'today':''} ${hb?'hasbrief':''}" data-d="${ds}" style="border-left:3px solid ${PHCOL[ph.mo]}"><div class="dn">${d} <span class="tag ${PHT[ph.wk]}" style="font-size:8px;padding:1px 4px;vertical-align:middle" title="Weekly AMD: ${ph.wk==='ACC'?'Accumulation':ph.wk==='MAN'?'Manipulation (judas)':'Distribution'} · Monthly AMD: ${ph.mo}">${ph.wk}</span>${ph.aplus?' <span title="A+ delivery — weekly & monthly distribution align" style="color:var(--grn)">★</span>':ph.trap?' <span title="Trap risk — weekly & monthly manipulation align" style="color:var(--amber)">⚠</span>':''}${hb?'<span class="brdot" title="Daily brief saved — click to review">📄</span>':''}</div><div class="evwrap">${evHtml}</div><div class="smr ${smr.na?'mut':''}">${smr.t}</div><div class="cls">${lab}</div></div>`;}
+    cells+=`<div class="cell ${cls} ${ds===td?'today':''} ${hb?'hasbrief':''}" data-d="${ds}" style="border-left:3px solid ${PHCOL[ph.mo]};cursor:pointer"><div class="dn">${d} <span class="tag ${PHT[ph.wk]}" style="font-size:8px;padding:1px 4px;vertical-align:middle" title="Weekly AMD: ${ph.wk==='ACC'?'Accumulation':ph.wk==='MAN'?'Manipulation (judas)':'Distribution'} · Monthly AMD: ${ph.mo}">${ph.wk}</span>${ph.aplus?' <span title="A+ delivery — weekly & monthly distribution align" style="color:var(--grn)">★</span>':ph.trap?' <span title="Trap risk — weekly & monthly manipulation align" style="color:var(--amber)">⚠</span>':''}${hb?'<span class="brdot" title="Daily brief saved — click to review">📄</span>':''}</div><div class="evwrap">${evHtml}</div><div class="smr ${smr.na?'mut':''}">${smr.t}</div><div class="cls">${lab}</div></div>`;}
   document.getElementById('calBody').innerHTML=cells;
-  document.querySelectorAll('#calBody .hasbrief').forEach(c=>c.addEventListener('click',()=>openBrief(c.dataset.d)));
+  document.querySelectorAll('#calBody .cell[data-d]').forEach(c=>c.addEventListener('click',()=>openDayDetail(c.dataset.d)));
   const msEl=document.getElementById('monthSummary');
   msEl.innerHTML=`<div class="sumcard trade"><div class="n">${cnt.trade}</div><div class="l">Trade</div></div><div class="sumcard caution"><div class="n">${cnt.caution}</div><div class="l">Caution</div></div><div class="sumcard skip"><div class="n">${cnt.skip}</div><div class="l">Skip</div></div>`;
   const dimM=new Date(Date.UTC(y,m,0)).getUTCDate(),a2=Math.round(0.382*dimM),b2=Math.round(0.618*dimM);
@@ -1381,6 +1382,53 @@ function expandMyBrief(ds){
 function openMyBriefModal(ds){const b=myBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='My Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen||'')+' · your brief';document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'My Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent='Auto-saved '+(b.gen||'8:35 AM ET');document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'Daily Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function closeBrief(){document.getElementById('briefModal').classList.remove('open');}
+/* ===== Protocol Calendar — day detail popout (time cycles + protocol read + events) ===== */
+function phaseFull(p){return p==='ACC'?'Accumulation':p==='MAN'?'Manipulation':'Distribution';}
+function openDayDetail(ds){
+  const y=+ds.slice(0,4),m=+ds.slice(5,7),d=+ds.slice(8,10);
+  const dt=new Date(ds+'T12:00:00'),dow=new Date(Date.UTC(y,m-1,d)).getUTCDay();
+  const ph=amdCyclePhase(y,m,d);
+  const dim=new Date(Date.UTC(y,m,0)).getUTCDate(),a2=Math.round(0.382*dim),b2=Math.round(0.618*dim);
+  const diy=((y%4===0&&y%100!==0)||y%400===0)?366:365,doy=Math.round((Date.UTC(y,m-1,d)-Date.UTC(y,0,1))/86400000)+1,yf=doy/diy,yp=yf<0.382?'ACC':yf<0.618?'MAN':'DIST';
+  const bd=fr=>{const dd=new Date(Date.UTC(y,0,1));dd.setUTCDate(dd.getUTCDate()+Math.round(fr*diy)-1);return new Intl.DateTimeFormat('en-US',{timeZone:'UTC',month:'short',day:'numeric'}).format(dd);};
+  const wkRole={1:'Week building — range forming',2:'Late accumulation into the midweek',3:'The weekly judas — midweek reversal',4:'The weekly delivery leg',5:'Final delivery into the weekly close'}[dow]||'Weekend — no session';
+  const evs=(MONTHCAL||[]).filter(e=>etDateStr(utcToEt(e.date))===ds).sort((a,b)=>utcToEt(a.date)-utcToEt(b.date));
+  const {cls,smr}=classifyDay(evs);
+  const clsLab={trade:'TRADE',caution:'CAUTION',skip:'NO TRADE'}[cls],clsTag={trade:'bull',caution:'med',skip:'bear'}[cls];
+  const seen=new Set(),evRows=[];evs.forEach(e=>{const nm=cleanEv(e.event);if((e.impact==='High'||e.impact==='Medium')&&!seen.has(nm)){seen.add(nm);evRows.push(`<div class="evrow"><span class="tm">${fmtEtTime(utcToEt(e.date))}</span><span>${nm}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`);}});
+  let conf,confTag,confTxt;
+  if(ph.aplus){conf='A+ DELIVERY';confTag='bull';confTxt='Weekly and monthly distribution align. Highest-conviction trend day — trade with the draw and hold winners into the delivery.';}
+  else if(ph.trap){conf='TRAP RISK';confTag='med';confTxt='Weekly and monthly manipulation align. Expect stop raids and false moves. Demand a clean SMT + CSD at a time window, or stand aside.';}
+  else {conf='MIXED';confTag='neut';confTxt=`Weekly ${phaseFull(ph.wk)} · monthly ${phaseFull(ph.mo)}. Let the higher timeframe lead — time the entry off the lower cycle finishing its manipulation.`;}
+  const hasGen=!!getBriefs()[ds],hasMine=(typeof myBriefs==='function')&&!!myBriefs()[ds];
+  const briefBtn=(hasGen||hasMine)?`<button class="btn grn" id="dayOpenBrief" style="margin-top:2px">📄 Open saved daily brief</button>`:'<span class="subtle">No brief saved for this day yet.</span>';
+  const weekend=(dow===0||dow===6);
+  const body=`
+    <div class="sec grn" style="margin:0 0 8px">Time Cycles</div>
+    <div class="kv"><span class="k">Yearly</span><span class="v"><span class="tag ${PHT[yp]}">${phaseFull(yp)}</span> <span class="subtle">Manip ${bd(0.382)} · Dist ${bd(0.618)}</span></span></div>
+    <div class="kv"><span class="k">Monthly</span><span class="v"><span class="tag ${PHT[ph.mo]}">${phaseFull(ph.mo)}</span> <span class="subtle">day ${d}/${dim} · ACC 1–${a2} · MAN ${a2+1}–${b2} · DIST ${b2+1}–${dim}</span></span></div>
+    <div class="kv"><span class="k">Weekly</span><span class="v"><span class="tag ${PHT[ph.wk]}">${phaseFull(ph.wk)}</span> <span class="subtle">${wkRole}</span></span></div>
+    <div class="kv"><span class="k">Confluence</span><span class="v"><span class="tag ${confTag}">${conf}</span></span></div>
+    <p class="narr" style="margin:8px 0 0">${confTxt}</p>
+    ${weekend?'':`<hr class="d">
+    <div class="sec" style="margin:0 0 8px">Protocol Read</div>
+    <div class="kv"><span class="k">Econ classification</span><span class="v"><span class="tag ${clsTag}">${clsLab}</span></span></div>
+    <div class="kv"><span class="k">SMR window</span><span class="v">${smr.na?'—':String(smr.t).replace('SMR ','')}</span></div>
+    <hr class="d">
+    <div class="sec" style="margin:0 0 8px">Economic Events <span class="subtle">· ET</span></div>
+    ${evRows.length?evRows.join(''):'<div class="subtle">Clean tape — no high/medium-impact US prints.</div>'}
+    <hr class="d">
+    <div class="sec" style="margin:0 0 8px">Session Map</div>
+    <div class="subtle">Asia accumulates (6:00PM–2:29AM) → London manipulates (2:30–6:59AM · raids one side of the Asian range = judas) → NY distributes to the opposite draw. Prime entry cycle <b>C7 (9:00–10:30 AM)</b> — NY judas, then the 0.618 flip ~9:53.</div>`}
+    <hr class="d">
+    ${briefBtn}`;
+  document.getElementById('dayModalTitle').textContent=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(dt);
+  document.getElementById('dayModalSub').innerHTML=`Weekly <b>${ph.wk}</b> · Monthly <b>${ph.mo}</b> · Yearly <b>${yp}</b>${ph.aplus?' · <span style="color:var(--grn)">★ A+ delivery</span>':ph.trap?' · <span style="color:var(--amber)">⚠ trap risk</span>':''}`;
+  document.getElementById('dayModalBody').innerHTML=body;
+  document.getElementById('dayModal').classList.add('open');
+  const ob=document.getElementById('dayOpenBrief');if(ob)ob.addEventListener('click',()=>{closeDayDetail();if(hasMine)openMyBriefModal(ds);else openBrief(ds);});
+}
+function closeDayDetail(){document.getElementById('dayModal').classList.remove('open');}
 function saveTodayBrief(){const b=buildBriefObject();if(!b){alert('Market data still loading — try again in a moment.');return;}const l=localBriefs();l[b.date]=b;try{lsSet('ct_briefs',JSON.stringify(l));}catch(e){}alert("Saved today's brief ("+b.date+"). It's now in your Daily Briefings calendar — click the day (📄) to pop it out.");safe(renderBriefCal);if(RENDERED.calendar)safe(renderMonthPlan);}
 document.getElementById('saveBriefBtn').addEventListener('click',saveTodayBrief);
 
@@ -1407,7 +1455,9 @@ if(document.getElementById('prevBV'))document.getElementById('prevBV').addEventL
 if(document.getElementById('nextBV'))document.getElementById('nextBV').addEventListener('click',()=>shiftBV(1));
 document.getElementById('briefModalX').addEventListener('click',closeBrief);
 document.getElementById('briefModal').addEventListener('click',e=>{if(e.target.id==='briefModal')closeBrief();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBrief();});
+document.getElementById('dayModalX').addEventListener('click',closeDayDetail);
+document.getElementById('dayModal').addEventListener('click',e=>{if(e.target.id==='dayModal')closeDayDetail();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeBrief();closeDayDetail();}});
 
 /* ===== Daily Briefing Composer (manual: screenshots + annotated levels) ===== */
 let cbShots=[];
