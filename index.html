@@ -102,6 +102,15 @@ ul.tight li::marker{color:var(--org)}
 .evrow:first-child{border-top:0}
 .evrow .wh{color:var(--grn);font-weight:600;font-size:10px;letter-spacing:.06em}
 .evrow .tm{color:var(--mut)}
+.geo-row{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:12px}
+.geo-row:first-child{border-top:0}
+.geo-row .gt{width:82px;flex:none;color:var(--mut);font-size:11px;padding-top:1px}
+.geo-row .gc{flex:1 1 auto;min-width:0}
+.geo-row .gh{font-weight:500;line-height:1.35}
+.geo-row .gh a{color:inherit;text-decoration:none}
+.geo-row .gh a:hover{text-decoration:underline}
+.geo-row .gx{color:var(--mut);display:block;margin-top:3px;line-height:1.4}
+.geo-row .gp{color:var(--faint);display:block;margin-top:2px;font-size:11px;letter-spacing:.02em}
 /* thesis cards */
 .thesis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 @media(max-width:1000px){.thesis{grid-template-columns:1fr}}
@@ -991,13 +1000,13 @@ function geoNorm(n){if(!n)return null;const t=n.t||n.title||'';if(!t)return null
 function geoRow(n){
   const cls=n.g?'tag hi':'tag neut';
   const tm=n.d?n.d.slice(5):'';
-  const link=n.u?`<a href="${n.u}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${n.t}</a>`:n.t;
-  return `<div class="evrow" style="align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)">
-    <span class="tm" style="min-width:78px;color:var(--mut);flex:none">${tm}</span>
-    <span style="flex:1;min-width:0">
-      <span style="${n.g?'color:var(--amber);':'color:var(--ink);'}font-weight:500">${link}</span>
-      ${n.x?`<span class="subtle" style="display:block;margin-top:3px">${n.x}</span>`:''}
-      <span class="subtle" style="color:var(--faint)">${n.p}</span>
+  const link=n.u?`<a href="${n.u}" target="_blank" rel="noopener">${n.t}</a>`:n.t;
+  return `<div class="geo-row">
+    <span class="gt">${tm}</span>
+    <span class="gc">
+      <span class="gh" style="${n.g?'color:var(--amber)':'color:var(--ink)'}">${link}</span>
+      ${n.x?`<span class="gx">${n.x}</span>`:''}
+      <span class="gp">${n.p}</span>
     </span>
     <span class="${cls}" style="flex:none">${n.k||(n.g?'Geo':'Mkt')}</span>
   </div>`;
