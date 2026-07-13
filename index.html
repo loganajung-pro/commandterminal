@@ -1853,6 +1853,7 @@ function printDoc(title,innerHtml){
   w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+escH(title)+'</title><style>'+PRINT_CSS+'</style></head><body><h1>'+escH(title)+'</h1>'+innerHtml+'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.focus();window.print();},400);};<\/scr'+'ipt></body></html>');
   w.document.close();
 }
+function nl2p(s){return String(s).split(/\n{2,}/).map(p=>p.replace(/\s+$/,'')).filter(p=>p.trim()).map(p=>'<p>'+escH(p).replace(/\n/g,'<br>')+'</p>').join('');}
 function tradeFieldsHtml(tr){
   const rt=tr.res==='Open'?'tag blue':tr.res==='Win'?'tag bull':tr.res==='Loss'?'tag bear':'tag neut';
   const rr=tr.r?((+tr.r>0?'+':'')+tr.r+'R'):'—';
@@ -1865,11 +1866,11 @@ function tradeFieldsHtml(tr){
     <div class="kv"><span class="k">Profit Grade</span><span class="v">${escH(tr.pgrade||'—')}</span></div>
     <div class="kv"><span class="k">Entry Grade</span><span class="v">${escH(tr.egrade||'—')}</span></div>
     <div class="kv"><span class="k">Trade Management</span><span class="v">${escH(tr.mgrade||'—')}</span></div></div>
-    ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr"><p>${escH(tr.notes)}</p></div></div>`:''}`;
+    ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr">${nl2p(tr.notes)}</div></div>`:''}`;
 }
 function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:'';}
 function tradeDetailHtml(tr){return tradeFieldsHtml(tr)+shotsArrHtml(tr.shots);}
-function dayTradesHtml(ds){const list=loadTrades().filter(t=>t.date===ds);if(!list.length)return '<div class="subtle">No trades this day.</div>';return list.map(tradeDetailHtml).join('<hr class="d">');}
+function dayTradesHtml(ds,editable){const list=loadTrades().filter(t=>t.date===ds);if(!list.length)return '<div class="subtle">No trades this day.</div>';return list.map(tr=>(editable?`<div style="text-align:right;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit trade</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
 function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)return;
   curTradeId=id;tradeShots=(tr.shots||[]).slice();
   document.getElementById('tradeModalTitle').textContent=tr.pair+' · '+tr.dir+' — '+fmtDayLong(tr.date);
@@ -1885,7 +1886,7 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
   const dr=document.getElementById('tr-drop');if(dr)dr.addEventListener('click',()=>{const fi=document.getElementById('tr-file');if(fi)fi.click();});
   const sv=document.getElementById('tr-savecharts');if(sv)sv.addEventListener('click',saveTradeCharts);
   document.getElementById('tradeModal').classList.add('open');}
-function openDayTrades(ds){curTradeId=null;const body=dayTradesHtml(ds);const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · click a trade in the log to add charts';document.getElementById('tradeModalBody').innerHTML=body;curPrint={title:'Trades · '+fmtDayLong(ds),body};document.getElementById('tradeModal').classList.add('open');}
+function openDayTrades(ds){curTradeId=null;const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below, or open one from the log to add charts';document.getElementById('tradeModalBody').innerHTML=dayTradesHtml(ds,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const t=loadTrades().find(x=>x.id===id);if(t){closeTradeModal();openLogModal(t);}}));curPrint={title:'Trades · '+fmtDayLong(ds),body:dayTradesHtml(ds,false)};document.getElementById('tradeModal').classList.add('open');}
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
 function renderTradeShots(){renderShotStrip('tr-shots',tradeShots,renderTradeShots);}
 function trAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{tradeShots.push(u);renderTradeShots();});rd.readAsDataURL(file);}
