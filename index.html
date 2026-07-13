@@ -565,7 +565,7 @@ const LS=(function(){try{return window.localStorage;}catch(e){return null;}})();
 const MEM={}; let IDB=null;
 function idbOpen(){return new Promise(res=>{try{const r=indexedDB.open('ct_store',1);r.onupgradeneeded=()=>{try{r.result.createObjectStore('kv');}catch(e){}};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null);}catch(e){res(null);}});}
 function idbLoadAll(db){return new Promise(res=>{try{const tx=db.transaction('kv','readonly'),st=tx.objectStore('kv'),kq=st.getAllKeys(),vq=st.getAll();let K=null,V=null;const done=()=>{const o={};(K||[]).forEach((k,i)=>o[k]=V[i]);res(o);};kq.onsuccess=()=>{K=kq.result;if(V!=null)done();};vq.onsuccess=()=>{V=vq.result;if(K!=null)done();};tx.onerror=()=>res({});}catch(e){res({});}});}
-function idbPut(k,v){if(!IDB)return;try{IDB.transaction('kv','readwrite').objectStore('kv').put(v,k);}catch(e){}}
+function idbPut(k,v){const fb=()=>{if(LS){try{LS.setItem(k,v);}catch(e){}}};if(!IDB){fb();return;}try{const tx=IDB.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.onerror=fb;tx.onabort=fb;}catch(e){fb();}}
 function idbDelKey(k){if(!IDB)return;try{IDB.transaction('kv','readwrite').objectStore('kv').delete(k);}catch(e){}}
 function lsGet(k){return (k in MEM)?MEM[k]:null;}
 function lsSet(k,v){MEM[k]=v;if(IDB)idbPut(k,v);else if(LS){try{LS.setItem(k,v);}catch(e){}}}
@@ -1622,11 +1622,13 @@ function openPm(){
 }
 function closePm(){cbEl('pmModal').classList.remove('open');}
 function savePm(){
-  if(!selDay)return;const g=id=>cbEl(id)?cbEl(id).value.trim():'';
+  if(!selDay){alert('Pick a day on the calendar first.');return;}
+  const g=id=>cbEl(id)?cbEl(id).value.trim():'';
   const obj={date:selDay,dir:g('pm-dir'),poi:{key:g('pm-key')},scenario:cbEl('pm-scenario').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean),shots:pmShots.slice()};
-  const all=loadPm();if(pmHasContent(obj))all[selDay]=obj;else delete all[selDay];
+  const all=loadPm();const has=pmHasContent(obj);if(has)all[selDay]=obj;else delete all[selDay];
   if(!savePmAll(all))return;
-  closePm();renderPmView();ideasCalendar();
+  const st=cbEl('pm-status');if(st)st.innerHTML=has?('<span class="up">✓ Saved '+fmtDay(selDay)+'</span>'):'<span class="mut">Nothing to save yet — add a direction, POI, scenario, or chart.</span>';
+  renderPmView();ideasCalendar();
 }
 function renderPmView(){
   const el=cbEl('pmView');if(!el)return;
