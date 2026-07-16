@@ -836,7 +836,8 @@ function composedLvl(sh){if(!COMPOSED)return null;return (COMPOSED.levels||[]).f
 /* ============================ NAV + CLOCK ============================ */
 const RENDERED={};
 function ensureView(v){
-  if(RENDERED[v])return;RENDERED[v]=true;
+  if(RENDERED[v]){if(v==="macro")safe(renderGeoNews);return;}   // revisiting Macro re-pulls the live geopolitical wire
+  RENDERED[v]=true;
   if(v==="macro")safe(renderMacro);
   if(v==="calendar"){MV=curMonth();safe(loadMonthView);}
   if(v==="ideas"){IV=curMonth();safe(renderIdeas);}
@@ -1074,6 +1075,7 @@ async function loadCalendar(){
   safe(renderWindows);safe(renderOverview);safe(renderKeyThemes);safe(renderCoach);safe(renderCal72);
 }
 setInterval(()=>safe(renderWindows),30000);
+setInterval(()=>{const mv=document.getElementById('view-macro');if(RENDERED.macro&&mv&&mv.classList.contains('active'))safe(renderGeoNews);},300000); // refresh geopolitical wire every 5 min while the Macro tab is open
 
 /* ===== Macro ===== */
 async function renderMacro(){
