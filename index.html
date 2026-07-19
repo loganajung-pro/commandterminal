@@ -350,7 +350,7 @@ ul.tight li::marker{color:var(--org)}
           <div class="subtle" style="margin-top:6px">Pops out an entry form — fill the details and drop in your annotated charts (1080p). Saves to the calendar for review &amp; PDF.</div>
           <hr class="d">
           <div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec">Trade Log <span class="mut" id="tlCount"></span></h2>
-            <div style="display:flex;gap:6px"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">Import</button></div></div>
+            <div style="display:flex;gap:6px"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button></div></div>
           <input type="file" id="impFile" accept="application/json" style="display:none">
           <div class="tlog" id="tradeLog"></div>
         </div>
@@ -449,6 +449,15 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><label>Result</label><select id="f-res"><option>Open</option><option>Win</option><option>Loss</option><option>BE</option></select></div></div>
   <div class="row2"><div class="field"><label>R multiple</label><input id="f-r" placeholder="e.g. 2.0"></div>
     <div class="field"><label>Emotional state <span class="subtle">where your psychology was</span></label><select id="f-state"><option value="">—</option><option>Settled Authority</option><option>Clear &amp; focused</option><option>Calm</option><option>Grounded</option><option>Hesitant</option><option>Doubt</option><option>Fear</option><option>FOMO</option><option>Greed</option><option>Tilt</option><option>Overconfident</option><option>Urgent</option><option>Detached</option></select></div></div>
+  <div class="briefsec" style="border-color:var(--grn-dim)"><h4>Prices <span class="subtle">— fill these and R, result, P&amp;L and R:R compute themselves</span></h4>
+    <div class="row2" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="field"><label>Entry</label><input id="f-pentry" placeholder="29,650"></div>
+      <div class="field"><label>Stop</label><input id="f-pstop" placeholder="29,600"></div>
+      <div class="field"><label>Target</label><input id="f-ptarget" placeholder="29,800"></div>
+      <div class="field"><label>Exit</label><input id="f-pexit" placeholder="29,760"></div>
+    </div>
+    <div class="subtle" id="f-derived" style="margin-top:6px">Enter price levels to auto-compute.</div>
+  </div>
   <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
     <div class="field"><label>Risk $</label><input id="f-risk" placeholder="e.g. 277"></div>
     <div class="field"><label>Entry time <span class="subtle">ET</span></label><input id="f-time" placeholder="09:47"></div>
@@ -458,6 +467,7 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><label>MFE <span class="subtle">— max it ran your way (R)</span></label><input id="f-mfe" placeholder="e.g. 4.2"></div>
     <div class="field"><label>MAE <span class="subtle">— max it went against you (R)</span></label><input id="f-mae" placeholder="e.g. 0.6"></div>
   </div>
+  <div style="margin:-2px 0 8px"><button class="btn" id="f-autoex" type="button" style="padding:5px 12px">⟳ Auto-fill MFE / MAE from 1-min bars</button> <span class="subtle">needs entry + stop price and an FMP plan with intraday history</span></div>
   <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
     <div class="field"><label>Planned R:R <span class="subtle">at entry</span></label><input id="f-prr" placeholder="e.g. 3"></div>
     <div class="field"><label>Exit time <span class="subtle">ET</span></label><input id="f-timeout" placeholder="10:32"></div>
@@ -476,6 +486,18 @@ ul.tight li::marker{color:var(--org)}
     <div id="te-shots"></div></div>
   <button class="btn grn" id="logBtn" style="width:100%">+ Log Trade</button>
   <div class="subtle" id="te-status" style="margin-top:6px"></div>
+</div></div>
+<div class="modal" id="impModal"><div class="box" style="max-width:860px">
+  <span class="x" id="impX">✕</span>
+  <h3>Import Trades from CSV</h3>
+  <div class="subtle">Export your trade history from Tradovate, Rithmic, NinjaTrader, TopStep or Apex and drop the file here. Columns are auto-detected — fix anything it gets wrong before importing.</div>
+  <div class="drop" id="imp-drop" style="margin-top:10px">＋ Click to choose a CSV — or paste the contents below</div>
+  <input type="file" id="imp-csvfile" accept=".csv,text/csv" style="display:none">
+  <div class="field" style="margin-top:8px"><textarea id="imp-paste" style="min-height:70px" placeholder="…or paste raw CSV text here and hit Parse"></textarea></div>
+  <button class="btn" id="imp-parse" type="button" style="padding:6px 14px">Parse CSV</button>
+  <div id="imp-preview" style="margin-top:12px"></div>
+  <button class="btn grn" id="imp-go" style="width:100%;margin-top:10px">Import trades</button>
+  <div class="subtle" id="imp-status" style="margin-top:6px"></div>
 </div></div>
 <div class="modal" id="setModal"><div class="box" style="max-width:540px"><span class="x" id="setX">✕</span><h3>Settings</h3>
   <div class="briefsec"><h4>Live Data — FMP API Key</h4>
@@ -618,7 +640,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · ideas-removed';
+const BUILD='2026-07-19 · replay+import';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -770,6 +792,7 @@ function snapshotFor(tool,a){
   if(tool==="economics"&&a.endpoint==="treasury-rates")return [{date:"snap",month3:SNAP.treasury.m3,month6:SNAP.treasury.m6,year1:SNAP.treasury.y1,year2:SNAP.treasury.y2,year3:SNAP.treasury.y3,year5:SNAP.treasury.y5,year7:SNAP.treasury.y7,year10:SNAP.treasury.y10,year20:SNAP.treasury.y20,year30:SNAP.treasury.y30}];
   if(tool==="economics")return SNAP.calendar.filter(e=>{const d=e.date.slice(0,10);return d>=a.from_date&&d<=a.to_date;});
   if(tool==="news")return SNAP.news;
+  if(tool==="intraday")return [];
   return [];
 }
 function showSnap(){const el=document.getElementById("diag");if(!el||el.dataset.s)return;el.dataset.s="1";el.style.display="block";el.innerHTML='<div class="panel" style="border-color:#6b4a12;background:#191204;padding:9px 12px"><b style="color:var(--amber)">SNAPSHOT MODE</b> <span class="subtle">— showing embedded data as of '+SNAP.asOf+'. Add your FMP API key in <b>Settings (⚙, bottom-left)</b> to pull live data directly.</span></div>';}
@@ -805,6 +828,12 @@ async function fmpRoute(tool,args){
     if(args.endpoint==='treasury-rates'){const j=await fmpGet('/stable/treasury-rates?from='+args.from_date+'&to='+args.to_date);const x=Array.isArray(j)?j[0]:null;return x?[{month3:x.month3,month6:x.month6,year1:x.year1,year2:x.year2,year3:x.year3,year5:x.year5,year7:x.year7,year10:x.year10,year20:x.year20,year30:x.year30}]:[];}
     const j=await fmpGet('/stable/economic-calendar?from='+args.from_date+'&to='+args.to_date);
     return (Array.isArray(j)?j:[]).filter(e=>e.country==='US'||e.country==='United States'||e.currency==='USD');
+  }
+  if(tool==='intraday'){
+    const iv=(args&&args.interval)||'1min';
+    const j=await fmpGet('/stable/historical-chart/'+encodeURIComponent(iv)+'?symbol='+encodeURIComponent(args.symbol)+'&from='+args.from+'&to='+args.to);
+    const a=Array.isArray(j)?j:(pickArr(j)||[]);
+    return a;
   }
   if(tool==='news'){
     const ep=(args&&args.endpoint)||'general-news';
@@ -1496,7 +1525,7 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
@@ -2541,6 +2570,7 @@ function tradeFieldsHtml(tr){
     <div class="kv"><span class="k">Model / Protocol Sequences</span><span class="v">${tr.model?String(tr.model).split(' · ').map(x=>`<span class="tag" style="margin:1px">${escH(x)}</span>`).join(' '):'—'}</span></div>
     <div class="kv"><span class="k">Session</span><span class="v">${escH(tr.sess||'—')}</span></div>
     <div class="kv"><span class="k">Result / R</span><span class="v">${tr.res} · ${rr}</span></div>
+    ${(tr.pentry||tr.pexit||tr.pstop)?`<div class="kv"><span class="k">Entry / Stop / Target / Exit</span><span class="v">${escH(tr.pentry||'—')} / <span class="down">${escH(tr.pstop||'—')}</span> / <span class="up">${escH(tr.ptarget||'—')}</span> / ${escH(tr.pexit||'—')}</span></div>`:''}
     ${(tr.risk||tr.time||tr.setup)?`<div class="kv"><span class="k">Risk / Entry / Setup</span><span class="v">${tr.risk?'$'+escH(tr.risk):'—'} · ${escH(tr.time||'—')} · ${escH(tr.setup||'—')}${(tr.risk&&tr.r)?` <span class="tag ${(+tr.r)>=0?'bull':'bear'}">${(+tr.r)>=0?'+':'-'}$${Math.abs((+tr.risk||0)*(+tr.r||0)).toFixed(0)}</span>`:''}</span></div>`:''}
     ${(tr.mfe||tr.mae)?`<div class="kv"><span class="k">MFE / MAE</span><span class="v">${tr.mfe?'+'+escH(tr.mfe)+'R':'—'} / ${tr.mae?'-'+escH(tr.mae)+'R':'—'}${(tr.mfe&&+tr.r>0)?` <span class="tag ${(+tr.r/+tr.mfe)>=0.6?'bull':'med'}">captured ${Math.round(+tr.r/+tr.mfe*100)}%</span>`:''}</span></div>`:''}
     <div class="kv"><span class="k">Emotional state</span><span class="v">${escH(tr.state||'—')}</span></div>
@@ -2556,16 +2586,20 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
   curTradeId=id;tradeShots=(tr.shots||[]).slice();
   document.getElementById('tradeModalTitle').textContent=tr.pair+' · '+tr.dir+' — '+fmtDayLong(tr.date);
   document.getElementById('tradeModalSub').textContent=(tr.model||'')+' · '+(tr.sess||'');
+  const replay=`<div class="briefsec"><h4>Trade Replay <span class="subtle">— 1-min bars with your entry, stop, target and exit plotted</span></h4>
+    <div id="tr-replay" style="min-height:60px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button class="btn" id="tr-replay-btn" style="padding:5px 12px">▶ Load replay</button><span class="subtle" id="tr-replay-status"></span></div></div>`;
   const editor=`<div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
     <div class="drop" id="tr-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
     <div id="tr-shots"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button class="btn grn" id="tr-savecharts" style="padding:6px 12px">Save charts</button><span class="subtle" id="tr-charts-status"></span></div></div>`;
   const editBtn=`<div style="text-align:right;margin-bottom:8px"><button class="btn grn" id="tr-edit" style="padding:5px 12px">✎ Edit trade</button></div>`;
-  document.getElementById('tradeModalBody').innerHTML=editBtn+tradeFieldsHtml(tr)+editor;
+  document.getElementById('tradeModalBody').innerHTML=editBtn+tradeFieldsHtml(tr)+replay+editor;
   renderTradeShots();
   const eb=document.getElementById('tr-edit');if(eb)eb.addEventListener('click',()=>{const t=loadTrades().find(x=>x.id===id);closeTradeModal();openLogModal(t);});
   const dr=document.getElementById('tr-drop');if(dr)dr.addEventListener('click',()=>{const fi=document.getElementById('tr-file');if(fi)fi.click();});
   const sv=document.getElementById('tr-savecharts');if(sv)sv.addEventListener('click',saveTradeCharts);
+  const rb=document.getElementById('tr-replay-btn');if(rb)rb.addEventListener('click',()=>{const t=loadTrades().filter(x=>x.id===id)[0];if(t)renderReplay(t,'tr-replay');});
   document.getElementById('tradeModal').classList.add('open');}
 function openDayTrades(ds){curTradeId=null;const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below, or open one from the log to add charts';document.getElementById('tradeModalBody').innerHTML=dayTradesHtml(ds,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const t=loadTrades().find(x=>x.id===id);if(t){closeTradeModal();openLogModal(t);}}));curPrint={title:'Trades · '+fmtDayLong(ds),body:dayTradesHtml(ds,false)};document.getElementById('tradeModal').classList.add('open');}
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
@@ -2579,6 +2613,221 @@ if(document.getElementById('tradeModalX')){
   const trf=document.getElementById('tr-file');if(trf)trf.addEventListener('change',ev=>{[...ev.target.files].forEach(trAddFile);ev.target.value='';});
   document.addEventListener('paste',ev=>{if(!document.getElementById('tradeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){trAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTradeModal();});
+}
+/* ============================================================
+   PRICE-DRIVEN AUTO-DERIVE
+   Give entry / stop / exit and the app computes R, result, planned
+   R:R and dollar P&L — fewer inputs than typing them by hand, and
+   exact rather than estimated. Same prices drive the replay chart.
+   ============================================================ */
+function pnum(v){if(v==null)return null;const n=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isFinite(n)?n:null;}
+function deriveTrade(o){
+  const e=pnum(o.pentry),s=pnum(o.pstop),x=pnum(o.pexit),tg=pnum(o.ptarget);
+  const long=(o.dir!=='Short');
+  const risk=(e!=null&&s!=null)?Math.abs(e-s):null;
+  const out={risk1:risk};
+  if(risk&&x!=null){out.r=((long?(x-e):(e-x))/risk);out.res=out.r>0.05?'Win':(out.r<-0.05?'Loss':'BE');}
+  if(risk&&tg!=null)out.prr=Math.abs(tg-e)/risk;
+  const rk=pnum(o.risk);
+  if(rk&&out.r!=null)out.usd=rk*out.r;
+  return out;
+}
+function teApplyDerived(){
+  const gv=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const o={pentry:gv('f-pentry'),pstop:gv('f-pstop'),pexit:gv('f-pexit'),ptarget:gv('f-ptarget'),dir:gv('f-dir'),risk:gv('f-risk')};
+  const d=deriveTrade(o),lbl=document.getElementById('f-derived');
+  const setIf=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null&&v!=='')el.value=v;};
+  if(d.r!=null){setIf('f-r',d.r.toFixed(2));setIf('f-res',d.res);}
+  if(d.prr!=null)setIf('f-prr',d.prr.toFixed(2));
+  if(!lbl)return;
+  if(d.r==null&&d.prr==null){lbl.textContent='Enter price levels to auto-compute.';return;}
+  const bits=[];
+  if(d.r!=null)bits.push(`<b class="${d.r>=0?'up':'down'}">${d.r>=0?'+':''}${d.r.toFixed(2)}R</b> · ${d.res}`);
+  if(d.usd!=null)bits.push(`<b class="${d.usd>=0?'up':'down'}">${d.usd>=0?'+$':'-$'}${Math.abs(d.usd).toFixed(0)}</b>`);
+  if(d.prr!=null)bits.push(`planned ${d.prr.toFixed(2)}R:R`);
+  if(d.risk1!=null)bits.push(`<span class="subtle">${d.risk1.toFixed(2)} pts risk</span>`);
+  lbl.innerHTML=bits.join(' · ')+' <span class="subtle">— written into R multiple / Result above</span>';
+}
+/* ===== Intraday bars → exact MFE / MAE + replay chart ===== */
+const SYM_MAP={NQ:'NQUSD',ES:'ESUSD',YM:'YMUSD'};
+function symFor(pair){return SYM_MAP[pair]||(pair?String(pair).toUpperCase():'NQUSD');}
+async function loadIntraday(pair,ds,interval){
+  const r=await mcp('intraday',{symbol:symFor(pair),from:ds,to:ds,interval:interval||'1min'});
+  return (Array.isArray(r)?r:[])
+    .map(b=>({t:String(b.date||b.datetime||''),o:+b.open,h:+b.high,l:+b.low,c:+b.close}))
+    .filter(b=>b.t&&isFinite(b.o)&&isFinite(b.h)&&isFinite(b.l)&&isFinite(b.c))
+    .sort((x,y)=>x.t.localeCompare(y.t));
+}
+function hhmm(s){const m=/(\d{1,2}):(\d{2})/.exec(String(s||''));return m?(m[1].padStart(2,'0')+':'+m[2]):null;}
+function barsInTrade(bars,tr){
+  const a=hhmm(tr.time),b=hhmm(tr.timeout);
+  if(!a&&!b)return bars;
+  return bars.filter(x=>{const t=x.t.slice(11,16);return (!a||t>=a)&&(!b||t<=b);});
+}
+/* MFE = furthest it ran your way · MAE = furthest it went against you, both in R */
+function excursion(bars,tr){
+  const e=pnum(tr.pentry),s=pnum(tr.pstop);
+  if(e==null||s==null)return null;
+  const risk=Math.abs(e-s);if(!risk)return null;
+  const use=barsInTrade(bars,tr);
+  if(!use.length)return null;
+  const hi=Math.max.apply(null,use.map(b=>b.h)),lo=Math.min.apply(null,use.map(b=>b.l));
+  const long=(tr.dir!=='Short');
+  return {mfe:Math.max(0,(long?(hi-e):(e-lo))/risk),mae:Math.max(0,(long?(e-lo):(hi-e))/risk),n:use.length,hi,lo};
+}
+async function teAutoExcursion(){
+  const st=document.getElementById('f-derived');
+  const gv=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const tr={pair:gv('f-pair'),dir:gv('f-dir'),pentry:gv('f-pentry'),pstop:gv('f-pstop'),time:gv('f-time'),timeout:gv('f-timeout')};
+  const ds=gv('f-date')||etParts().date;
+  if(pnum(tr.pentry)==null||pnum(tr.pstop)==null){if(st)st.innerHTML='<span class="down">Enter an entry and stop price first — MFE/MAE are measured in R.</span>';return;}
+  if(st)st.innerHTML='<span class="mut">Pulling 1-min bars…</span>';
+  try{
+    const bars=await loadIntraday(tr.pair,ds,'1min');
+    if(!bars.length){if(st)st.innerHTML='<span class="down">No intraday bars returned for '+escH(ds)+'. Your FMP plan may not include intraday history for this symbol.</span>';return;}
+    const ex=excursion(bars,tr);
+    if(!ex){if(st)st.innerHTML='<span class="down">Could not compute — check entry/stop and the entry/exit times.</span>';return;}
+    const setv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+    setv('f-mfe',ex.mfe.toFixed(2));setv('f-mae',ex.mae.toFixed(2));
+    if(st)st.innerHTML=`<span class="up">✓ MFE ${ex.mfe.toFixed(2)}R · MAE ${ex.mae.toFixed(2)}R</span> <span class="subtle">from ${ex.n} bars (${escH(hhmm(document.getElementById('f-time').value)||'open')}–${escH(hhmm(document.getElementById('f-timeout').value)||'close')})</span>`;
+  }catch(e){if(st)st.innerHTML='<span class="down">Intraday fetch failed: '+escH((e&&e.message)||'error')+'</span>';}
+}
+/* ===== Trade replay chart (TradingView Lightweight Charts, lazy-loaded) ===== */
+let LWC_P=null;
+function loadLWC(){
+  if(window.LightweightCharts)return Promise.resolve(window.LightweightCharts);
+  if(LWC_P)return LWC_P;
+  LWC_P=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
+    s.onload=()=>window.LightweightCharts?res(window.LightweightCharts):rej(new Error('library did not initialise'));
+    s.onerror=()=>rej(new Error('could not load the chart library (offline or blocked)'));
+    document.head.appendChild(s);
+  });
+  return LWC_P;
+}
+function etSecs(t){const v=Date.parse(String(t).replace(' ','T')+'Z');return isFinite(v)?Math.floor(v/1000):null;}
+async function renderReplay(tr,elId){
+  const el=document.getElementById(elId);if(!el)return;
+  const st=document.getElementById(elId+'-status');
+  const say=(c,m)=>{if(st)st.innerHTML='<span class="'+c+'">'+m+'</span>';};
+  if(pnum(tr.pentry)==null){say('subtle','Add an entry price to this trade to plot the replay.');return;}
+  say('mut','Loading chart…');
+  let LC,bars;
+  try{LC=await loadLWC();}catch(e){say('down','Chart unavailable — '+escH(e.message)+'. Your annotated screenshots are below.');return;}
+  try{bars=await loadIntraday(tr.pair,tr.date,'1min');}catch(e){bars=[];}
+  if(!bars.length){say('down','No intraday bars for '+escH(tr.date)+' — your FMP plan may not cover intraday history for this symbol. Screenshots below still apply.');return;}
+  el.innerHTML='';
+  const chart=LC.createChart(el,{
+    width:el.clientWidth||620,height:320,
+    layout:{background:{color:'transparent'},textColor:'#9aa4b2',fontSize:10},
+    grid:{vertLines:{color:'rgba(255,255,255,.05)'},horzLines:{color:'rgba(255,255,255,.05)'}},
+    rightPriceScale:{borderColor:'rgba(255,255,255,.12)'},
+    timeScale:{borderColor:'rgba(255,255,255,.12)',timeVisible:true,secondsVisible:false},
+    crosshair:{mode:0}
+  });
+  const series=chart.addCandlestickSeries({upColor:'#35d07f',downColor:'#ef5350',borderVisible:false,wickUpColor:'#35d07f',wickDownColor:'#ef5350'});
+  const data=bars.map(b=>({time:etSecs(b.t),open:b.o,high:b.h,low:b.l,close:b.c})).filter(b=>b.time);
+  series.setData(data);
+  const line=(p,color,title)=>{const v=pnum(p);if(v!=null)series.createPriceLine({price:v,color,lineWidth:1,lineStyle:2,axisLabelVisible:true,title});};
+  line(tr.pentry,'#e8eaed','Entry');line(tr.pstop,'#ef5350','Stop');line(tr.ptarget,'#35d07f','Target');line(tr.pexit,'#4a9eff','Exit');
+  const long=(tr.dir!=='Short'),marks=[];
+  const inTrade=barsInTrade(bars,tr);
+  const first=inTrade[0]||bars[0],last=inTrade[inTrade.length-1]||bars[bars.length-1];
+  if(first)marks.push({time:etSecs(first.t),position:long?'belowBar':'aboveBar',color:'#e8eaed',shape:long?'arrowUp':'arrowDown',text:'ENTRY '+(pnum(tr.pentry)!=null?pnum(tr.pentry):'')});
+  if(last&&pnum(tr.pexit)!=null){const win=(+tr.r||0)>=0;marks.push({time:etSecs(last.t),position:long?'aboveBar':'belowBar',color:win?'#35d07f':'#ef5350',shape:long?'arrowDown':'arrowUp',text:'EXIT '+pnum(tr.pexit)+(tr.r?' ('+((+tr.r)>=0?'+':'')+tr.r+'R)':'')});}
+  try{series.setMarkers(marks.filter(m=>m.time));}catch(e){}
+  chart.timeScale().fitContent();
+  const ex=excursion(bars,tr);
+  say('up','✓ '+data.length+' bars · '+escH(symFor(tr.pair))+(ex?` · MFE ${ex.mfe.toFixed(2)}R · MAE ${ex.mae.toFixed(2)}R`:''));
+  try{new ResizeObserver(()=>chart.applyOptions({width:el.clientWidth||620})).observe(el);}catch(e){}
+}
+/* ============================================================
+   PROP-FIRM / BROKER CSV IMPORT
+   Auto-detects common export headers (Tradovate, Rithmic, NinjaTrader,
+   TopStep, Apex) and lets you remap anything it gets wrong.
+   ============================================================ */
+/* Order matters — the most specific patterns claim their column first,
+   so "Entry Price" is taken by pentry before the time matcher sees it. */
+const CSV_FIELDS=[
+  {k:'date',   label:'Date',        pat:/^(trade\s*)?date\b|^opened$|^entry\s*date$/i,req:true},
+  {k:'pair',   label:'Instrument',  pat:/^(symbol|instrument|contract|ticker|product)/i},
+  {k:'dir',    label:'Direction',   pat:/^(side|direction|b\/s|buy\/sell|action|position|type)$/i},
+  {k:'pentry', label:'Entry price', pat:/(entry|open|buy|bought|avg\s*entry)\s*price|^price\s*in$|^entryprice$/i},
+  {k:'pexit',  label:'Exit price',  pat:/(exit|close|sell|sold|avg\s*exit)\s*price|^price\s*out$|^exitprice$/i},
+  {k:'time',   label:'Entry time',  pat:/(entry|open|bought|fill)\s*(time|timestamp)|^time$/i},
+  {k:'timeout',label:'Exit time',   pat:/(exit|close|closed|sold)\s*(time|timestamp)/i},
+  {k:'qty',    label:'Quantity',    pat:/^(qty|quantity|size|contracts|filled|volume)/i},
+  {k:'usd',    label:'P&L $',       pat:/(net\s*|gross\s*|realized\s*)?(p\s*&\s*l|p\/l|pnl|profit)/i},
+  {k:'fees',   label:'Fees',        pat:/^(fee|fees|commission|comm)/i}
+];
+function parseCSV(text){
+  const rows=[];let row=[],cur='',q=false;
+  const t=String(text).replace(/\r\n?/g,'\n');
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){ if(c==='"'){ if(t[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else if(c==='"')q=true;
+    else if(c===','){row.push(cur);cur='';}
+    else if(c==='\n'){row.push(cur);cur='';if(row.some(x=>String(x).trim()!==''))rows.push(row);row=[];}
+    else cur+=c;}
+  row.push(cur);if(row.some(x=>String(x).trim()!==''))rows.push(row);
+  return rows;
+}
+function csvAutoMap(headers){
+  const m={};
+  CSV_FIELDS.forEach(f=>{
+    const i=headers.findIndex(h=>f.pat.test(String(h||'').trim()));
+    if(i>=0&&Object.values(m).indexOf(i)<0)m[f.k]=i;
+  });
+  return m;
+}
+function normDate(v){
+  const s=String(v||'').trim();
+  let m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);if(m)return m[1]+'-'+m[2]+'-'+m[3];
+  m=/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s);
+  if(m){let y=m[3];if(y.length===2)y='20'+y;return y+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0');}
+  const d=Date.parse(s);if(isFinite(d))return new Date(d).toISOString().slice(0,10);
+  return '';
+}
+function normDir(v){const s=String(v||'').toLowerCase();
+  if(/sell|short|sld|^s$/.test(s))return 'Short';
+  if(/buy|long|bot|^b$/.test(s))return 'Long';return 'Long';}
+function normPair(v){const s=String(v||'').toUpperCase();
+  if(/^NQ|MNQ/.test(s))return 'NQ';if(/^ES|MES/.test(s))return 'ES';if(/^YM|MYM/.test(s))return 'YM';return s.slice(0,4)||'NQ';}
+let CSVROWS=null,CSVMAP=null;
+function csvRenderPreview(){
+  const el=document.getElementById('imp-preview');if(!el||!CSVROWS)return;
+  const heads=CSVROWS[0],body=CSVROWS.slice(1);
+  el.innerHTML=`<div class="subtle" style="margin-bottom:6px">${body.length} row${body.length!==1?'s':''} found. Check the mapping, then import.</div>`+
+    `<div class="tagrid">`+CSV_FIELDS.map(f=>`<div class="field"><label>${f.label}${f.req?' <span class="down">*</span>':''}</label>
+      <select class="csvmap" data-k="${f.k}"><option value="">— not in file —</option>${heads.map((h,i)=>`<option value="${i}" ${CSVMAP[f.k]===i?'selected':''}>${escH(String(h).slice(0,40))}</option>`).join('')}</select></div>`).join('')+`</div>`+
+    `<div style="overflow-x:auto;margin-top:10px"><table class="lvl"><thead><tr>${CSV_FIELDS.map(f=>`<th style="text-align:left">${f.label}</th>`).join('')}</tr></thead><tbody>`+
+    body.slice(0,4).map(r=>`<tr>${CSV_FIELDS.map(f=>{const i=CSVMAP[f.k];return `<td>${i==null?'—':escH(String(r[i]||'').slice(0,18))}</td>`;}).join('')}</tr>`).join('')+
+    `</tbody></table></div>`;
+  el.querySelectorAll('.csvmap').forEach(sel=>sel.addEventListener('change',()=>{
+    const k=sel.dataset.k,v=sel.value;if(v==='')delete CSVMAP[k];else CSVMAP[k]=+v;csvRenderPreview();}));
+}
+function csvDoImport(){
+  if(!CSVROWS)return;
+  const st=document.getElementById('imp-status');
+  const body=CSVROWS.slice(1),get=(r,k)=>{const i=CSVMAP[k];return i==null?'':String(r[i]||'').trim();};
+  if(CSVMAP.date==null){if(st)st.innerHTML='<span class="down">Map a Date column first.</span>';return;}
+  const existing=loadTrades(),out=existing.slice();let n=0,skipped=0;
+  body.forEach(r=>{
+    const date=normDate(get(r,'date'));if(!date){skipped++;return;}
+    const t={id:nextTid(),date,pair:normPair(get(r,'pair')||'NQ'),dir:normDir(get(r,'dir')),
+      time:hhmm(get(r,'time'))||'',timeout:hhmm(get(r,'timeout'))||'',
+      pentry:get(r,'pentry'),pexit:get(r,'pexit'),qty:get(r,'qty'),
+      model:'',seq:[],sess:'',res:'Open',r:'',state:'',notes:'Imported from CSV',shots:[],tags:{}};
+    const usd=pnum(get(r,'usd'));
+    if(usd!=null){t.usd=usd;t.res=usd>0?'Win':(usd<0?'Loss':'BE');}
+    const d=deriveTrade(t);
+    if(d.r!=null){t.r=d.r.toFixed(2);t.res=d.res;}
+    out.push(t);n++;
+  });
+  saveTrades(out);
+  if(st)st.innerHTML=`<span class="up">✓ Imported ${n} trade${n!==1?'s':''}${skipped?' · '+skipped+' skipped (no valid date)':''}.</span> <span class="subtle">Add stop prices to get R, then tag and grade them.</span>`;
+  renderJournal();if(RENDERED.pmr)safe(renderPmr);
 }
 /* ===== Trade tags — multi-select per category ===== */
 const TAG_GROUPS=[
@@ -2621,13 +2870,13 @@ function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=
 function teSeqRender(){const c=document.getElementById('f-seq-chips');if(!c)return;c.innerHTML=teSeq.length?teSeq.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="rm" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">None selected — pick sequences above (add as many as you want).</span>';c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teSeq.splice(+x.dataset.i,1);teSeqRender();}));}
 function setTradeFields(tr){const setv=(id,v)=>{const el=document.getElementById(id);if(!el)return;
     if(el.tagName==='SELECT'&&v&&!Array.prototype.some.call(el.options,o=>o.value===String(v)||o.text===String(v))){const op=document.createElement('option');op.value=String(v);op.textContent=String(v);el.appendChild(op);}  /* keep legacy typed values */
-    el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-risk',tr.risk);setv('f-time',tr.time);setv('f-setup',tr.setup);setv('f-mfe',tr.mfe);setv('f-mae',tr.mae);setv('f-prr',tr.prr);setv('f-timeout',tr.timeout);setv('f-exit',tr.exit);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();
+    el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-pentry',tr.pentry);setv('f-pstop',tr.pstop);setv('f-ptarget',tr.ptarget);setv('f-pexit',tr.pexit);setv('f-risk',tr.risk);setv('f-time',tr.time);setv('f-setup',tr.setup);setv('f-mfe',tr.mfe);setv('f-mae',tr.mae);setv('f-prr',tr.prr);setv('f-timeout',tr.timeout);setv('f-exit',tr.exit);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();
   teTags={};TAG_GROUPS.forEach(g=>{const v=(tr.tags&&tr.tags[g.id])||[];if(v.length)teTags[g.id]=v.slice();});}
 function openLogModal(trade){
   const tt=document.getElementById('teTitle'),lb=document.getElementById('logBtn');
   if(trade&&trade.id!=null){editingTradeId=trade.id;setTradeFields(trade);if(tt)tt.textContent='Edit Trade';if(lb)lb.textContent='Save changes';}
-  else{editingTradeId=null;teShots=[];teSeq=[];teTags={};['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;if(tt)tt.textContent='Log a Trade';if(lb)lb.textContent='+ Log Trade';}
-  teRenderShots();teSeqRender();teTagsRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');
+  else{editingTradeId=null;teShots=[];teSeq=[];teTags={};['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;if(tt)tt.textContent='Log a Trade';if(lb)lb.textContent='+ Log Trade';}
+  teRenderShots();teSeqRender();teTagsRender();safe(teApplyDerived);const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');
 }
 function closeLogModal(){document.getElementById('tradeEntryModal').classList.remove('open');}
 if(document.getElementById('openLogBtn')){
@@ -2635,10 +2884,33 @@ if(document.getElementById('openLogBtn')){
   const sp=document.getElementById('f-seq-pick');if(sp)sp.addEventListener('change',e=>{const v=e.target.value;if(v){teSeq.push(v);teSeqRender();}e.target.value='';});
   document.getElementById('teX').addEventListener('click',closeLogModal);
   document.getElementById('tradeEntryModal').addEventListener('click',e=>{if(e.target.id==='tradeEntryModal')closeLogModal();});
+  ['f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-dir'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',teApplyDerived);e.addEventListener('change',teApplyDerived);}});
+  if(document.getElementById('f-autoex'))document.getElementById('f-autoex').addEventListener('click',teAutoExcursion);
   document.getElementById('te-drop').addEventListener('click',()=>document.getElementById('te-file').click());
   document.getElementById('te-file').addEventListener('change',ev=>{[...ev.target.files].forEach(teAddFile);ev.target.value='';});
   document.addEventListener('paste',ev=>{if(!document.getElementById('tradeEntryModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){teAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLogModal();});
+}
+if(document.getElementById('impCsvBtn')){
+  const openImp=()=>{CSVROWS=null;CSVMAP=null;const p=document.getElementById('imp-preview');if(p)p.innerHTML='';const st=document.getElementById('imp-status');if(st)st.textContent='';document.getElementById('impModal').classList.add('open');};
+  document.getElementById('impCsvBtn').addEventListener('click',openImp);
+  document.getElementById('impX').addEventListener('click',()=>document.getElementById('impModal').classList.remove('open'));
+  document.getElementById('impModal').addEventListener('click',e=>{if(e.target.id==='impModal')document.getElementById('impModal').classList.remove('open');});
+  document.getElementById('imp-drop').addEventListener('click',()=>document.getElementById('imp-csvfile').click());
+  document.getElementById('imp-csvfile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const ta=document.getElementById('imp-paste');if(ta)ta.value=rd.result;csvParseNow();};rd.readAsText(f);ev.target.value='';});
+  document.getElementById('imp-parse').addEventListener('click',csvParseNow);
+  document.getElementById('imp-go').addEventListener('click',csvDoImport);
+}
+function csvParseNow(){
+  const ta=document.getElementById('imp-paste'),st=document.getElementById('imp-status');
+  const txt=ta?ta.value:'';
+  if(!txt.trim()){if(st)st.innerHTML='<span class="down">Choose a CSV file or paste its contents first.</span>';return;}
+  const rows=parseCSV(txt);
+  if(rows.length<2){if(st)st.innerHTML='<span class="down">Could not find a header row plus data.</span>';return;}
+  CSVROWS=rows;CSVMAP=csvAutoMap(rows[0]);
+  const found=Object.keys(CSVMAP).length;
+  if(st)st.innerHTML='<span class="up">Parsed '+(rows.length-1)+' rows · auto-mapped '+found+' column'+(found!==1?'s':'')+'.</span>';
+  csvRenderPreview();
 }
 if(document.getElementById('briefModalPdf'))document.getElementById('briefModalPdf').addEventListener('click',()=>printDoc(curPrint.title,curPrint.body));
 if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventListener('click',()=>{const t=loadTrades().slice().sort((a,b)=>b.date.localeCompare(a.date));const body=t.length?t.map(tradeDetailHtml).join('<hr class="d">'):'<div class="subtle">No trades.</div>';printDoc('Trade Journal — All Trades',body);});
