@@ -111,15 +111,6 @@ ul.tight li::marker{color:var(--org)}
 .geo-row .gh a:hover{text-decoration:underline}
 .geo-row .gx{color:var(--mut);display:block;margin-top:3px;line-height:1.4}
 .geo-row .gp{color:var(--faint);display:block;margin-top:2px;font-size:11px;letter-spacing:.02em}
-/* thesis cards */
-.thesis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-@media(max-width:1000px){.thesis{grid-template-columns:1fr}}
-.tcard .th{display:flex;justify-content:space-between;align-items:flex-start}
-.tcard .sym{font-size:16px;font-weight:600} .tcard .sub{font-size:10px;color:var(--faint)}
-.lvlbar{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:4px}
-.lvlbar div{background:var(--panel2);padding:6px 4px;text-align:center}
-.lvlbar .l{font-size:8.5px;color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
-.lvlbar .n{font-size:11.5px;font-weight:600;margin-top:2px}
 /* calendar */
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .sumcard{border:1px solid var(--line);border-radius:9px;padding:14px;text-align:center}
@@ -209,7 +200,6 @@ ul.tight li::marker{color:var(--org)}
   <nav class="side" id="side">
     <div class="navi active" data-v="brief"><span class="tip">Market Brief</span><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
     <div class="navi" data-v="macro"><span class="tip">Macro Overview</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
-    <div class="navi" data-v="thesis"><span class="tip">Indices Thesis</span><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg></div>
     <div class="navi" data-v="calendar"><span class="tip">Protocol Calendar</span><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg></div>
     <div class="navi" data-v="ideas"><span class="tip">Trade Ideas</span><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V6a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg></div>
     <div class="navi" data-v="journal"><span class="tip">Trade Journal</span><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 3v18M13 8h3M13 12h3"/></svg></div>
@@ -315,13 +305,6 @@ ul.tight li::marker{color:var(--org)}
         <div class="pb" id="geoNews"><div class="subtle">Loading geopolitical wire…</div></div></div>
     </section>
 
-    <!-- ===== THESIS ===== -->
-    <section class="view" id="view-thesis">
-      <div class="crumb">Matrix / <b>Indices Thesis</b></div>
-      <h1 class="h1">Indices Thesis <span class="subtle">NQ · ES · YM · 1–2 week horizon</span></h1>
-      <div class="thesis" id="thesisCards"></div>
-    </section>
-
     <!-- ===== PROTOCOL CALENDAR ===== -->
     <section class="view" id="view-calendar">
       <div class="crumb">Matrix / <b>Protocol Calendar</b></div>
@@ -357,17 +340,9 @@ ul.tight li::marker{color:var(--org)}
         <div class="panel" style="min-height:calc(100vh - 130px)">
           <div class="ph" style="border-bottom:1px solid var(--line);padding:0 0 12px;margin-bottom:12px">
             <div><h2 id="dayDetailTitle" style="font-size:16px;font-weight:600;margin:0">Day</h2><span class="subtle" id="fwDay"></span></div>
-            <div style="display:flex;gap:8px"><button class="btn" id="pmOpen" style="padding:7px 14px">Pre Market Framework</button><button class="btn grn" id="fwSave" style="padding:7px 14px">＋ Save Framework</button></div>
+            <div style="display:flex;gap:8px"><button class="btn grn" id="pmOpen" style="padding:7px 14px">Pre Market Framework</button></div>
           </div>
           <div id="pmView"></div>
-          <div class="row2"><div class="field"><label>Instrument</label><select id="fw-pair"><option>NQ</option><option>ES</option><option>YM</option></select></div>
-            <div class="field"><label>Direction</label><select id="fw-dir"><option>—</option><option>Long</option><option>Short</option></select></div></div>
-          <div class="field"><label>Framework / Plan</label><textarea id="fw-notes" style="min-height:130px" placeholder="HTF bias · draw on liquidity · POI · time window · scenario A→B · invalidation…"></textarea></div>
-          <div class="field"><label>Chart Screenshots — displayed full size below</label>
-            <div class="drop" id="fw-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
-            <input type="file" id="fw-file" accept="image/*" multiple style="display:none">
-            <div id="fw-shots"></div></div>
-          <div class="subtle" id="fwStatus" style="margin-top:4px"></div>
           <hr class="d">
           <div class="sec grn" style="margin-bottom:8px">Trades This Day</div>
           <div id="dayDetail"></div>
@@ -511,23 +486,26 @@ ul.tight li::marker{color:var(--org)}
 <div class="modal" id="pmModal"><div class="box" style="max-width:760px">
   <span class="x" id="pmX">✕</span>
   <h3>Pre Market Framework <span class="subtle" id="pmDayLbl"></span></h3>
-  <div class="subtle">NQ setup — mark your Point of Interest, attach annotated charts, write the participation scenario.</div>
+  <div class="subtle">NQ setup — write the framework, mark your Point of Interest and liquidity target, attach annotated charts.</div>
   <div class="briefsec"><h4>Session Read</h4>
     <div class="row2">
       <div class="field"><label>Instrument</label><input value="NQ" disabled style="opacity:.7"></div>
       <div class="field"><label>Direction</label><select id="pm-dir"><option>—</option><option>Long</option><option>Short</option></select></div>
     </div>
   </div>
+  <div class="briefsec"><h4>Framework</h4>
+    <div class="field"><textarea id="pm-scenario" style="min-height:130px" placeholder="HTF bias · draw on liquidity · POI · time window · scenario A→B · displacement · CSD · entry trigger · invalidation. Blank line = new paragraph."></textarea></div></div>
   <div class="briefsec"><h4>Point of Interest</h4>
     <div class="field"><input id="pm-key" placeholder="NQ POI / key level — OB · FVG · liquidity pool · price…" style="width:100%"></div>
+  </div>
+  <div class="briefsec"><h4>Liquidity Target</h4>
+    <div class="field"><input id="pm-liq" placeholder="Draw on liquidity — PDH / PDL · equal highs / lows · session extreme · price…" style="width:100%"></div>
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
     <div class="drop" id="pm-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
     <input type="file" id="pm-file" accept="image/*" multiple style="display:none">
     <div id="pm-shots"></div>
   </div>
-  <div class="briefsec"><h4>Participation Scenario</h4>
-    <div class="field"><textarea id="pm-scenario" style="min-height:100px" placeholder="A→B scenario — draw on liquidity, POI, displacement, CSD, entry trigger, invalidation. Blank line = new paragraph."></textarea></div></div>
   <button class="btn grn" id="pm-save" style="width:100%;margin-top:8px">Save Framework</button>
   <div class="subtle" id="pm-status" style="margin-top:6px"></div>
 </div></div>
@@ -786,7 +764,7 @@ async function loadQuotes(){
   RICH=!!(by.NQUSD&&typeof by.NQUSD.priceAvg50==="number"&&typeof by.NQUSD.dayHigh==="number");
   if(!by.NQUSD){const qs=document.getElementById("qstrip");if(qs)qs.innerHTML='<div class="panel down">Quotes unavailable.</div>';return;}
   LASTQ=by;
-  safe(renderQuotes);safe(renderLevels);safe(renderOverview);safe(renderCoach);safe(renderKeyThemes);safe(renderThesis);
+  safe(renderQuotes);safe(renderLevels);safe(renderOverview);safe(renderCoach);safe(renderKeyThemes);
   loadPrevLevels();
 }
 /* ---- Real previous-day high/low (prior completed session, not today's running range) ---- */
@@ -804,7 +782,7 @@ async function loadPrevLevels(){
     }
     await computeAutoLevels(sy); // intraday: Asia/London/Mid/NDOG/NWOG (+ precise Week) when available
   }catch(e){}}));
-  safe(renderLevels);safe(renderQuotes);safe(renderThesis);safe(renderCoach);
+  safe(renderLevels);safe(renderQuotes);safe(renderCoach);
 }
 function renderQuotes(){
   const qs=document.getElementById("qstrip");if(!qs)return;
@@ -825,7 +803,7 @@ function renderLevels(){
     h+=`<tr><td>${SHORT[sy]}</td><td>${fmtN(ph)}</td><td>${fmtN(pl)}</td><td>${fmtN(d.open)}</td><td class="${d.change>=0?'up':'down'}">${fmtN(d.price)}</td></tr>`;});
   tb.innerHTML=h;
 }
-/* biasWord + coach reused across brief/thesis */
+/* biasWord + coach reused across the brief */
 function biasWord(d){if(!d)return null;if(typeof d.priceAvg50==="number"&&typeof d.priceAvg200==="number"){if(d.price>d.priceAvg50&&d.priceAvg50>d.priceAvg200)return"bullish";if(d.price<d.priceAvg50&&d.priceAvg50<d.priceAvg200)return"bearish";return"mixed";}return d.change>0?"bullish":d.change<0?"bearish":"mixed";}
 function drawState(){const w={NQ:biasWord(LASTQ.NQUSD),ES:biasWord(LASTQ.ESUSD),YM:biasWord(LASTQ.YMUSD)};const b=Object.values(w).filter(x=>x==="bullish").length,be=Object.values(w).filter(x=>x==="bearish").length;let draw=b>=2&&be===0?"HIGHER":be>=2&&b===0?"LOWER":"TWO-SIDED";return{w,draw,b,be};}
 function todayHigh(){const td=etParts().date;return CAL.filter(e=>etDateStr(utcToEt(e.date))===td&&e.impact==="High").sort((a,b)=>utcToEt(a.date)-utcToEt(b.date));}
@@ -843,7 +821,6 @@ function ensureView(v){
   if(v==="ideas"){IV=curMonth();safe(renderIdeas);}
   if(v==="journal"){JV=curMonth();safe(renderJournal);}
   if(v==="pmr"){PV=curMonth();safe(renderPmr);}
-  if(v==="thesis")safe(renderThesis);
 }
 document.querySelectorAll(".navi[data-v]").forEach(n=>n.addEventListener("click",()=>{
   document.querySelectorAll(".navi").forEach(x=>x.classList.remove("active"));
@@ -1148,60 +1125,33 @@ function renderCal72(){
   el.innerHTML=h;
 }
 
-/* ===== Thesis ===== */
-function sessLevels(_c){if(!_c)return{lonH:null,lonL:null,asiaH:null,asiaL:null,mid:null};return{lonH:parseLvlNum(_c.lonH),lonL:parseLvlNum(_c.lonL),asiaH:parseLvlNum(_c.asiaH),asiaL:parseLvlNum(_c.asiaL),mid:parseLvlNum(_c.mid)};}
-function renderThesis(){
-  const el=document.getElementById('thesisCards');if(!el)return;if(!LASTQ.NQUSD&&!COMPOSED){el.innerHTML='<div class="panel">Loading…</div>';return;}
-  const evs=todayHigh();
-  el.innerHTML=SYMS.map(sy=>{const d=LASTQ[sy]||{};const _c=composedLvl(SHORT[sy]);if(!LASTQ[sy]&&!_c)return'';
-    const cbias=(COMPOSED&&COMPOSED.bias&&COMPOSED.bias[SHORT[sy]])||null;
-    let bw=LASTQ[sy]?biasWord(d):null;if((!bw||bw==='mixed')&&cbias)bw=cbias;if(!bw)bw='mixed';
-    const bias=bw==='bullish'?'BULLISH':bw==='bearish'?'BEARISH':'NEUTRAL';const bt=bw==='bullish'?'bull':bw==='bearish'?'bear':'neut';const arrow=bw==='bullish'?'▲':bw==='bearish'?'▼':'•';
-    let hi,lo,px,pv;
-    if(_c){hi=parseLvlNum(_c.pdh);lo=parseLvlNum(_c.pdl);px=parseLvlNum(_c.now);if(hi==null)hi=(d.pdh!=null)?d.pdh:d.dayHigh;if(lo==null)lo=(d.pdl!=null)?d.pdl:d.dayLow;if(px==null)px=d.price;pv=(d.previousClose!=null)?d.previousClose:((parseLvlNum(_c.open)!=null)?parseLvlNum(_c.open):px);}
-    else{hi=(d.pdh!=null)?d.pdh:d.dayHigh;lo=(d.pdl!=null)?d.pdl:d.dayLow;px=d.price;pv=d.previousClose;}
-    let entry,t1,t2,stop;
-    if(bw==='bullish'&&lo!=null){entry=fmtN(lo)+'–'+fmtN(pv);t1=fmtN(hi);t2=fmtN(hi+(hi-lo));stop=fmtN(lo-(hi-lo)*0.25);}
-    else if(bw==='bearish'&&hi!=null){entry=fmtN(pv)+'–'+fmtN(hi);t1=fmtN(lo);t2=fmtN(lo-(hi-lo));stop=fmtN(hi+(hi-lo)*0.25);}
-    else{entry='wait';t1=fmtN(hi);t2=fmtN(lo);stop='—';}
-    let cat=[],risk=[],sessBlock='';
-    if(_c){
-      // Catalysts + Risks built from YOUR screenshot marks (draw, session liquidity, midnight open, key levels)
-      const sess=sessLevels(_c);
-      const up=[['PDH',hi],['London H',sess.lonH],['Asia H',sess.asiaH]].filter(x=>x[1]!=null).sort((a,b)=>a[1]-b[1]);
-      const dn=[['PDL',lo],['London L',sess.lonL],['Asia L',sess.asiaL]].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
-      const drawTxt=COMPOSED.draw||'TWO-SIDED';
-      const tgt=drawTxt==='HIGHER'?up:drawTxt==='LOWER'?dn:up.concat(dn);
-      cat.push('Draw on liquidity: <b>'+drawTxt+'</b>'+(tgt.length?' — targeting '+tgt.map(x=>x[0]+' '+fmtN(x[1])).join(' · '):''));
-      if(sess.mid!=null)cat.push(px>sess.mid?'Above midnight open ('+fmtN(sess.mid)+') — intraday premium':'Below midnight open ('+fmtN(sess.mid)+') — intraday discount');
-      if(_c.key)cat.push('Your marks: '+escH(_c.key));
-      if(evs.length)cat.push('High-impact catalyst today: '+cleanEv(evs[0].event));
-      const dnStr=dn.map(x=>x[0]+' '+fmtN(x[1])).join(' / '),upStr=up.map(x=>x[0]+' '+fmtN(x[1])).join(' / ');
-      if(drawTxt==='HIGHER')risk.push('Sweep below '+(dnStr||'PDL')+' invalidates the long');
-      else if(drawTxt==='LOWER')risk.push('Sweep above '+(upStr||'PDH')+' invalidates the short');
-      else risk.push('Two-sided draw — SMT both sides of range; demand a clean CSD at time or stand aside');
-      if(up.length>1||dn.length>1)risk.push('Equal highs/lows at session extremes = engineered liquidity — expect a sweep before the real move');
-      risk.push('News spike outside a time window = no-trade');
-      const li=(label,arr,side)=>arr.length?`<li><b>${label}:</b> ${arr.map(x=>escH(x[0])+' '+fmtN(x[1])).join(' · ')}${drawTxt===side?` <span class="tag ${side==='HIGHER'?'bull':'bear'}">DRAW</span>`:''}</li>`:'';
-      sessBlock=`<div class="sec" style="margin-top:10px">Draw-on-Liquidity Targets</div><ul class="tight">${li('Buyside',up,'HIGHER')}${li('Sellside',dn,'LOWER')}${sess.mid!=null?`<li><b>Midnight open:</b> ${fmtN(sess.mid)}</li>`:''}</ul>`;
-    } else {
-      if(typeof d.priceAvg50==='number'){cat.push(px>d.priceAvg50?'Holding above 50-day ('+fmtN(d.priceAvg50)+')':'Below 50-day ('+fmtN(d.priceAvg50)+')');cat.push(px>d.priceAvg200?'Above 200-day — bull regime':'Below 200-day — bear regime');}
-      if(evs.length)cat.push('High-impact catalyst today: '+cleanEv(evs[0].event));
-      risk=[bw==='bullish'?'Sweep below PDL invalidates the discount long':'Sweep above PDH invalidates the premium short','News spike outside a time window = no-trade','SMT on both sides of range = liquidity engineering'];
-    }
-    return `<div class="panel tcard"><div class="th"><div><div class="sym">${SHORT[sy]}</div><div class="sub">${NAMES[sy].split('· ')[1]}</div></div><span class="tag ${bt}">${arrow} ${bias}</span></div>
-      <hr class="d"><div class="sec">Catalysts</div><ul class="tight">${cat.map(c=>`<li>${c}</li>`).join('')}</ul>
-      <div class="sec" style="margin-top:10px">Risks</div><ul class="tight">${risk.map(c=>`<li>${c}</li>`).join('')}</ul>
-      <div class="sec" style="margin-top:10px">Price Levels</div>
-      <div class="lvlbar"><div><div class="l">Now</div><div class="n">${fmtN(px)}</div></div><div><div class="l">Entry</div><div class="n">${entry}</div></div><div><div class="l">T1</div><div class="n">${t1}</div></div><div><div class="l">T2</div><div class="n">${t2}</div></div><div><div class="l">Stop</div><div class="n down">${stop}</div></div></div>
-      ${sessBlock}
-      <div class="subtle" style="margin-top:8px"><b>Invalidation:</b> ${bw==='bullish'?'clean CSD back below '+fmtN(lo):bw==='bearish'?'clean CSD back above '+fmtN(hi):'range holds — no directional read'}. Entry only on POI + time + SMT + CSD.</div></div>`;
-  }).join('');
-}
 
 /* ===== Protocol Calendar (month plan) ===== */
 let MV=curMonth(),MONTHCAL=[];
-function classifyDay(evs){const hi=evs.filter(e=>e.impact==='High');const jobs=evs.some(e=>/(non.?farm|nonfarm|payroll|\bADP\b|unemployment rate|employment change)/i.test(e.event));const fomc=evs.some(e=>/(FOMC|federal funds|interest rate decision|rate decision)/i.test(e.event));let cls=jobs?'skip':(hi.length?'caution':'trade');let smr=cls==='skip'?{t:'SMR --',na:1}:fomc?{t:'SMR 2:45–3:15'}:{t:'SMR 9:45–10:15'};return{cls,smr,hi};}
+/* Protocol day rules:
+   1. Red-folder (High-impact) news on the day  → TRADE (green light — news is opportunity, not caution). Wins over everything.
+   2. Day BEFORE CPI / PPI / NFP (and no news of its own) → NO TRADE.
+   3. No-news Monday   → CAUTION (consolidation / accumulation day).
+   4. No-news Friday   → CAUTION (high resistance liquidity runs) — escalated if it follows a red-folder news day.
+   5. Otherwise → TRADE. */
+const KEYEV=/(non.?farm|nonfarm|\bNFP\b|consumer price index|\bCPI\b|producer price index|\bPPI\b)/i;
+function dsShift(ds,n){const d=new Date(ds+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function evsOnDay(ds){return (MONTHCAL||[]).filter(e=>etDateStr(utcToEt(e.date))===ds);}
+function hasRedFolder(ds){return evsOnDay(ds).some(e=>e.impact==='High');}
+function hasKeyPrint(ds){return evsOnDay(ds).some(e=>KEYEV.test(e.event||''));}
+function classifyDay(evs,ds){
+  const hi=evs.filter(e=>e.impact==='High');
+  const fomc=evs.some(e=>/(FOMC|federal funds|interest rate decision|rate decision)/i.test(e.event));
+  const dow=ds?new Date(ds+'T12:00:00Z').getUTCDay():-1;   // 0=Sun..6=Sat
+  let cls,why;
+  if(hi.length){cls='trade';why='Red-folder news today — green light. News is the driver, not a reason to stand aside.';}
+  else if(ds&&hasKeyPrint(dsShift(ds,1))){cls='skip';why='Day before CPI / PPI / NFP — no trade. Positioning ahead of the print distorts delivery.';}
+  else if(dow===1){cls='caution';why='No-news Monday — consolidation / accumulation day. Range is still forming; demand a clean SMT + CSD or stand aside.';}
+  else if(dow===5){cls='caution';why=(hasRedFolder(dsShift(ds,-1))?'No-news Friday following a red-folder news day — high resistance liquidity runs into the weekly close. Expect the sweep, not the trend.':'No-news Friday — high resistance liquidity runs into the weekly close. Expect the sweep, not the trend.');}
+  else{cls='trade';why='Clean tape, mid-week delivery — trade the protocol.';}
+  const smr=cls==='skip'?{t:'SMR --',na:1}:fomc?{t:'SMR 2:45–3:15'}:{t:'SMR 9:45–10:15'};
+  return{cls,smr,hi,why};
+}
 /* ===== Time-cycle overlay for the Protocol Calendar — weekly + monthly AMD phase per day ===== */
 function amdCyclePhase(y,m,d){
   const dow=new Date(Date.UTC(y,m-1,d)).getUTCDay();               // 0=Sun..6=Sat
@@ -1215,7 +1165,8 @@ const PHCOL={ACC:'var(--faint)',MAN:'var(--amber)',DIST:'var(--grn)'}; // left-e
 async function loadMonthView(){
   const first=new Date(Date.UTC(MV.y,MV.m-1,1)),last=new Date(Date.UTC(MV.y,MV.m,0));
   document.getElementById('calBody').innerHTML='<div class="subtle" style="padding:10px">Loading…</div>';
-  try{const raw=await fetchCalChunked(ymd(first),ymd(last));const seen=new Set();MONTHCAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);MONTHCAL.push(e);}}});renderMonthPlan();}catch(e){document.getElementById('calBody').innerHTML='<div class="down" style="padding:10px">Calendar unavailable.</div>';}
+  const look=new Date(last.getTime()+864e5);   // +1 day so month-end can see if the 1st is CPI/PPI/NFP
+  try{const raw=await fetchCalChunked(ymd(first),ymd(look));const seen=new Set();MONTHCAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);MONTHCAL.push(e);}}});renderMonthPlan();}catch(e){document.getElementById('calBody').innerHTML='<div class="down" style="padding:10px">Calendar unavailable.</div>';}
 }
 function renderMonthPlan(){
   const y=MV.y,m=MV.m;document.getElementById('calTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1)));
@@ -1228,7 +1179,7 @@ function renderMonthPlan(){
   for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,dow=new Date(Date.UTC(y,m-1,d)).getUTCDay();
     const ph=amdCyclePhase(y,m,d);
     if(dow===0||dow===6){cells+=`<div class="cell dim" style="border-left:3px solid ${PHCOL[ph.mo]}"><div class="dn">${d}</div></div>`;continue;}
-    const evs=(byDay[ds]||[]).sort((a,b)=>utcToEt(a.date)-utcToEt(b.date));const{cls,smr,hi}=classifyDay(evs);cnt[cls]++;
+    const evs=(byDay[ds]||[]).sort((a,b)=>utcToEt(a.date)-utcToEt(b.date));const{cls,smr,hi,why}=classifyDay(evs,ds);cnt[cls]++;
     const seen=new Set();const evList=[];evs.forEach(e=>{const nm=cleanEv(e.event);if((e.impact==='High'||e.impact==='Medium')&&!seen.has(nm)){seen.add(nm);evList.push({nm,hi:e.impact==='High'});}});
     evList.sort((a,b)=>(b.hi?1:0)-(a.hi?1:0));
     const evHtml=evList.slice(0,3).map(e=>`<div class="evln"><span class="edot ${e.hi?'hi':'md'}"></span><span class="ent" title="${e.nm}">${e.nm}</span></div>`).join('');
@@ -1306,16 +1257,11 @@ function renderShotStrip(containerId,arr,rerender){
     el.addEventListener('drop',e=>{e.preventDefault();el.style.outline='';const to=+el.dataset.i;if(dragI==null||dragI===to)return;const m=arr.splice(dragI,1)[0];arr.splice(to,0,m);dragI=null;rerender();});
   });
 }
-function renderShots(){renderShotStrip('fw-shots',fwShots,renderShots);}
-function loadFwEditor(){const fw=loadFw()[selDay]||{};fwShots=(fw.shots||[]).slice();
-  document.getElementById('fw-pair').value=fw.pair||'NQ';document.getElementById('fw-dir').value=fw.dir||'—';document.getElementById('fw-notes').value=fw.notes||'';
-  document.getElementById('fwStatus').textContent='';renderShots();}
 function shrinkImg(dataUrl,cb){try{const img=new Image();img.onload=()=>{const mx=1920;let w=img.width,hh=img.height;if(w>mx){hh=Math.round(hh*mx/w);w=mx;}const cv=document.createElement('canvas');cv.width=w;cv.height=hh;const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,hh);try{cb(cv.toDataURL('image/jpeg',0.92));}catch(e){cb(dataUrl);}};img.onerror=()=>cb(dataUrl);img.src=dataUrl;}catch(e){cb(dataUrl);}}
-function addShotFromFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{fwShots.push(u);renderShots();});rd.readAsDataURL(file);}
 function renderIdeas(){
   document.getElementById('ideasMonth').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(IV.y,IV.m-1,1)));
   const vk=`${IV.y}-${String(IV.m).padStart(2,'0')}`;if(selDay&&selDay.slice(0,7)!==vk)selDay=null;
-  ideasCalendar();renderPmView();renderDayDetail();loadFwEditor();
+  ideasCalendar();renderPmView();renderDayDetail();
   const mt=loadTrades().filter(x=>x.date.slice(0,7)===vk),s=computeStats(mt);
   document.getElementById('perfTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(IV.y,IV.m-1,1)))+' Performance';
   document.getElementById('ideasStat').innerHTML=`<div class="s"><div class="v">${s.n}</div><div class="l">Ideas</div></div><div class="s"><div class="v up">${s.wr}%</div><div class="l">Win rate</div></div><div class="s"><div class="v">${s.wins}</div><div class="l">Wins</div></div><div class="s"><div class="v down">${s.loss}</div><div class="l">Losses</div></div><div class="s"><div class="v ${s.avg>=0?'up':'down'}">${s.avg>=0?'+':''}${s.avg.toFixed(1)}R</div><div class="l">Avg R</div></div><div class="s"><div class="v ${s.totR>=0?'up':'down'}">${s.totR>=0?'+':''}${s.totR.toFixed(1)}R</div><div class="l">Total R</div></div>`;
@@ -1323,10 +1269,6 @@ function renderIdeas(){
 }
 document.getElementById('prevMI').addEventListener('click',()=>{let m=IV.m-1,y=IV.y;if(m<1){m=12;y--;}IV={y,m};renderIdeas();});
 document.getElementById('nextMI').addEventListener('click',()=>{let m=IV.m+1,y=IV.y;if(m>12){m=1;y++;}IV={y,m};renderIdeas();});
-document.getElementById('fw-drop').addEventListener('click',()=>document.getElementById('fw-file').click());
-document.getElementById('fw-file').addEventListener('change',ev=>{[...ev.target.files].forEach(addShotFromFile);ev.target.value='';});
-document.addEventListener('paste',ev=>{if(!document.getElementById('view-ideas').classList.contains('active'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){addShotFromFile(f);ev.preventDefault();}}}});
-document.getElementById('fwSave').addEventListener('click',()=>{if(!selDay){alert('Pick a day on the calendar first.');return;}const all=loadFw();all[selDay]={pair:document.getElementById('fw-pair').value,dir:document.getElementById('fw-dir').value,notes:document.getElementById('fw-notes').value,shots:fwShots.slice()};if(saveFwAll(all)){document.getElementById('fwStatus').innerHTML='<span class="up">✓ Saved '+fmtDay(selDay)+'</span>';ideasCalendar();renderDayDetail();}});
 function renderJournal(){const t=loadTrades();const s=computeStats(t);
   document.getElementById('jStat').innerHTML=`<div class="s"><div class="v">${s.n}</div><div class="l">Trades</div></div><div class="s"><div class="v up">${s.wr}%</div><div class="l">Win rate</div></div><div class="s"><div class="v">${s.wins}</div><div class="l">Wins</div></div><div class="s"><div class="v down">${s.loss}</div><div class="l">Losses</div></div><div class="s"><div class="v ${s.avg>=0?'up':'down'}">${s.avg>=0?'+':''}${s.avg.toFixed(1)}</div><div class="l">Avg R</div></div><div class="s"><div class="v ${s.totR>=0?'up':'down'}">${s.totR>=0?'+':''}${s.totR.toFixed(1)}</div><div class="l">Total R</div></div>`;
   document.getElementById('jEquity').innerHTML=equitySvg(t);
@@ -1396,7 +1338,7 @@ function openDayDetail(ds){
   const bd=fr=>{const dd=new Date(Date.UTC(y,0,1));dd.setUTCDate(dd.getUTCDate()+Math.round(fr*diy)-1);return new Intl.DateTimeFormat('en-US',{timeZone:'UTC',month:'short',day:'numeric'}).format(dd);};
   const wkRole={1:'Week building — range forming',2:'Late accumulation into the midweek',3:'The weekly judas — midweek reversal',4:'The weekly delivery leg',5:'Final delivery into the weekly close'}[dow]||'Weekend — no session';
   const evs=(MONTHCAL||[]).filter(e=>etDateStr(utcToEt(e.date))===ds).sort((a,b)=>utcToEt(a.date)-utcToEt(b.date));
-  const {cls,smr}=classifyDay(evs);
+  const {cls,smr,why}=classifyDay(evs,ds);
   const clsLab={trade:'TRADE',caution:'CAUTION',skip:'NO TRADE'}[cls],clsTag={trade:'bull',caution:'med',skip:'bear'}[cls];
   const seen=new Set(),evRows=[];evs.forEach(e=>{const nm=cleanEv(e.event);if((e.impact==='High'||e.impact==='Medium')&&!seen.has(nm)){seen.add(nm);evRows.push(`<div class="evrow"><span class="tm">${fmtEtTime(utcToEt(e.date))}</span><span>${nm}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`);}});
   let conf,confTag,confTxt;
@@ -1416,6 +1358,7 @@ function openDayDetail(ds){
     ${weekend?'':`<hr class="d">
     <div class="sec" style="margin:0 0 8px">Protocol Read</div>
     <div class="kv"><span class="k">Econ classification</span><span class="v"><span class="tag ${clsTag}">${clsLab}</span></span></div>
+    ${why?`<p class="narr" style="margin:6px 0 0">${why}</p>`:''}
     <div class="kv"><span class="k">SMR window</span><span class="v">${smr.na?'—':String(smr.t).replace('SMR ','')}</span></div>
     <hr class="d">
     <div class="sec" style="margin:0 0 8px">Economic Events <span class="subtle">· ET</span></div>
@@ -1513,7 +1456,7 @@ function myBriefs(){try{return JSON.parse(lsGet('ct_mybriefs')||'{}');}catch(e){
 function saveMyBrief(b){const all=myBriefs();all[b.date]=b;try{lsSet('ct_mybriefs',JSON.stringify(all));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
 function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; closeCompose(); goBrief(); safe(renderBriefCal); expandMyBrief(b.date); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
-function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);safe(renderThesis);renderComposedCharts();}
+function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);renderComposedCharts();}
 const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
 function lvlShow(v){return (v&&v!=='—')?escH(v):'—';}
 function hasSess(l){return SESS_FIELDS.some(f=>l[f]&&l[f]!=='—');}
@@ -1606,8 +1549,25 @@ if(cbEl('composeBriefBtn')){
 const PMKEY='ct_premarket';
 function loadPm(){try{return JSON.parse(lsGet(PMKEY)||'{}');}catch(e){return {};}}
 function savePmAll(o){try{lsSet(PMKEY,JSON.stringify(o));return true;}catch(e){cbEl('pm-status').innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
-function pmHasContent(ex){return !!(ex&&((ex.scenario&&ex.scenario.length)||(ex.shots&&ex.shots.length)||(ex.poi&&(ex.poi.key||ex.poi.pdh||ex.poi.pdl||ex.poi.open||ex.poi.now))||(ex.dir&&ex.dir!=='—')));}
+function pmHasContent(ex){return !!(ex&&((ex.scenario&&ex.scenario.length)||(ex.shots&&ex.shots.length)||(ex.liq&&String(ex.liq).trim())||(ex.poi&&(ex.poi.key||ex.poi.pdh||ex.poi.pdl||ex.poi.open||ex.poi.now))||(ex.dir&&ex.dir!=='—')));}
 let pmShots=[];
+/* One-time migration: fold any legacy inline "Framework / Plan" entries (ct_frameworks)
+   into the Pre Market Framework store so nothing saved before is lost. */
+function migrateLegacyFw(){
+  try{
+    if(lsGet('ct_fw_migrated'))return;
+    const legacy=loadFw(),pm=loadPm();let n=0;
+    Object.keys(legacy||{}).forEach(ds=>{
+      const f=legacy[ds];if(!f)return;
+      if(pmHasContent(pm[ds]))return;                       // already have a framework for that day
+      const scen=(f.notes||'').split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
+      if(!scen.length&&!(f.shots&&f.shots.length)&&(!f.dir||f.dir==='—'))return;
+      pm[ds]={date:ds,dir:f.dir||'—',poi:{key:''},liq:'',scenario:scen,shots:(f.shots||[]).slice()};n++;
+    });
+    if(n)savePmAll(pm);
+    lsSet('ct_fw_migrated','1');
+  }catch(e){}
+}
 function pmRenderShots(){renderShotStrip('pm-shots',pmShots,pmRenderShots);}
 function pmAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{pmShots.push(u);pmRenderShots();});rd.readAsDataURL(file);}
 function openPm(){
@@ -1615,10 +1575,10 @@ function openPm(){
   cbEl('pmDayLbl').textContent='· '+fmtDayLong(selDay);
   const ex=loadPm()[selDay];
   if(ex){
-    cbEl('pm-dir').value=ex.dir||'—';cbEl('pm-key').value=(ex.poi&&ex.poi.key)||'';
+    cbEl('pm-dir').value=ex.dir||'—';cbEl('pm-key').value=(ex.poi&&ex.poi.key)||'';cbEl('pm-liq').value=ex.liq||'';
     cbEl('pm-scenario').value=(ex.scenario||[]).join('\n\n');pmShots=(ex.shots||[]).slice();
   }else{
-    cbEl('pm-dir').value='—';cbEl('pm-key').value='';cbEl('pm-scenario').value='';pmShots=[];
+    cbEl('pm-dir').value='—';cbEl('pm-key').value='';cbEl('pm-liq').value='';cbEl('pm-scenario').value='';pmShots=[];
   }
   pmRenderShots();cbEl('pm-status').textContent='';cbEl('pmModal').classList.add('open');
 }
@@ -1626,25 +1586,27 @@ function closePm(){cbEl('pmModal').classList.remove('open');}
 function savePm(){
   if(!selDay){alert('Pick a day on the calendar first.');return;}
   const g=id=>cbEl(id)?cbEl(id).value.trim():'';
-  const obj={date:selDay,dir:g('pm-dir'),poi:{key:g('pm-key')},scenario:cbEl('pm-scenario').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean),shots:pmShots.slice()};
+  const obj={date:selDay,dir:g('pm-dir'),poi:{key:g('pm-key')},liq:g('pm-liq'),scenario:cbEl('pm-scenario').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean),shots:pmShots.slice()};
   const all=loadPm();const has=pmHasContent(obj);if(has)all[selDay]=obj;else delete all[selDay];
   if(!savePmAll(all))return;
-  const st=cbEl('pm-status');if(st)st.innerHTML=has?('<span class="up">✓ Saved '+fmtDay(selDay)+'</span>'):'<span class="mut">Nothing to save yet — add a direction, POI, scenario, or chart.</span>';
+  const st=cbEl('pm-status');if(st)st.innerHTML=has?('<span class="up">✓ Saved '+fmtDay(selDay)+'</span> <span class="subtle">— filled in on the main screen</span>'):'<span class="mut">Nothing to save yet — add a framework, POI, liquidity target, direction, or chart.</span>';
   renderPmView();ideasCalendar();
 }
 function renderPmView(){
   const el=cbEl('pmView');if(!el)return;
   const ex=selDay?loadPm()[selDay]:null;
-  if(!pmHasContent(ex)){el.innerHTML='';return;}
+  if(!pmHasContent(ex)){el.innerHTML=selDay?`<div class="panel" style="border-style:dashed"><div class="subtle" style="padding:6px 0">No framework for ${fmtDay(selDay)} yet — hit <b>Pre Market Framework</b> above to build it. It fills in here once saved.</div></div><hr class="d">`:'';return;}
   const p=ex.poi||{};
   const dirTag=(ex.dir&&ex.dir!=='—')?`<span class="tag ${ex.dir==='Long'?'bull':'bear'}">${ex.dir}</span>`:'';
   let poi='';
   if(p.key)poi+=`<div class="kv"><span class="k">POI</span><span class="v">${escH(p.key)}</span></div>`;
+  if(ex.liq)poi+=`<div class="kv"><span class="k">Liquidity Target</span><span class="v">${escH(ex.liq)}</span></div>`;
   if(p.pdh||p.pdl)poi+=`<div class="kv"><span class="k">PDH / PDL</span><span class="v">${escH(p.pdh||'—')} / ${escH(p.pdl||'—')}</span></div>`;
   if(p.open||p.now)poi+=`<div class="kv"><span class="k">Open / Now</span><span class="v">${escH(p.open||'—')} / ${escH(p.now||'—')}</span></div>`;
-  const scen=(ex.scenario&&ex.scenario.length)?`<div class="sec" style="margin-top:12px">Participation Scenario</div><div class="narr">${ex.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`:'';
+  const scen=(ex.scenario&&ex.scenario.length)?`<div class="sec" style="margin-top:12px">Framework</div><div class="narr">${ex.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`:'';
   const shots=(ex.shots&&ex.shots.length)?`<div class="sec" style="margin-top:12px">Annotated Charts</div>${ex.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}`:'';
-  el.innerHTML=`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec grn" style="margin:0">Pre Market Framework — NQ ${dirTag}</h2><div style="display:flex;gap:8px;align-items:center"><button class="btn" id="pmPdf" style="padding:4px 10px">⬇ PDF</button><span class="subtle">${fmtDay(selDay)}</span></div></div>${poi?`<div style="margin-top:8px">${poi}</div>`:''}${scen}${shots}</div><hr class="d">`;
+  el.innerHTML=`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec grn" style="margin:0">Pre Market Framework — NQ ${dirTag}</h2><div style="display:flex;gap:8px;align-items:center"><button class="btn" id="pmEdit" style="padding:4px 10px">✎ Edit</button><button class="btn" id="pmPdf" style="padding:4px 10px">⬇ PDF</button><span class="subtle">${fmtDay(selDay)}</span></div></div>${scen}${poi?`<div style="margin-top:12px">${poi}</div>`:''}${shots}</div><hr class="d">`;
+  const eb=document.getElementById('pmEdit');if(eb)eb.addEventListener('click',openPm);
   const pb=document.getElementById('pmPdf');if(pb)pb.addEventListener('click',()=>printDoc('Pre Market Framework — '+fmtDayLong(selDay),pmPrintHtml(ex)));
 }
 function pmPrintHtml(ex){
@@ -1652,11 +1614,12 @@ function pmPrintHtml(ex){
   poi+=`<div class="kv"><span>Instrument</span><span>NQ</span></div>`;
   poi+=`<div class="kv"><span>Direction</span><span>${(ex.dir&&ex.dir!=='—')?escH(ex.dir):'—'}</span></div>`;
   if(p.key)poi+=`<div class="kv"><span>POI</span><span>${escH(p.key)}</span></div>`;
+  if(ex.liq)poi+=`<div class="kv"><span>Liquidity Target</span><span>${escH(ex.liq)}</span></div>`;
   if(p.pdh||p.pdl)poi+=`<div class="kv"><span>PDH / PDL</span><span>${escH(p.pdh||'—')} / ${escH(p.pdl||'—')}</span></div>`;
   if(p.open||p.now)poi+=`<div class="kv"><span>Open / Now</span><span>${escH(p.open||'—')} / ${escH(p.now||'—')}</span></div>`;
-  const scen=(ex.scenario&&ex.scenario.length)?`<div class="briefsec"><h4>Participation Scenario</h4><div class="narr">${ex.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div></div>`:'';
+  const scen=(ex.scenario&&ex.scenario.length)?`<div class="briefsec"><h4>Framework</h4><div class="narr">${ex.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div></div>`:'';
   const shots=(ex.shots&&ex.shots.length)?`<div class="briefsec"><h4>Annotated Charts</h4>${ex.shots.map(s=>`<div class="fwshot"><img src="${s}"></div>`).join('')}</div>`:'';
-  return `<div class="briefsec">${poi}</div>${scen}${shots}`;
+  return `${scen}<div class="briefsec">${poi}</div>${shots}`;
 }
 if(cbEl('pmOpen')){
   cbEl('pmOpen').addEventListener('click',openPm);
@@ -1676,7 +1639,7 @@ async function refreshLight(){
     const c=await mcp('quote',{endpoint:'full-commodities-quotes'});
     if(Array.isArray(c)){let any=false;
       c.forEach(x=>{if(x&&SYMS.includes(x.symbol)&&LASTQ[x.symbol]){const d=LASTQ[x.symbol];d.price=x.price;d.change=x.change;const pv=(x.previousClose!=null)?x.previousClose:((d.previousClose!=null)?d.previousClose:(x.price-x.change));d.previousClose=pv;d.changePercentage=(x.changePercentage!=null)?x.changePercentage:(pv?(x.change/pv*100):0);if(x.dayHigh!=null)d.dayHigh=x.dayHigh;if(x.dayLow!=null)d.dayLow=x.dayLow;any=true;}});
-      if(any){lastUpdate=Date.now();safe(renderQuotes);safe(renderLevels);safe(renderCoach);safe(renderOverview);safe(renderThesis);}
+      if(any){lastUpdate=Date.now();safe(renderQuotes);safe(renderLevels);safe(renderCoach);safe(renderOverview);}
     }
   }catch(e){}
 }
@@ -1929,6 +1892,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
 /* ===== Boot ===== */
 (async function boot(){
   await initStore();   // load persisted data (IndexedDB) into the cache BEFORE anything reads it
+  safe(migrateLegacyFw);   // carry old inline Framework/Plan entries into the Pre Market Framework store
   try{const s=lsGet('ct_live_ms');LIVE_MS=(s!=null)?(+s||0):120000;}catch(e){LIVE_MS=120000;}
   const _fd=document.getElementById('f-date');if(_fd)_fd.value=etParts().date;
   seedTrades();
