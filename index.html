@@ -647,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · brief-composed';
+const BUILD='2026-07-19 · brief-enriched';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1091,9 +1091,68 @@ function composedReadHtml(b){
        b.framework.map(p=>`<p>${escH(p)}</p>`).join('');
   const rd=readinessOf(b);
   if(rd!=null)h+=`<p class="subtle" style="margin-top:8px">Readiness ${rd.toFixed(1)}/5${(b.routine&&b.routine.length)?' · '+b.routine.length+' non-negotiables done':''}</p>`;
+  h+=liveVsMarksHtml(b);
   return h;
 }
 function composedHasRead(b){return !!(b&&((b.framework&&b.framework.length)||b.liq||(b.levels||[]).some(l=>l&&((l.pdh&&l.pdh!=='—')||(l.pdl&&l.pdl!=='—')||l.key))));}
+/* ---- Auto-context the app can add to YOUR read ---- */
+/* Where live price actually sits inside the range you marked, and whether the
+   app's own structural bias backs the direction you wrote. */
+function liveVsMarksHtml(b){
+  const nq=LASTQ.NQUSD;if(!nq||nq.price==null)return '';
+  const lv=(b.levels||[]).filter(l=>l.s==='NQ')[0]||{};
+  const hi=parseLvlNum(lv.pdh),lo=parseLvlNum(lv.pdl),mid=parseLvlNum(lv.mid);
+  const px=+nq.price;const bits=[];
+  if(hi!=null&&lo!=null&&hi>lo){
+    const pct=(px-lo)/(hi-lo)*100;
+    const where=px>hi?'<b>above</b> your PDH — expansion outside the marked range'
+      :px<lo?'<b>below</b> your PDL — expansion outside the marked range'
+      :(pct>=50?`in <b>premium</b> (${Math.round(pct)}% of your range)`:`in <b>discount</b> (${Math.round(pct)}% of your range)`);
+    bits.push(`Price ${fmtN(px)} sits ${where}`);
+    if(px<=hi&&px>=lo)bits.push(`${fmtN(hi-px)} to your PDH · ${fmtN(px-lo)} to your PDL`);
+  }
+  if(mid!=null)bits.push(px>mid?`above your midnight open (${fmtN(mid)})`:`below your midnight open (${fmtN(mid)})`);
+  let agree='';
+  try{
+    const s=drawState();
+    if(s&&s.draw&&b.draw){
+      const same=(s.draw===b.draw);
+      const neutral=(s.draw==='TWO-SIDED'||b.draw==='TWO-SIDED');
+      agree=neutral?`<span class="tag neut">structure mixed</span> live read is ${s.draw}, yours is ${b.draw}`
+        :same?`<span class="tag bull">structure agrees</span> live 50/200-day read is also ${s.draw}`
+        :`<span class="tag bear">structure conflicts</span> live read is ${s.draw} against your ${b.draw} — expect chop or a deeper sweep first`;
+    }
+  }catch(e){}
+  let smt='';
+  try{
+    const arr=[['NQ',LASTQ.NQUSD&&LASTQ.NQUSD.changePercentage],['ES',LASTQ.ESUSD&&LASTQ.ESUSD.changePercentage],['YM',LASTQ.YMUSD&&LASTQ.YMUSD.changePercentage]].filter(x=>typeof x[1]==='number');
+    if(arr.length>1&&new Set(arr.map(x=>Math.sign(x[1]))).size>1)smt='<span class="tag hi">SMT</span> triad divergence live — one index is not confirming';
+  }catch(e){}
+  if(!bits.length&&!agree&&!smt)return '';
+  return `<div style="border-top:1px dashed var(--line2);margin:13px 0 10px"></div>`+
+    `<div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Live vs Your Marks</div>`+
+    (bits.length?`<p>${bits.join(' · ')}</p>`:'')+
+    (agree?`<p>${agree}</p>`:'')+(smt?`<p>${smt}</p>`:'');
+}
+/* Today's protocol verdict, computed from your Protocol Calendar rules. */
+function protocolVerdict(ds){
+  try{
+    const evs=(CAL||[]).filter(e=>etDateStr(utcToEt(e.date))===ds);
+    const c=classifyDay(evs,ds);if(!c)return null;
+    return {cls:c.cls,why:c.why||'',lab:{trade:'TRADE',caution:'CAUTION',skip:'NO TRADE'}[c.cls]||'',
+      tag:{trade:'bull',caution:'med',skip:'bear'}[c.cls]||'neut'};
+  }catch(e){return null;}
+}
+/* The action item from your most recent coach debrief, carried forward. */
+function lastCoachAction(){
+  try{
+    const jr=loadPmr(),ds=etParts().date;
+    const keys=Object.keys(jr).filter(k=>k<ds&&jr[k]&&jr[k].debrief&&(jr[k].debrief.action||jr[k].debrief.recode)).sort();
+    if(!keys.length)return null;
+    const k=keys[keys.length-1];
+    return {ds:k,action:jr[k].debrief.action||'',recode:jr[k].debrief.recode||''};
+  }catch(e){return null;}
+}
 function techReadHtml(){
   if(COMPOSED&&COMPOSED.coach)return COMPOSED.coach;
   if(composedHasRead(COMPOSED))return composedReadHtml(COMPOSED);
@@ -1195,20 +1254,32 @@ function renderCoach(){
 function renderKeyThemes(){
   const ktEl=document.getElementById('keyThemes'),wtEl=document.getElementById('watchToday');
   const cTh=(COMPOSED&&COMPOSED.themes)||[],cWt=(COMPOSED&&COMPOSED.watch)||[];
-  /* Your composed items win. Each panel falls back to the auto version
-     independently, so writing themes but no watch list still leaves a useful page. */
-  if(cTh.length&&ktEl)ktEl.innerHTML=cTh.map(t=>`<li>${escH(t)}</li>`).join('');
-  if(cWt.length&&wtEl)wtEl.innerHTML=cWt.map(t=>`<li>${escH(t)}</li>`).join('');
-  if(cTh.length&&cWt.length)return;
-  if(!LASTQ.NQUSD)return;const evs=todayHigh();const {draw}=drawState();const themes=[];
-  themes.push(`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw, not against it`);
-  themes.push(evs.length?`${evs.length} high-impact US print(s) today — expect engineered volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact US prints today — structure leads, cleaner protocol tape');
-  themes.push('One trade per focus window · size at protocol default · abundance is the default');
-  if(!cTh.length&&ktEl)ktEl.innerHTML=themes.map(t=>`<li>${t}</li>`).join('');
-  const watch=[];evs.forEach(e=>watch.push(`${fmtEtTime(utcToEt(e.date))} — <b>${cleanEv(e.event)}</b>${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`));
-  const wins=todaysWindows();watch.push(`Prime windows: ${wins.slice(0,3).map(w=>fmt12(w.s)).join(' · ')}`);
-  if(!evs.length)watch.push('PDH / PDL are the levels that matter for the sweep');
-  if(!cWt.length&&wtEl)wtEl.innerHTML=watch.map(t=>`<li>${t}</li>`).join('');
+  const ds=etParts().date,evs=todayHigh();
+  const themes=[],watch=[];
+  /* 1 — what you wrote comes first */
+  cTh.forEach(t=>themes.push(escH(t)));
+  cWt.forEach(t=>watch.push(escH(t)));
+  /* 2 — auto structural themes only when you haven't written your own */
+  if(!cTh.length&&LASTQ.NQUSD){
+    try{
+      const {draw}=drawState();
+      themes.push(`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw, not against it`);
+    }catch(e){}
+    themes.push(evs.length?`${evs.length} high-impact US print(s) today — expect engineered volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact US prints today — structure leads, cleaner protocol tape');
+    themes.push('One trade per focus window · size at protocol default · abundance is the default');
+  }
+  /* 3 — today's protocol verdict, from your calendar rules */
+  const pv=protocolVerdict(ds);
+  if(pv&&pv.lab)themes.push(`<span class="tag ${pv.tag}">${pv.lab}</span> ${escH(pv.why)}`);
+  /* 4 — scheduled events and prime windows always show */
+  evs.forEach(e=>watch.push(`${fmtEtTime(utcToEt(e.date))} — <b>${cleanEv(e.event)}</b>${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`));
+  try{const wins=todaysWindows();if(wins&&wins.length)watch.push(`Prime windows: ${wins.slice(0,3).map(w=>fmt12(w.s)).join(' · ')}`);}catch(e){}
+  if(!evs.length&&!cWt.length)watch.push('PDH / PDL are the levels that matter for the sweep');
+  /* 5 — carry last night's coach action into today */
+  const la=lastCoachAction();
+  if(la&&(la.action||la.recode))watch.push(`<b>Carry-over</b> <span class="subtle">${fmtDay(la.ds)} debrief</span> — ${escH(la.action||la.recode)}`);
+  if(ktEl)ktEl.innerHTML=themes.length?themes.map(t=>`<li>${t}</li>`).join(''):'<li class="subtle">—</li>';
+  if(wtEl)wtEl.innerHTML=watch.length?watch.map(t=>`<li>${t}</li>`).join(''):'<li class="subtle">—</li>';
 }
 
 /* ===== Calendar fetch (shared) ===== */
@@ -1514,7 +1585,7 @@ let MV=curMonth(),MONTHCAL=[];
    5. Otherwise → TRADE. */
 const KEYEV=/(non.?farm|nonfarm|\bNFP\b|consumer price index|\bCPI\b|producer price index|\bPPI\b)/i;
 function dsShift(ds,n){const d=new Date(ds+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
-function evsOnDay(ds){return (MONTHCAL||[]).filter(e=>etDateStr(utcToEt(e.date))===ds);}
+function evsOnDay(ds){const src=(MONTHCAL&&MONTHCAL.length)?MONTHCAL:(CAL||[]);return src.filter(e=>etDateStr(utcToEt(e.date))===ds);}
 function hasRedFolder(ds){return evsOnDay(ds).some(e=>e.impact==='High');}
 function hasKeyPrint(ds){return evsOnDay(ds).some(e=>KEYEV.test(e.event||''));}
 function classifyDay(evs,ds){
