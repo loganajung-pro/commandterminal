@@ -647,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · brief-enriched';
+const BUILD='2026-07-19 · coach-tape';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2373,7 +2373,27 @@ async function pmrDebrief(){
   if(!Object.values(fields).some(v=>v)){say('down','Write at least one section first.');return;}
   const key=anthKey();if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
   say('mut','Coach is reviewing your day…');
-  const journal='POST MARKET REVIEW — '+(selPmrDay||'')+'\n'+
+  /* The coach sees the day's objective technical record, not just your prose —
+     so its diagnosis can cite execution facts, not only feelings. */
+  let tech='';
+  try{
+    const D=dayDossier(selPmrDay);
+    tech='\n\nOBJECTIVE RECORD FOR THE DAY (computed, not self-reported):\n';
+    tech+='Protocol day: '+(D.cls?D.cls.toUpperCase():'n/a')+(D.why?' — '+D.why:'')+(D.violation?' · VIOLATION: '+D.violation:'')+'\n';
+    if(D.hasPlan){tech+='Pre-market framework'+((D.pm.dir&&D.pm.dir!=='—')?' ['+D.pm.dir+']':'')+': '+((D.pm.scenario||[]).join(' ')||'(none)')+'\n';
+      if(D.pm.liq)tech+='Stated liquidity target: '+D.pm.liq+'\n';
+      const rd=readinessOf(D.pm);if(rd!=null)tech+='Readiness: '+rd.toFixed(1)+'/5 · non-negotiables done: '+((D.pm.routine||[]).length)+'\n';}
+    else tech+='No pre-market framework was written.\n';
+    if(D.trades.length)D.trades.forEach(t=>{
+      const w=windowFor(t.time);
+      tech+='Trade: '+(t.pair||'')+' '+(t.dir||'')+' · entry '+(t.pentry||'?')+' stop '+(t.pstop||'?')+' exit '+(t.pexit||'?')
+        +' · '+(t.time||'?')+'→'+(t.timeout||'?')+(w===false?' (OUTSIDE every focus window)':w?' (inside '+w.label+')':'')
+        +' · '+(t.res||'')+' '+(t.r?t.r+'R':'')+(t.mfe?' · MFE '+t.mfe+'R':'')+(t.mae?' · MAE '+t.mae+'R':'')
+        +(t.mfe&&+t.r>0?' · captured '+Math.round(+t.r/+t.mfe*100)+'% of the move':'')
+        +(t.setup?' · setup graded '+t.setup+' at entry':'')+(t.state?' · state: '+t.state:'')+'\n';});
+    else tech+='No trades logged.\n';
+  }catch(e){}
+  const journal='POST MARKET REVIEW — '+(selPmrDay||'')+tech+'\n'+
     'Surface Level Circumstance: '+(fields.surface||'(blank)')+'\n'+
     'Conscious Inner Circumstance: '+(fields.inner||'(blank)')+'\n'+
     'Risk Management: '+(fields.risk||'(blank)')+'\n'+
@@ -2764,6 +2784,9 @@ function weekReviewHtml(w){
   if(bk.length)h+=`<div class="kv"><span class="k">Rule breaks</span><span class="v">${bk.map(k=>`<span class="tag bear" style="margin:1px">${escH(k)} ×${w.breaks[k]}</span>`).join(' ')}</span></div>`;
   const stk=Object.keys(w.states);
   if(stk.length)h+=`<div class="kv"><span class="k">State at execution</span><span class="v">${stk.map(k=>`<span class="tag ${/settled|grounded/i.test(k)?'bull':'med'}" style="margin:1px">${escH(k)} ×${w.states[k]}</span>`).join(' ')}</span></div>`;
+  const wOut=w.trades.filter(t=>windowFor(t.time)===false);
+  if(wOut.length)h+=`<div class="kv"><span class="k">Window discipline</span><span class="v"><b class="down">${wOut.length}</b> trade${wOut.length!==1?'s':''} taken outside a focus window <span class="subtle">${wOut.map(t=>fmtDay(t.date)+' '+(hhmm(t.time)||'')).join(' · ')}</span></span></div>`;
+  else if(w.trades.some(t=>hhmm(t.time)))h+=`<div class="kv"><span class="k">Window discipline</span><span class="v"><span class="tag bull">all entries inside focus windows</span></span></div>`;
   if(w.violations.length)h+=`<div class="kv"><span class="k">Protocol violations</span><span class="v">${w.violations.map(v=>`<span class="tag bear" style="margin:1px">${fmtDay(v.ds)} — ${escH(v.v)}</span>`).join(' ')}</span></div>`;
   h+='<hr class="d"><div class="sec">Day by Day <span class="subtle">— click a day to open it below · click another any time</span></div>';
   h+=w.days.map(D=>{
@@ -2912,13 +2935,13 @@ function tradeFieldsHtml(tr){
     <div class="kv"><span class="k">Session</span><span class="v">${escH(tr.sess||'—')}</span></div>
     <div class="kv"><span class="k">Result / R</span><span class="v">${tr.res} · ${rr}</span></div>
     ${(tr.pentry||tr.pexit||tr.pstop)?`<div class="kv"><span class="k">Entry / Stop / Target / Exit</span><span class="v">${escH(tr.pentry||'—')} / <span class="down">${escH(tr.pstop||'—')}</span> / <span class="up">${escH(tr.ptarget||'—')}</span> / ${escH(tr.pexit||'—')}</span></div>`:''}
-    ${(tr.risk||tr.time||tr.setup)?`<div class="kv"><span class="k">Risk / Entry / Setup</span><span class="v">${tr.risk?'$'+escH(tr.risk):'—'} · ${escH(tr.time||'—')} · ${escH(tr.setup||'—')}${(tr.risk&&tr.r)?` <span class="tag ${(+tr.r)>=0?'bull':'bear'}">${(+tr.r)>=0?'+':'-'}$${Math.abs((+tr.risk||0)*(+tr.r||0)).toFixed(0)}</span>`:''}</span></div>`:''}
+    ${(tr.risk||tr.time||tr.setup)?`<div class="kv"><span class="k">Risk / Entry / Setup</span><span class="v">${tr.risk?'$'+escH(tr.risk):'—'} · ${escH(tr.time||'—')} ${windowFlagHtml(tr)} · ${escH(tr.setup||'—')}${(tr.risk&&tr.r)?` <span class="tag ${(+tr.r)>=0?'bull':'bear'}">${(+tr.r)>=0?'+':'-'}$${Math.abs((+tr.risk||0)*(+tr.r||0)).toFixed(0)}</span>`:''}</span></div>`:''}
     ${(tr.mfe||tr.mae)?`<div class="kv"><span class="k">MFE / MAE</span><span class="v">${tr.mfe?'+'+escH(tr.mfe)+'R':'—'} / ${tr.mae?'-'+escH(tr.mae)+'R':'—'}${(tr.mfe&&+tr.r>0)?` <span class="tag ${(+tr.r/+tr.mfe)>=0.6?'bull':'med'}">captured ${Math.round(+tr.r/+tr.mfe*100)}%</span>`:''}</span></div>`:''}
     <div class="kv"><span class="k">Emotional state</span><span class="v">${escH(tr.state||'—')}</span></div>
     <div class="kv"><span class="k">Profit Grade</span><span class="v">${escH(tr.pgrade||'—')}</span></div>
     <div class="kv"><span class="k">Entry Grade</span><span class="v">${escH(tr.egrade||'—')}</span></div>
     <div class="kv"><span class="k">Trade Management</span><span class="v">${escH(tr.mgrade||'—')}</span></div></div>
-    ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr">${nl2p(tr.notes)}</div></div>`:''}${tagsHtml(tr)}`;
+    ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr">${nl2p(tr.notes)}</div></div>`:''}${tagsHtml(tr)}${tr.review?tradeReviewHtml(tr.review):''}`;
 }
 function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:'';}
 function tradeDetailHtml(tr){return tradeFieldsHtml(tr)+shotsArrHtml(tr.shots);}
@@ -2929,7 +2952,10 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
   document.getElementById('tradeModalSub').textContent=(tr.model||'')+' · '+(tr.sess||'');
   const replay=`<div class="briefsec"><h4>Trade Replay <span class="subtle">— 1-min bars with your entry, stop, target and exit plotted</span></h4>
     <div id="tr-replay" style="min-height:60px"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button class="btn" id="tr-replay-btn" style="padding:5px 12px">▶ Load replay</button><span class="subtle" id="tr-replay-status"></span></div></div>`;
+    <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button class="btn" id="tr-replay-btn" style="padding:5px 12px">▶ Load replay</button><span class="subtle" id="tr-replay-status"></span></div></div>
+  <div class="briefsec"><h4>Coach's Trade Review <span class="subtle">— the mentor grades the execution, not the outcome</span></h4>
+    <div id="tr-coach">${tr.review?tradeReviewHtml(tr.review):''}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button class="btn grn" id="tr-coach-btn" style="padding:5px 12px">🧠 ${tr.review?'Re-review':'Review this trade'}</button><span class="subtle" id="tr-coach-status">${tr.review?'':'Uses your Anthropic key · reads the bars + your annotated charts.'}</span></div></div>`;
   const editor=`<div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
     <div class="drop" id="tr-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
     <div id="tr-shots"></div>
@@ -2941,6 +2967,7 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
   const dr=document.getElementById('tr-drop');if(dr)dr.addEventListener('click',()=>{const fi=document.getElementById('tr-file');if(fi)fi.click();});
   const sv=document.getElementById('tr-savecharts');if(sv)sv.addEventListener('click',saveTradeCharts);
   const rb=document.getElementById('tr-replay-btn');if(rb)rb.addEventListener('click',()=>{const t=loadTrades().filter(x=>x.id===id)[0];if(t)renderReplay(t,'tr-replay');});
+  const cb2=document.getElementById('tr-coach-btn');if(cb2)cb2.addEventListener('click',()=>coachTradeReview(id));
   document.getElementById('tradeModal').classList.add('open');}
 function openDayTrades(ds){curTradeId=null;const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below, or open one from the log to add charts';document.getElementById('tradeModalBody').innerHTML=dayTradesHtml(ds,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const t=loadTrades().find(x=>x.id===id);if(t){closeTradeModal();openLogModal(t);}}));curPrint={title:'Trades · '+fmtDayLong(ds),body:dayTradesHtml(ds,false)};document.getElementById('tradeModal').classList.add('open');}
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
@@ -3169,6 +3196,88 @@ function csvDoImport(){
   saveTrades(out);
   if(st)st.innerHTML=`<span class="up">✓ Imported ${n} trade${n!==1?'s':''}${skipped?' · '+skipped+' skipped (no valid date)':''}.</span> <span class="subtle">Add stop prices to get R, then tag and grade them.</span>`;
   renderJournal();if(RENDERED.pmr)safe(renderPmr);
+}
+/* ============================================================
+   COACH'S TRADE REVIEW — the mentor reviews your tape.
+   Sends the trade's data, a compact digest of the 1-min bars around
+   entry/exit, and your annotated screenshots to the coach, and gets a
+   technical grading of the execution against the Matrix protocol.
+   ============================================================ */
+const COACH_TRADE_PROMPT=`You are this trader's 1-on-1 trading mentor — a savant who scaled past $100M. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their focus windows (Prime AM 09:40–10:15 · Silver Bullet 10:25–10:35 · Late AM 10:45–11:15 · Early PM 12:45–13:15 · Afternoon 13:45–14:15 ET).
+
+Review this COMPLETED TRADE like a mentor reviewing tape. You are given the trade record, a digest of the 1-minute price action around it, and (if attached) the trader's own annotated charts. Judge the EXECUTION, not the outcome — a winning trade can be badly executed and a losing trade can be perfect.
+
+Assess specifically:
+- Entry: was it at a defensible POI? Did they wait for confirmation (displacement/CSD) or anticipate? Early, late, or clean relative to where the move actually started?
+- Stop: beyond the swept level / logical invalidation, or inside it where a normal sweep takes it?
+- Exit: against MFE, did they capture what the move offered? Cut early, held through target, or managed cleanly?
+- Time: inside a focus window or outside it?
+- If annotated charts are attached, verify their marked levels against the price digest.
+
+Be direct and specific — cite prices and times from the data. If execution was clean, say so plainly; do NOT invent faults.
+
+Return ONLY strict JSON — no prose, no code fences:
+{"entry":"entry quality — POI, confirmation vs anticipation, timing (1-3 sentences)","stop":"stop placement judgement (1-2 sentences)","exit":"exit quality vs what MFE shows was available (1-2 sentences)","grade":"A|B|C|F — execution grade, outcome-independent","verdict":"the one lesson from this tape, in the mentor's voice, second person (1-2 sentences)"}`;
+function barsDigest(bars,tr){
+  if(!bars||!bars.length)return 'No intraday bars available.';
+  const et=hhmm(tr.time),xt=hhmm(tr.timeout);
+  const eM=et?toMin(et):null;
+  const seg=(a,b)=>{const u=bars.filter(x=>{const m=toMin(x.t.slice(11,16));return m>=a&&m<=b;});if(!u.length)return null;return {h:Math.max.apply(null,u.map(x=>x.h)),l:Math.min.apply(null,u.map(x=>x.l)),o:u[0].o,c:u[u.length-1].c,n:u.length};};
+  let s='1-MIN PRICE DIGEST ('+tr.date+' · '+symFor(tr.pair)+'):\n';
+  const day=seg(0,1439);if(day)s+='Session: open '+day.o+' high '+day.h+' low '+day.l+' close '+day.c+'\n';
+  if(eM!=null){
+    const pre=seg(eM-30,eM-1);if(pre)s+='30min BEFORE entry: high '+pre.h+' low '+pre.l+'\n';
+    const at=seg(eM-1,eM+1);if(at)s+='At entry ('+et+'): traded '+at.l+'–'+at.h+'\n';
+    const inT=seg(eM,xt?toMin(xt):eM+60);if(inT)s+='During trade: high '+inT.h+' low '+inT.l+'\n';
+    if(xt){const post=seg(toMin(xt),toMin(xt)+30);if(post)s+='30min AFTER exit: high '+post.h+' low '+post.l+'\n';}
+  }
+  return s;
+}
+async function coachTradeReview(id){
+  const st=document.getElementById('tr-coach-status');
+  const say=(c,m)=>{if(st)st.innerHTML='<span class="'+c+'">'+m+'</span>';};
+  const tr=loadTrades().filter(x=>x.id===id)[0];if(!tr)return;
+  const key=anthKey();if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
+  say('mut','Coach is reviewing the tape…');
+  let bars=[];try{bars=await loadIntraday(tr.pair,tr.date,'1min');}catch(e){}
+  const w=windowFor(tr.time);
+  const rec='TRADE RECORD:\n'+JSON.stringify({date:tr.date,pair:tr.pair,dir:tr.dir,session:tr.sess,model:tr.model,
+    entry:tr.pentry,stop:tr.pstop,target:tr.ptarget,exit:tr.pexit,entryTime:tr.time,exitTime:tr.timeout,
+    window:(w===false?'OUTSIDE all focus windows':w?w.label:'no time logged'),
+    result:tr.res,r:tr.r,plannedRR:tr.prr,mfe:tr.mfe,mae:tr.mae,setupGrade:tr.setup,state:tr.state,exitBehaviour:tr.exit,notes:tr.notes},null,1);
+  const content=[];
+  (tr.shots||[]).slice(0,3).forEach(sh=>{const m=/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(sh);if(m)content.push({type:'image',source:{type:'base64',media_type:m[1],data:m[2]}});});
+  content.push({type:'text',text:COACH_TRADE_PROMPT+'\n\n'+rec+'\n\n'+barsDigest(bars,tr)});
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:1200,messages:[{role:'user',content}]})});
+    if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
+    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
+    const data=parseJsonLoose(txt);if(!data)throw new Error('Could not parse the review.');
+    const all=loadTrades();const i=all.findIndex(x=>x.id===id);if(i>=0){all[i].review=data;saveTrades(all);}
+    const box=document.getElementById('tr-coach');if(box)box.innerHTML=tradeReviewHtml(data);
+    say('up','✓ Review saved with the trade.');
+  }catch(e){say('down','Review failed: '+escH((e&&e.message)||'error'));}
+}
+function tradeReviewHtml(d){
+  if(!d)return '';
+  const g=String(d.grade||'').toUpperCase().charAt(0);
+  const gt=g==='A'?'bull':g==='B'?'bull':g==='C'?'med':'bear';
+  const row=(t,v)=>v&&String(v).trim()?`<div class="kv"><span class="k">${t}</span><span class="v">${escH(v)}</span></div>`:'';
+  return `<div class="panel" style="border-color:var(--grn-dim);background:rgba(53,208,127,.05)"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec grn" style="margin:0">Coach's Trade Review</h2>${g?`<span class="tag ${gt}">EXECUTION ${escH(g)}</span>`:''}</div>${row('Entry',d.entry)}${row('Stop',d.stop)}${row('Exit',d.exit)}${d.verdict?`<div class="narr" style="margin-top:8px"><p><b>${escH(d.verdict)}</b></p></div>`:''}</div>`;
+}
+/* ===== Window compliance — objective, computed from entry time ===== */
+function windowFor(hm){
+  const t=hhmm(hm);if(!t)return null;
+  const m=toMin(t);
+  const wins=BASE_WINDOWS.concat([FOMC_WIN]);
+  for(let i=0;i<wins.length;i++)if(m>=toMin(wins[i].s)&&m<=toMin(wins[i].e))return wins[i];
+  return false;   // false = logged a time, outside every window · null = no time logged
+}
+function windowFlagHtml(tr){
+  const w=windowFor(tr.time);
+  if(w==null)return '';
+  return w?`<span class="tag bull" style="font-size:9px" title="Entry inside ${escH(w.label)} (${w.s}–${w.e} ET)">◷ ${escH(w.label)}</span>`
+          :`<span class="tag bear" style="font-size:9px" title="Entry at ${escH(hhmm(tr.time))} ET — outside every focus window">◷ OUTSIDE WINDOW</span>`;
 }
 /* ===== Trade tags — multi-select per category ===== */
 const TAG_GROUPS=[
