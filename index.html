@@ -647,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · macro-diagnostics';
+const BUILD='2026-07-19 · brief-composed';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1063,8 +1063,40 @@ function coachHtmlAuto(){
   const div=new Set(arr.map(x=>Math.sign(x[1]))).size>1;const basis=RICH?'structure vs 50/200-day':'intraday proxy';
   return `<p><b>HTF draw:</b> ${draw} <span class="subtle">(NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM} · ${basis})</span><br><b>NQ zone:</b> ${zone}<br><b>SMT:</b> ${div?'<span class="down">Triad diverging — potential SMT building. Confirm at POI + time.</span>':'Triad in tandem — no clean SMT yet.'}</p>${levelsNarr('NQUSD')}<p><b>Play:</b> ${stance}</p>`;
 }
+/* Price Read built from YOUR composed brief — the levels you marked off your
+   screenshots plus the framework you wrote. Falls back to the auto read. */
+function composedReadHtml(b){
+  const bias=b.bias||{},lv=(b.levels||[]).filter(l=>l.s==='NQ')[0]||{};
+  const draw=b.draw||'TWO-SIDED';
+  const stance=draw==='HIGHER'
+    ?'Favor <b>longs</b> from discount POIs. Hunt sellside sweeps + bullish SMT into a time window.'
+    :draw==='LOWER'
+    ?'Favor <b>shorts</b> from premium POIs. Hunt buyside sweeps + bearish SMT into a time window.'
+    :'Two-sided draw — demand a clean sweep + CSD at a time window, or stand aside.';
+  const val=v=>(v&&v!=='—')?escH(v):null;
+  const bw=k=>bias[k]?escH(bias[k]):'—';
+  let h=`<p><b>HTF draw:</b> ${escH(draw)} <span class="subtle">(NQ ${bw('NQ')}, ES ${bw('ES')}, YM ${bw('YM')} · your marks)</span>`;
+  const pdh=val(lv.pdh),pdl=val(lv.pdl);
+  if(pdh||pdl)h+=`<br><b>NQ range:</b> PDH ${pdh||'—'} · PDL ${pdl||'—'}`;
+  const sess=[['London',val(lv.lonH),val(lv.lonL)],['Asia',val(lv.asiaH),val(lv.asiaL)]]
+    .filter(x=>x[1]||x[2]).map(x=>`${x[0]} ${x[1]||'—'} / ${x[2]||'—'}`).join(' · ');
+  if(sess)h+=`<br><b>Session H/L:</b> ${sess}`;
+  const mid=val(lv.mid);if(mid)h+=`<br><b>Midnight open:</b> ${mid}`;
+  const poi=val(lv.key);if(poi)h+=`<br><b>POI:</b> ${poi}`;
+  if(b.liq)h+=`<br><b>Liquidity target:</b> ${escH(b.liq)}`;
+  h+=`<br>${stance}</p>`;
+  if(b.framework&&b.framework.length)
+    h+=`<div style="border-top:1px dashed var(--line2);margin:13px 0 10px"></div>`+
+       `<div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Your Framework</div>`+
+       b.framework.map(p=>`<p>${escH(p)}</p>`).join('');
+  const rd=readinessOf(b);
+  if(rd!=null)h+=`<p class="subtle" style="margin-top:8px">Readiness ${rd.toFixed(1)}/5${(b.routine&&b.routine.length)?' · '+b.routine.length+' non-negotiables done':''}</p>`;
+  return h;
+}
+function composedHasRead(b){return !!(b&&((b.framework&&b.framework.length)||b.liq||(b.levels||[]).some(l=>l&&((l.pdh&&l.pdh!=='—')||(l.pdl&&l.pdl!=='—')||l.key))));}
 function techReadHtml(){
   if(COMPOSED&&COMPOSED.coach)return COMPOSED.coach;
+  if(composedHasRead(COMPOSED))return composedReadHtml(COMPOSED);
   if(!LASTQ.NQUSD)return '<p class="subtle">Technical read waiting on live quotes…</p>';
   return coachHtmlAuto();
 }
@@ -1161,20 +1193,22 @@ function renderCoach(){
   el.innerHTML=consciousHtml()+techDivider()+timeFrameHtml()+techReadHtml();
 }
 function renderKeyThemes(){
-  if(COMPOSED){
-    document.getElementById('keyThemes').innerHTML=(COMPOSED.themes&&COMPOSED.themes.length)?COMPOSED.themes.map(t=>`<li>${escH(t)}</li>`).join(''):'<li class="subtle">—</li>';
-    document.getElementById('watchToday').innerHTML=(COMPOSED.watch&&COMPOSED.watch.length)?COMPOSED.watch.map(t=>`<li>${escH(t)}</li>`).join(''):'<li class="subtle">—</li>';
-    return;
-  }
+  const ktEl=document.getElementById('keyThemes'),wtEl=document.getElementById('watchToday');
+  const cTh=(COMPOSED&&COMPOSED.themes)||[],cWt=(COMPOSED&&COMPOSED.watch)||[];
+  /* Your composed items win. Each panel falls back to the auto version
+     independently, so writing themes but no watch list still leaves a useful page. */
+  if(cTh.length&&ktEl)ktEl.innerHTML=cTh.map(t=>`<li>${escH(t)}</li>`).join('');
+  if(cWt.length&&wtEl)wtEl.innerHTML=cWt.map(t=>`<li>${escH(t)}</li>`).join('');
+  if(cTh.length&&cWt.length)return;
   if(!LASTQ.NQUSD)return;const evs=todayHigh();const {draw}=drawState();const themes=[];
   themes.push(`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw, not against it`);
   themes.push(evs.length?`${evs.length} high-impact US print(s) today — expect engineered volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact US prints today — structure leads, cleaner protocol tape');
   themes.push('One trade per focus window · size at protocol default · abundance is the default');
-  document.getElementById('keyThemes').innerHTML=themes.map(t=>`<li>${t}</li>`).join('');
+  if(!cTh.length&&ktEl)ktEl.innerHTML=themes.map(t=>`<li>${t}</li>`).join('');
   const watch=[];evs.forEach(e=>watch.push(`${fmtEtTime(utcToEt(e.date))} — <b>${cleanEv(e.event)}</b>${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`));
   const wins=todaysWindows();watch.push(`Prime windows: ${wins.slice(0,3).map(w=>fmt12(w.s)).join(' · ')}`);
   if(!evs.length)watch.push('PDH / PDL are the levels that matter for the sweep');
-  document.getElementById('watchToday').innerHTML=watch.map(t=>`<li>${t}</li>`).join('');
+  if(!cWt.length&&wtEl)wtEl.innerHTML=watch.map(t=>`<li>${t}</li>`).join('');
 }
 
 /* ===== Calendar fetch (shared) ===== */
@@ -1950,9 +1984,20 @@ function syncFrameworkFromBrief(b){
     savePmAll(all);
   }catch(e){}
 }
-function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; syncFrameworkFromBrief(b); closeCompose(); goBrief(); safe(renderBriefCal);  if(RENDERED.pmr)safe(renderPmr); expandMyBrief(b.date); }
+function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; syncFrameworkFromBrief(b);
+  if(b.date===etParts().date){COMPOSED=b;safe(applyComposed);}   // your read now drives Price Read / Key Themes / Watch Today
+  closeCompose(); goBrief(); safe(renderBriefCal);  if(RENDERED.pmr)safe(renderPmr); expandMyBrief(b.date); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
-function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);renderComposedCharts();}
+/* Which brief drives today's Market Brief: your own composed one first,
+   then any pre-authored brief baked into the file. Only today's date counts —
+   composing a framework for a future day must not rewrite today's page. */
+function composedForToday(){
+  const ds=etParts().date;
+  try{const mine=myBriefs()[ds];if(mine)return mine;}catch(e){}
+  try{const b=BRIEFS[ds];if(b&&b.manual)return b;}catch(e){}
+  return null;
+}
+function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);safe(renderComposedCharts);}
 const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
 function lvlShow(v){return (v&&v!=='—')?escH(v):'—';}
 function hasSess(l){return SESS_FIELDS.some(f=>l[f]&&l[f]!=='—');}
@@ -3155,7 +3200,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   // Compose is now your own separate brief — it no longer drives this page. Purge any legacy composed state.
   try{lsDel('ct_composed');}catch(e){}
   // The page shows the GENERATED brief: a pre-authored brief for today (if seeded in BRIEFS), else auto-built from live data.
-  if(!COMPOSED){try{const _tb=BRIEFS[etParts().date];if(_tb&&_tb.manual)COMPOSED=_tb;}catch(e){}}
+  if(!COMPOSED)COMPOSED=composedForToday();
   tick();setInterval(tick,1000);
   loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
   if(geoWindow())safe(renderGeoNews);   // 9AM–12PM ET: every reload re-pulls the geopolitical wire
