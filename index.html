@@ -111,6 +111,11 @@ ul.tight li::marker{color:var(--org)}
 .geo-row .gh a:hover{text-decoration:underline}
 .geo-row .gx{color:var(--mut);display:block;margin-top:3px;line-height:1.4}
 .geo-row .gp{color:var(--faint);display:block;margin-top:2px;font-size:11px;letter-spacing:.02em}
+/* trade tag picker */
+.tagrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media(max-width:700px){.tagrid{grid-template-columns:1fr}}
+.tagrid select{width:100%}
+.tagchips{min-height:18px}
 /* Protocol Score + charts */
 .pscore{display:grid;grid-template-columns:1fr 190px;gap:12px;align-items:center}
 @media(max-width:820px){.pscore{grid-template-columns:1fr}}
@@ -398,7 +403,16 @@ ul.tight li::marker{color:var(--org)}
             <div class="sec" style="margin:14px 0 6px">By Session</div><div id="jBySess"></div>
             <div class="sec" style="margin:14px 0 6px">By Protocol Sequence</div><div id="jBySeq"></div>
             <div class="sec" style="margin:14px 0 6px">By Setup Grade <span class="subtle">— is your entry grading predictive?</span></div><div id="jBySetup"></div>
-            <div class="sec" style="margin:14px 0 6px">By Exit Reason</div><div id="jByExit"></div>
+            <div class="sec" style="margin:14px 0 6px">By Exit Behaviour</div><div id="jByExit"></div>
+            <div class="sec" style="margin:14px 0 6px">By Emotional State <span class="subtle">— what psychology costs you</span></div><div id="jByState"></div>
+            <div class="sec" style="margin:14px 0 6px">By Mistake Tag <span class="subtle">— what each error actually costs</span></div><div id="jByMistake"></div>
+            <div class="sec" style="margin:14px 0 6px">By Market Condition</div><div id="jByMarket"></div>
+            <div class="sec" style="margin:14px 0 6px">By Entry Execution</div><div id="jByEntry"></div>
+            <div class="sec" style="margin:14px 0 6px">By Area of Interest</div><div id="jByAoi"></div>
+            <div class="sec" style="margin:14px 0 6px">By Entry Timeframe</div><div id="jByTf"></div>
+            <div class="sec" style="margin:14px 0 6px">By Sleep / Health</div><div id="jBySleep"></div>
+            <div class="sec" style="margin:14px 0 6px">By Distraction</div><div id="jByDistract"></div>
+            <div class="sec" style="margin:14px 0 6px">By Routine &amp; Prep</div><div id="jByRoutine"></div>
           </div>
           <hr class="d">
           <div class="panel"><h2 class="sec">Calendar</h2>
@@ -463,7 +477,7 @@ ul.tight li::marker{color:var(--org)}
   <div class="row2"><div class="field"><label>Session</label><select id="f-sess"><option>NY AM</option><option>NY PM</option><option>London</option><option>Asia</option></select></div>
     <div class="field"><label>Result</label><select id="f-res"><option>Open</option><option>Win</option><option>Loss</option><option>BE</option></select></div></div>
   <div class="row2"><div class="field"><label>R multiple</label><input id="f-r" placeholder="e.g. 2.0"></div>
-    <div class="field"><label>Mindset / State</label><select id="f-state"><option value="">—</option><option>Settled Authority</option><option>Grounded</option><option>Urgent</option><option>Doubt</option><option>Greed</option><option>Fear</option><option>Hesitant</option><option>Detached</option></select></div></div>
+    <div class="field"><label>Emotional state <span class="subtle">where your psychology was</span></label><select id="f-state"><option value="">—</option><option>Settled Authority</option><option>Clear &amp; focused</option><option>Calm</option><option>Grounded</option><option>Hesitant</option><option>Doubt</option><option>Fear</option><option>FOMO</option><option>Greed</option><option>Tilt</option><option>Overconfident</option><option>Urgent</option><option>Detached</option></select></div></div>
   <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
     <div class="field"><label>Risk $</label><input id="f-risk" placeholder="e.g. 277"></div>
     <div class="field"><label>Entry time <span class="subtle">ET</span></label><input id="f-time" placeholder="09:47"></div>
@@ -476,13 +490,15 @@ ul.tight li::marker{color:var(--org)}
   <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
     <div class="field"><label>Planned R:R <span class="subtle">at entry</span></label><input id="f-prr" placeholder="e.g. 3"></div>
     <div class="field"><label>Exit time <span class="subtle">ET</span></label><input id="f-timeout" placeholder="10:32"></div>
-    <div class="field"><label>Exit reason</label><select id="f-exit"><option value="">—</option><option>Target hit</option><option>Stopped out</option><option>Trailed out</option><option>Manual exit</option><option>Breakeven</option><option>Time stop</option></select></div>
+    <div class="field"><label>Exit behaviour <span class="subtle">how you closed it</span></label><select id="f-exit"><option value="">—</option><option>Full TP</option><option>Partial TP</option><option>Manual close early</option><option>Stop loss hit</option><option>Moved SL to BE</option><option>Moved SL wider (broke rules)</option><option>Trailed stop properly</option><option>Exited emotionally</option><option>Time stop</option></select></div>
   </div>
   <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
     <div class="field"><label>Profit Grade</label><select id="f-pgrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
     <div class="field"><label>Entry Grade</label><select id="f-egrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
     <div class="field"><label>Trade Management</label><select id="f-mgrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div></div>
   <div class="field"><label>Setup / Notes</label><textarea id="f-notes" placeholder="HTF bias, POI, SMT, time, CSD, invalidation…"></textarea></div>
+  <div class="briefsec"><h4>Tags <span class="subtle">— pick from each dropdown; add as many as apply</span></h4>
+    <div id="f-tags" class="tagrid"></div></div>
   <div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
     <div class="drop" id="te-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
     <input type="file" id="te-file" accept="image/*" multiple style="display:none">
@@ -1481,6 +1497,11 @@ function renderJournalCharts(){
   set('jBySeq',barsHtml(attribBy(trades,tradeSeqs)));
   set('jBySetup',barsHtml(G.bySetup));
   set('jByExit',barsHtml(G.byExit));
+  set('jByState',barsHtml(attribBy(trades,t=>t.state)));
+  TAG_GROUPS.forEach(g=>{
+    const id={mistake:'jByMistake',market:'jByMarket',entry:'jByEntry',aoi:'jByAoi',tf:'jByTf',sleep:'jBySleep',distract:'jByDistract',routine:'jByRoutine'}[g.id];
+    if(id)set(id,barsHtml(attribBy(trades,t=>tagsOf(t,g.id))));
+  });
 }
 function renderJournal(){const t=loadTrades();const s=computeStats(t);
   const P=perfStats(t),S=shadowMetrics(t),G=globalAnalytics();
@@ -1523,7 +1544,7 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
@@ -2538,7 +2559,7 @@ function tradeFieldsHtml(tr){
     <div class="kv"><span class="k">Profit Grade</span><span class="v">${escH(tr.pgrade||'—')}</span></div>
     <div class="kv"><span class="k">Entry Grade</span><span class="v">${escH(tr.egrade||'—')}</span></div>
     <div class="kv"><span class="k">Trade Management</span><span class="v">${escH(tr.mgrade||'—')}</span></div></div>
-    ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr">${nl2p(tr.notes)}</div></div>`:''}`;
+    ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr">${nl2p(tr.notes)}</div></div>`:''}${tagsHtml(tr)}`;
 }
 function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:'';}
 function tradeDetailHtml(tr){return tradeFieldsHtml(tr)+shotsArrHtml(tr.shots);}
@@ -2571,18 +2592,54 @@ if(document.getElementById('tradeModalX')){
   document.addEventListener('paste',ev=>{if(!document.getElementById('tradeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){trAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTradeModal();});
 }
+/* ===== Trade tags — multi-select per category ===== */
+const TAG_GROUPS=[
+  {id:'entry',   label:'Entry Execution', opts:['Limit order','Market order','Entered early','Entered late','Chased entry','Perfect entry','At zone','Breakout entry']},
+  {id:'tf',      label:'Entry Timeframe', opts:['1 min','2 min','3 min','5 min','15 min','30 min','1 hour','4 hour','Daily']},
+  {id:'aoi',     label:'Area of Interest',opts:['1H supply zone','1H demand zone','4H supply zone','4H support zone','15m trendline','Daily level','Order block','FVG / imbalance','Equal highs','Equal lows','PDH','PDL','Midnight open','VWAP','100 EMA','200 EMA']},
+  {id:'mistake', label:'Mistakes',        opts:['Oversized','Overtraded','Revenge traded','Took low-quality setup','Broke rules',"Didn't wait for confirmation",'Traded during chop',"Didn't follow playbook",'FOMO entry','Cut winner early']},
+  {id:'market',  label:'Market Condition',opts:['Trending','Choppy','Range-bound','High volume','Low volume','News-driven','Volatile','Slow']},
+  {id:'distract',label:'Distractions',    opts:['Phone distraction','Social media','Family interruption','Work interruption','Noise','Rushing / late start']},
+  {id:'routine', label:'Routine & Prep',  opts:['Did premarket prep','Skipped prep','Worked out before trading','No workout','Reviewed levels',"Didn't review levels"]},
+  {id:'sleep',   label:'Sleep / Health',  opts:['Good sleep','Okay sleep','Bad sleep','Slept < 5 hours','Slept 6–8 hours','Slept 8+ hours']}
+];
+const TAG_LABEL={};TAG_GROUPS.forEach(g=>{TAG_LABEL[g.id]=g.label;});
+let teTags={};
+function tagsOf(t,gid){const x=t&&t.tags;if(!x)return [];return (x[gid]||[]).slice();}
+function allTags(t){const o=[];TAG_GROUPS.forEach(g=>tagsOf(t,g.id).forEach(v=>o.push(v)));return o;}
+function teTagsRender(){
+  const c=document.getElementById('f-tags');if(!c)return;
+  c.innerHTML=TAG_GROUPS.map(g=>{
+    const sel=teTags[g.id]||[];
+    return `<div class="field"><label>${escH(g.label)}${sel.length?` <span class="subtle">(${sel.length})</span>`:''}</label>
+      <select class="tagpick" data-g="${g.id}"><option value="">＋ add…</option>${g.opts.map(o=>`<option${sel.indexOf(o)>=0?' disabled':''}>${escH(o)}</option>`).join('')}</select>
+      <div class="tagchips" data-g="${g.id}" style="margin-top:4px">${sel.length?sel.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="tgrm" data-g="${g.id}" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">none</span>'}</div></div>`;
+  }).join('');
+  c.querySelectorAll('.tagpick').forEach(s=>s.addEventListener('change',()=>{
+    const g=s.dataset.g,v=s.value;if(!v){return;}
+    teTags[g]=teTags[g]||[];if(teTags[g].indexOf(v)<0)teTags[g].push(v);
+    teTagsRender();
+  }));
+  c.querySelectorAll('.tgrm').forEach(x=>x.addEventListener('click',()=>{const g=x.dataset.g;(teTags[g]||[]).splice(+x.dataset.i,1);teTagsRender();}));
+}
+function teTagsVal(){const o={};TAG_GROUPS.forEach(g=>{const v=(teTags[g.id]||[]).filter(Boolean);if(v.length)o[g.id]=v;});return o;}
+function tagsHtml(tr){
+  const rows=TAG_GROUPS.map(g=>{const v=tagsOf(tr,g.id);return v.length?`<div class="kv"><span class="k">${escH(g.label)}</span><span class="v">${v.map(x=>`<span class="tag ${g.id==='mistake'?'bear':(g.id==='distract'?'med':'neut')}" style="margin:1px">${escH(x)}</span>`).join(' ')}</span></div>`:'';}).filter(Boolean).join('');
+  return rows?`<div class="briefsec"><h4>Tags</h4>${rows}</div>`:'';
+}
 /* Trade entry pop-out (fields + 1080p charts) */
 function teRenderShots(){renderShotStrip('te-shots',teShots,teRenderShots);}
 function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{teShots.push(u);teRenderShots();});rd.readAsDataURL(file);}
 function teSeqRender(){const c=document.getElementById('f-seq-chips');if(!c)return;c.innerHTML=teSeq.length?teSeq.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="rm" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">None selected — pick sequences above (add as many as you want).</span>';c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teSeq.splice(+x.dataset.i,1);teSeqRender();}));}
 function setTradeFields(tr){const setv=(id,v)=>{const el=document.getElementById(id);if(!el)return;
     if(el.tagName==='SELECT'&&v&&!Array.prototype.some.call(el.options,o=>o.value===String(v)||o.text===String(v))){const op=document.createElement('option');op.value=String(v);op.textContent=String(v);el.appendChild(op);}  /* keep legacy typed values */
-    el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-risk',tr.risk);setv('f-time',tr.time);setv('f-setup',tr.setup);setv('f-mfe',tr.mfe);setv('f-mae',tr.mae);setv('f-prr',tr.prr);setv('f-timeout',tr.timeout);setv('f-exit',tr.exit);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();}
+    el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-risk',tr.risk);setv('f-time',tr.time);setv('f-setup',tr.setup);setv('f-mfe',tr.mfe);setv('f-mae',tr.mae);setv('f-prr',tr.prr);setv('f-timeout',tr.timeout);setv('f-exit',tr.exit);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();
+  teTags={};TAG_GROUPS.forEach(g=>{const v=(tr.tags&&tr.tags[g.id])||[];if(v.length)teTags[g.id]=v.slice();});}
 function openLogModal(trade){
   const tt=document.getElementById('teTitle'),lb=document.getElementById('logBtn');
   if(trade&&trade.id!=null){editingTradeId=trade.id;setTradeFields(trade);if(tt)tt.textContent='Edit Trade';if(lb)lb.textContent='Save changes';}
-  else{editingTradeId=null;teShots=[];teSeq=[];['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;if(tt)tt.textContent='Log a Trade';if(lb)lb.textContent='+ Log Trade';}
-  teRenderShots();teSeqRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');
+  else{editingTradeId=null;teShots=[];teSeq=[];teTags={};['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;if(tt)tt.textContent='Log a Trade';if(lb)lb.textContent='+ Log Trade';}
+  teRenderShots();teSeqRender();teTagsRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');
 }
 function closeLogModal(){document.getElementById('tradeEntryModal').classList.remove('open');}
 if(document.getElementById('openLogBtn')){
