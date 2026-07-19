@@ -489,6 +489,11 @@ ul.tight li::marker{color:var(--org)}
   <button class="btn grn" id="logBtn" style="width:100%">+ Log Trade</button>
   <div class="subtle" id="te-status" style="margin-top:6px"></div>
 </div></div>
+<div class="modal" id="indModal"><div class="box" style="max-width:720px">
+  <span class="x" id="indX">✕</span>
+  <h3 id="indTitle">Indicator</h3>
+  <div id="indBody" style="margin-top:8px"></div>
+</div></div>
 <div class="modal" id="impModal"><div class="box" style="max-width:860px">
   <span class="x" id="impX">✕</span>
   <h3>Import Trades from CSV</h3>
@@ -642,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · macro-live';
+const BUILD='2026-07-19 · macro-explain';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1204,6 +1209,97 @@ const MACRO_IND=[
   {g:'labor',name:'consumerSentiment',             l:'Consumer Sentiment',fmt:v=>v.toFixed(1),     better:'up'}
 ];
 function fmtThousands(v){const n=Math.abs(v);return n>=1000?((v/1000).toFixed(2)+'M'):(v.toFixed(0)+'K');}
+/* Plain-English reference for every macro print. Market notes describe
+   typical historical tendencies — not predictions, and not advice. */
+const MACRO_INFO={
+  inflationRate:{
+    t:'Inflation Rate (CPI, year-over-year)',
+    what:'The percentage change in the Consumer Price Index versus the same month a year ago. This is the headline inflation number quoted in the press.',
+    econ:'It measures how fast the cost of living is rising. The Federal Reserve aims for about 2% over time. Readings that stay above target pressure the Fed to keep interest rates high, which slows borrowing, hiring and spending. Falling readings give the Fed room to cut.',
+    mkt:'One of the highest-volatility releases of the month, published around 8:30am ET. Hotter-than-expected prints have historically pressured index futures, because higher-for-longer rates lower the present value of future earnings. Cooler prints have tended to support them. What moves price is the surprise versus expectations, not the level itself.'},
+  CPI:{
+    t:'Consumer Price Index (level)',
+    what:'The raw index level of a fixed basket of consumer goods and services, where 1982–84 = 100.',
+    econ:'This is the underlying basket cost that the inflation rate is calculated from. It also anchors cost-of-living adjustments for Social Security and the payouts on inflation-protected bonds.',
+    mkt:'The level itself rarely moves markets — traders react to the month-over-month and year-over-year changes derived from it. Useful as context for how far prices have compounded over time.'},
+  federalFunds:{
+    t:'Federal Funds Rate',
+    what:"The Federal Reserve's policy interest rate — the overnight rate banks charge one another, steered by the FOMC.",
+    econ:'The base cost of money in the economy. It feeds through to mortgages, credit cards, business loans and the discount rate applied to every future cash flow. Raising it cools demand and inflation; cutting it stimulates borrowing and growth.',
+    mkt:'Arguably the single most important number for index futures. Cuts have generally supported equities and hikes have generally pressured them — but markets price expectations well in advance, so the reaction depends on how the decision and the accompanying guidance compare to what was already expected.'},
+  '30YearFixedRateMortgageAverage':{
+    t:'30-Year Fixed Mortgage Rate',
+    what:'The national average interest rate on a 30-year fixed-rate home loan.',
+    econ:'The main determinant of housing affordability, and housing is the largest asset on most household balance sheets. Higher rates cool home sales, construction, renovation and the durable goods that go with them, which ripples into employment and consumer confidence.',
+    mkt:'A useful proxy for long-end financial conditions — it tracks the 10-year Treasury yield closely. Sustained increases tend to slow the housing cycle and, with a lag, the broader consumer.'},
+  unemploymentRate:{
+    t:'Unemployment Rate',
+    what:'The share of the labour force that is actively looking for work and cannot find it.',
+    econ:'Half of the Federal Reserve’s dual mandate, alongside price stability. Low unemployment supports consumer spending but can push wages — and therefore inflation — higher. A rising rate is one of the earliest and most reliable recession signals; the Sahm rule triggers when the three-month average rises half a point above its prior twelve-month low.',
+    mkt:'A genuinely two-sided read. A rising rate increases the odds of rate cuts, which is supportive, while simultaneously signalling a weakening economy, which is not. Which effect dominates depends on whether the market is more worried about inflation or growth at the time.'},
+  totalNonfarmPayroll:{
+    t:'Non-Farm Payrolls (monthly change)',
+    what:'The net number of jobs added or lost across the economy excluding farm work, government-surveyed from employer payrolls. Shown here as the month-over-month change, which is the figure that gets quoted.',
+    econ:'The broadest and most closely watched monthly measure of labour demand. Sustained strong payroll growth signals an expanding economy; consecutive weak or negative prints are a classic late-cycle warning.',
+    mkt:'Released the first Friday of the month at 8:30am ET and routinely the highest-volatility scheduled event on the calendar. Large surprises move index futures violently, and the initial move frequently reverses once revisions to prior months and the separate household survey are digested. This print is the reason your protocol treats the day before it as a no-trade day.'},
+  initialClaims:{
+    t:'Initial Jobless Claims',
+    what:'The number of people filing for unemployment insurance for the first time in the past week.',
+    econ:'The most timely labour market indicator available — weekly rather than monthly, so it turns before payrolls do. Historically, a sustained move above roughly 250,000 has marked genuine deterioration in the labour market.',
+    mkt:'Usually a secondary mover, but its importance rises sharply when the Fed’s focus shifts from inflation to employment. Released every Thursday at 8:30am ET, so it is a recurring mid-week volatility point.'},
+  consumerSentiment:{
+    t:'Consumer Sentiment (University of Michigan)',
+    what:'A monthly survey of households on their view of current conditions, expectations, and their own finances.',
+    econ:'Consumer spending is roughly two-thirds of US GDP, so sentiment is a leading — though noisy — indicator of future consumption. The survey’s embedded inflation-expectations component is watched carefully by the Fed, because expectations can become self-fulfilling.',
+    mkt:'Modest direct impact on index futures. The inflation-expectations sub-reading often matters more to rate markets than the headline sentiment number does.'}
+};
+function seriesSvg(pts){
+  if(!pts||pts.length<2)return '<div class="subtle">Not enough history stored yet — hit ⟳ Refresh on the Macro page.</div>';
+  const vals=pts.map(p=>p.v),mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),span=(mx-mn)||1;
+  const W=100,H=40;
+  const X=i=>i/(pts.length-1)*W, Y=v=>H-((v-mn)/span)*H;
+  const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(2)+' '+Y(p.v).toFixed(2)).join(' ');
+  const area=d+` L ${W} ${H} L 0 ${H} Z`;
+  const up=pts[pts.length-1].v>=pts[0].v,col=up?'var(--grn)':'var(--red)';
+  return `<svg viewBox="0 0 100 46" preserveAspectRatio="none" style="width:100%;height:130px">
+    <path d="${area}" fill="${up?'rgba(53,208,127,.13)':'rgba(239,83,80,.13)'}" stroke="none"/>
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="1.1" vector-effect="non-scaling-stroke"/></svg>
+    <div class="legend"><span class="lg subtle">${escH(pts[0].d)}</span><span style="flex:1"></span><span class="lg subtle">high ${mx} · low ${mn}</span><span style="flex:1"></span><span class="lg subtle">${escH(pts[pts.length-1].d)}</span></div>`;
+}
+function openIndicator(name){
+  const def=MACRO_INFO[name],meta=MACRO_IND.filter(d=>d.name===name)[0];
+  const x=(loadMacroCache().ind||{})[name];
+  if(!def&&!x)return;
+  const el=document.getElementById('indBody');if(!el)return;
+  document.getElementById('indTitle').textContent=(def&&def.t)||(meta&&meta.l)||name;
+  const fmt=(meta&&meta.fmt)||(v=>String(v));
+  let h='';
+  if(x){
+    const chg=(x.prev!=null)?(x.v-x.prev):null;
+    const val=(meta&&meta.delta&&x.prev!=null)?(x.v-x.prev):x.v;
+    let dir=0;if(chg!=null&&meta&&meta.better!=='flat'){const good=(meta.better==='up')?(chg>0):(chg<0);dir=chg===0?0:(good?1:-1);}
+    h+=`<div class="stat"><div class="s"><div class="v ${dir>0?'up':(dir<0?'down':'')}">${fmt(val)}</div><div class="l">Latest · ${escH(x.date)}</div></div>`;
+    if(x.prev!=null)h+=`<div class="s"><div class="v">${fmt(meta&&meta.delta?x.prev:x.prev)}</div><div class="l">Previous</div></div>`;
+    if(chg!=null)h+=`<div class="s"><div class="v ${dir>0?'up':(dir<0?'down':'')}">${chg>0?'+':''}${(Math.round(chg*100)/100)}</div><div class="l">Change</div></div>`;
+    h+=`</div>`;
+    if(x.series&&x.series.length>1)h+=`<div class="sec" style="margin:14px 0 6px">History <span class="subtle">— last ${x.series.length} prints</span></div>${seriesSvg(x.series)}`;
+  }else h+='<div class="subtle">No live data stored yet. Add an FMP key in Settings ⚙ and hit ⟳ Refresh on the Macro page.</div>';
+  if(def){
+    h+=`<hr class="d"><div class="briefsec"><h4>What it measures</h4><div class="narr"><p>${escH(def.what)}</p></div></div>`;
+    h+=`<div class="briefsec"><h4>What it means for the economy</h4><div class="narr"><p>${escH(def.econ)}</p></div></div>`;
+    h+=`<div class="briefsec"><h4>How it tends to hit the tape</h4><div class="narr"><p>${escH(def.mkt)}</p></div>
+        <div class="subtle" style="margin-top:6px">Historical tendencies only — not a prediction, and not financial advice.</div></div>`;
+  }
+  if(x&&x.series&&x.series.length){
+    const rows=x.series.slice().reverse().slice(0,12);
+    h+=`<hr class="d"><div class="sec" style="margin:0 0 6px">Recent prints</div><div style="overflow-x:auto"><table class="lvl"><thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Value</th><th style="text-align:left">Change</th></tr></thead><tbody>`+
+      rows.map((p,i)=>{const nx=rows[i+1];const c=nx?(p.v-nx.v):null;
+        return `<tr><td>${escH(p.d)}</td><td>${p.v}</td><td class="${c==null?'':(c>0?'up':(c<0?'down':''))}">${c==null?'—':((c>0?'+':'')+(Math.round(c*100)/100))}</td></tr>`;}).join('')+
+      `</tbody></table></div>`;
+  }
+  el.innerHTML=h;
+  document.getElementById('indModal').classList.add('open');
+}
 function loadMacroCache(){try{return JSON.parse(lsGet(MKEY)||'{}');}catch(e){return {};}}
 function saveMacroCache(o){try{lsSet(MKEY,JSON.stringify(o));}catch(e){}}
 function agoTxt(ts){if(!ts)return 'never';const m=Math.round((Date.now()-ts)/60000);
@@ -1215,7 +1311,8 @@ async function fetchMacroIndicators(){
       const r=await mcp('econIndicator',{name:d.name});
       const a=(Array.isArray(r)?r:[]).filter(x=>x&&x.date&&x.value!=null&&isFinite(+x.value))
         .sort((x,y)=>String(y.date).localeCompare(String(x.date)));
-      if(a.length)out[d.name]={date:String(a[0].date).slice(0,10),v:+a[0].value,prev:a[1]?+a[1].value:null};
+      if(a.length)out[d.name]={date:String(a[0].date).slice(0,10),v:+a[0].value,prev:a[1]?+a[1].value:null,
+        series:a.slice(0,36).map(x=>({d:String(x.date).slice(0,10),v:+x.value})).reverse()};
     }catch(e){}
   }));
   return out;
@@ -1238,7 +1335,7 @@ function macroTiles(cache){
     if(chg!=null&&d.better!=='flat'){const good=(d.better==='up')?(chg>0):(chg<0);dir=chg===0?0:(good?1:-1);}
     const arrow=chg==null?'':(chg>0?'▲':(chg<0?'▼':'■'));
     const prevTxt=(chg!=null&&!d.delta)?(arrow+' prev '+d.fmt(x.prev)):'';
-    return {l:d.l,v:d.fmt(val),d:(x.date||'')+(prevTxt?' · '+prevTxt:''),dir};
+    return {l:d.l,v:d.fmt(val),d:(x.date||'')+(prevTxt?' · '+prevTxt:''),dir,name:d.name};
   }).filter(Boolean);
   return {infl:build('infl'),labor:build('labor')};
 }
@@ -1249,6 +1346,7 @@ function paintMacroTiles(cache){
   const ie=document.getElementById('tilesInfl'),le=document.getElementById('tilesLabor');
   if(ie)ie.innerHTML=inf.map(tile).join('');
   if(le)le.innerHTML=lab.map(tile).join('');
+  document.querySelectorAll('.indtile').forEach(el=>el.addEventListener('click',()=>openIndicator(el.dataset.ind)));
   const live=!!t.infl.length;
   const st=document.getElementById('macroStamp');
   if(st)st.innerHTML=live?('live · updated '+agoTxt(cache&&cache.ts)):('<span class="down">snapshot data ('+SNAP.asOf+') — add an FMP key in Settings ⚙ for live prints</span>');
@@ -1326,7 +1424,9 @@ function paintGeo(){
   const btn=document.getElementById('geoFilterBtn');
   if(btn){btn.textContent=GEO_ONLY?'Show all':'Geo only';btn.classList.toggle('grn',GEO_ONLY);}
 }
-function tile(t){const cls=t.dir>0?'up':t.dir<0?'down':'mut';return `<div class="tile"><div class="tl">${t.l}</div><div class="tv">${t.v}</div><div class="td ${cls}">${t.d}</div></div>`;}
+function tile(t){const cls=t.dir>0?'up':t.dir<0?'down':'mut';
+  const clickable=t.name?` class="tile indtile" data-ind="${t.name}" style="cursor:pointer" title="Click for history and what it means"`:' class="tile"';
+  return `<div${clickable}><div class="tl">${t.l}${t.name?' <span class="subtle" style="font-size:9px">ⓘ</span>':''}</div><div class="tv">${t.v}</div><div class="td ${cls}">${t.d}</div></div>`;}
 function drawCurve(tr){const pts=[['3M',tr.m3],['6M',tr.m6],['1Y',tr.y1],['2Y',tr.y2],['5Y',tr.y5],['10Y',tr.y10],['30Y',tr.y30]];const W=100,H=54,vals=pts.map(p=>p[1]),mn=Math.min(...vals)-0.1,mx=Math.max(...vals)+0.1;const X=i=>i/(pts.length-1)*W,Y=v=>H-(v-mn)/(mx-mn)*H;let d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');let dots=pts.map((p,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="1.3" fill="var(--org)"/>`).join('');document.getElementById('yieldCurve').innerHTML=`<svg viewBox="0 0 100 62" style="width:100%;height:120px"><path d="${d}" fill="none" stroke="var(--org)" stroke-width="1.2"/>${dots}</svg>`;document.getElementById('curveChips').innerHTML=pts.map(p=>`<span class="tag neut">${p[0]} ${p[1].toFixed(2)}</span>`).join('');}
 function renderCal72(){
   const el=document.getElementById('cal72');if(!el)return;
@@ -2990,6 +3090,11 @@ if(document.getElementById('openLogBtn')){
   document.getElementById('te-file').addEventListener('change',ev=>{[...ev.target.files].forEach(teAddFile);ev.target.value='';});
   document.addEventListener('paste',ev=>{if(!document.getElementById('tradeEntryModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){teAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLogModal();});
+}
+if(document.getElementById('indX')){
+  document.getElementById('indX').addEventListener('click',()=>document.getElementById('indModal').classList.remove('open'));
+  document.getElementById('indModal').addEventListener('click',e=>{if(e.target.id==='indModal')document.getElementById('indModal').classList.remove('open');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('indModal').classList.remove('open');});
 }
 if(document.getElementById('impCsvBtn')){
   const openImp=()=>{CSVROWS=null;CSVMAP=null;const p=document.getElementById('imp-preview');if(p)p.innerHTML='';const st=document.getElementById('imp-status');if(st)st.textContent='';document.getElementById('impModal').classList.add('open');};
