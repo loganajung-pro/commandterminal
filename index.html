@@ -297,10 +297,12 @@ ul.tight li::marker{color:var(--org)}
 
     <!-- ===== MACRO ===== -->
     <section class="view" id="view-macro">
-      <div class="crumb">Matrix / <b>Macro Overview</b></div>
-      <h1 class="h1">Macro Overview</h1>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><div class="crumb">Matrix / <b>Macro Overview</b></div><h1 class="h1" style="margin:2px 0 0">Macro Overview</h1></div>
+        <div style="display:flex;align-items:center;gap:10px"><span class="subtle" id="macroStamp">—</span><button class="btn grn" id="macroRefresh" style="padding:6px 14px">⟳ Refresh</button></div>
+      </div>
       <div class="grid" style="grid-template-columns:1fr 1.2fr 1.3fr">
-        <div class="panel ti"><div class="ph"><h2>Central Bank Watch</h2><span class="meta">editorial</span></div>
+        <div class="panel ti"><div class="ph"><h2>Central Bank Watch</h2><span class="meta" id="cbMeta">editorial</span></div>
           <div class="pb" id="cbWatch"></div></div>
         <div class="panel ti"><div class="ph"><h2>US Yield Curve</h2><span class="meta" id="curveSpread"></span></div>
           <div class="pb"><div id="yieldCurve"></div><div id="curveChips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px"></div>
@@ -368,6 +370,11 @@ ul.tight li::marker{color:var(--org)}
           <hr class="d">
           <div class="panel"><h2 class="sec">Equity Curve (R)</h2><div id="jEquity"></div></div>
           <hr class="d">
+          <div class="panel"><h2 class="sec">Calendar</h2>
+            <div class="ph" style="border:0;padding:0 0 8px"><span class="subtle" id="jCalTitle"></span>
+              <div class="navbtns"><button class="btn" id="prevMJ">◄</button><button class="btn" id="nextMJ">►</button></div></div>
+            <div class="calgrid" id="jCalHead"></div><div class="calgrid" id="jCalBody"></div></div>
+          <hr class="d">
           <div class="panel"><h2 class="sec">Charts</h2>
             <div class="sec" style="margin:2px 0 6px">Daily R <span class="subtle">— last 30 trading days</span></div><div id="jDaily"></div>
             <div class="sec" style="margin:14px 0 6px">R Distribution</div><div id="jDist"></div>
@@ -385,11 +392,6 @@ ul.tight li::marker{color:var(--org)}
             <div class="sec" style="margin:14px 0 6px">By Distraction</div><div id="jByDistract"></div>
             <div class="sec" style="margin:14px 0 6px">By Routine &amp; Prep</div><div id="jByRoutine"></div>
           </div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec">Calendar</h2>
-            <div class="ph" style="border:0;padding:0 0 8px"><span class="subtle" id="jCalTitle"></span>
-              <div class="navbtns"><button class="btn" id="prevMJ">◄</button><button class="btn" id="nextMJ">►</button></div></div>
-            <div class="calgrid" id="jCalHead"></div><div class="calgrid" id="jCalBody"></div></div>
         </div>
       </div>
     </section>
@@ -640,7 +642,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · replay+import';
+const BUILD='2026-07-19 · macro-live';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -793,6 +795,7 @@ function snapshotFor(tool,a){
   if(tool==="economics")return SNAP.calendar.filter(e=>{const d=e.date.slice(0,10);return d>=a.from_date&&d<=a.to_date;});
   if(tool==="news")return SNAP.news;
   if(tool==="intraday")return [];
+  if(tool==="econIndicator")return [];
   return [];
 }
 function showSnap(){const el=document.getElementById("diag");if(!el||el.dataset.s)return;el.dataset.s="1";el.style.display="block";el.innerHTML='<div class="panel" style="border-color:#6b4a12;background:#191204;padding:9px 12px"><b style="color:var(--amber)">SNAPSHOT MODE</b> <span class="subtle">— showing embedded data as of '+SNAP.asOf+'. Add your FMP API key in <b>Settings (⚙, bottom-left)</b> to pull live data directly.</span></div>';}
@@ -828,6 +831,10 @@ async function fmpRoute(tool,args){
     if(args.endpoint==='treasury-rates'){const j=await fmpGet('/stable/treasury-rates?from='+args.from_date+'&to='+args.to_date);const x=Array.isArray(j)?j[0]:null;return x?[{month3:x.month3,month6:x.month6,year1:x.year1,year2:x.year2,year3:x.year3,year5:x.year5,year7:x.year7,year10:x.year10,year20:x.year20,year30:x.year30}]:[];}
     const j=await fmpGet('/stable/economic-calendar?from='+args.from_date+'&to='+args.to_date);
     return (Array.isArray(j)?j:[]).filter(e=>e.country==='US'||e.country==='United States'||e.currency==='USD');
+  }
+  if(tool==='econIndicator'){
+    const j=await fmpGet('/stable/economic-indicators?name='+encodeURIComponent(args.name));
+    return Array.isArray(j)?j:(pickArr(j)||[]);
   }
   if(tool==='intraday'){
     const iv=(args&&args.interval)||'1min';
@@ -934,7 +941,7 @@ function composedLvl(sh){if(!COMPOSED)return null;return (COMPOSED.levels||[]).f
 /* ============================ NAV + CLOCK ============================ */
 const RENDERED={};
 function ensureView(v){
-  if(RENDERED[v]){if(v==="macro")safe(renderGeoNews);return;}   // revisiting Macro re-pulls the live geopolitical wire
+  if(RENDERED[v]){if(v==="macro")safe(renderMacro);return;}   // revisiting Macro re-pulls everything live
   RENDERED[v]=true;
   if(v==="macro")safe(renderMacro);
   if(v==="calendar"){MV=curMonth();safe(loadMonthView);}
@@ -1171,17 +1178,110 @@ async function loadCalendar(){
   safe(renderWindows);safe(renderOverview);safe(renderKeyThemes);safe(renderCoach);safe(renderCal72);
 }
 setInterval(()=>safe(renderWindows),30000);
+if(document.getElementById('macroRefresh'))document.getElementById('macroRefresh').addEventListener('click',()=>{
+  const b=document.getElementById('macroRefresh');if(b)b.textContent='⟳ Refreshing…';
+  Promise.resolve(renderMacro(true)).then(()=>{if(b)b.textContent='⟳ Refresh';}).catch(()=>{if(b)b.textContent='⟳ Refresh';});
+});
 setInterval(()=>{const mv=document.getElementById('view-macro');if(RENDERED.macro&&mv&&mv.classList.contains('active'))safe(renderGeoNews);},300000); // refresh geopolitical wire every 5 min while the Macro tab is open
 
+/* ============================================================
+   LIVE MACRO DATA
+   The indicator tiles and the Fed rate used to be hardcoded constants —
+   they could never change. These now pull real prints from FMP.
+   Macro series update monthly, so results are cached and only refetched
+   when stale (or on demand). Polling them hard would burn the FMP
+   daily quota for data that moves once a month.
+   ============================================================ */
+const MKEY='ct_macro', MACRO_TTL=6*3600*1000;   // 6h
+const MACRO_IND=[
+  {g:'infl', name:'inflationRate',                 l:'Inflation YoY',     fmt:v=>v.toFixed(2)+'%', better:'down'},
+  {g:'infl', name:'CPI',                           l:'CPI Index',         fmt:v=>v.toFixed(1),     better:'down'},
+  {g:'infl', name:'federalFunds',                  l:'Fed Funds',         fmt:v=>v.toFixed(2)+'%', better:'flat'},
+  {g:'infl', name:'30YearFixedRateMortgageAverage',l:'30Y Mortgage',      fmt:v=>v.toFixed(2)+'%', better:'down'},
+  {g:'labor',name:'unemploymentRate',              l:'Unemployment',      fmt:v=>v.toFixed(1)+'%', better:'down'},
+  {g:'labor',name:'totalNonfarmPayroll',           l:'Non-Farm Payrolls', fmt:v=>(v>=0?'+':'')+Math.round(v)+'K', better:'up', delta:true},   // FMP reports the LEVEL in thousands — the print everyone quotes is the month-over-month change
+  {g:'labor',name:'initialClaims',                 l:'Initial Claims',    fmt:v=>Math.round(v/1000)+'K', better:'down'},                        // FMP reports raw persons
+  {g:'labor',name:'consumerSentiment',             l:'Consumer Sentiment',fmt:v=>v.toFixed(1),     better:'up'}
+];
+function fmtThousands(v){const n=Math.abs(v);return n>=1000?((v/1000).toFixed(2)+'M'):(v.toFixed(0)+'K');}
+function loadMacroCache(){try{return JSON.parse(lsGet(MKEY)||'{}');}catch(e){return {};}}
+function saveMacroCache(o){try{lsSet(MKEY,JSON.stringify(o));}catch(e){}}
+function agoTxt(ts){if(!ts)return 'never';const m=Math.round((Date.now()-ts)/60000);
+  if(m<1)return 'just now';if(m<60)return m+'m ago';const h=Math.round(m/60);if(h<24)return h+'h ago';return Math.round(h/24)+'d ago';}
+async function fetchMacroIndicators(){
+  const out={};
+  await Promise.all(MACRO_IND.map(async d=>{
+    try{
+      const r=await mcp('econIndicator',{name:d.name});
+      const a=(Array.isArray(r)?r:[]).filter(x=>x&&x.date&&x.value!=null&&isFinite(+x.value))
+        .sort((x,y)=>String(y.date).localeCompare(String(x.date)));
+      if(a.length)out[d.name]={date:String(a[0].date).slice(0,10),v:+a[0].value,prev:a[1]?+a[1].value:null};
+    }catch(e){}
+  }));
+  return out;
+}
+async function refreshMacroData(force){
+  const c=loadMacroCache();
+  if(!force&&c.ts&&c.ind&&Object.keys(c.ind).length&&(Date.now()-c.ts)<MACRO_TTL)return c;
+  const ind=await fetchMacroIndicators();
+  if(Object.keys(ind).length){const n={ts:Date.now(),ind};saveMacroCache(n);return n;}
+  return c;   // keep whatever we had rather than blanking the page
+}
+function macroTiles(cache){
+  const ind=(cache&&cache.ind)||{};
+  const build=g=>MACRO_IND.filter(d=>d.g===g).map(d=>{
+    const x=ind[d.name];
+    if(!x)return null;
+    const val=(d.delta&&x.prev!=null)?(x.v-x.prev):x.v;
+    const chg=(x.prev!=null)?(x.v-x.prev):null;
+    let dir=0;
+    if(chg!=null&&d.better!=='flat'){const good=(d.better==='up')?(chg>0):(chg<0);dir=chg===0?0:(good?1:-1);}
+    const arrow=chg==null?'':(chg>0?'▲':(chg<0?'▼':'■'));
+    const prevTxt=(chg!=null&&!d.delta)?(arrow+' prev '+d.fmt(x.prev)):'';
+    return {l:d.l,v:d.fmt(val),d:(x.date||'')+(prevTxt?' · '+prevTxt:''),dir};
+  }).filter(Boolean);
+  return {infl:build('infl'),labor:build('labor')};
+}
+function paintMacroTiles(cache){
+  const t=macroTiles(cache);
+  const inf=t.infl.length?t.infl:SNAP.indicators.infl;
+  const lab=t.labor.length?t.labor:SNAP.indicators.labor;
+  const ie=document.getElementById('tilesInfl'),le=document.getElementById('tilesLabor');
+  if(ie)ie.innerHTML=inf.map(tile).join('');
+  if(le)le.innerHTML=lab.map(tile).join('');
+  const live=!!t.infl.length;
+  const st=document.getElementById('macroStamp');
+  if(st)st.innerHTML=live?('live · updated '+agoTxt(cache&&cache.ts)):('<span class="down">snapshot data ('+SNAP.asOf+') — add an FMP key in Settings ⚙ for live prints</span>');
+  return live;
+}
+function paintCentralBanks(cache){
+  const el=document.getElementById('cbWatch');if(!el)return;
+  const ff=cache&&cache.ind&&cache.ind.federalFunds;
+  const rows=SNAP.centralBanks.map(b=>{
+    const live=(ff&&/federal reserve/i.test(b.bank));
+    const rate=live?ff.v:b.rate;
+    const st=b.stance==='Hawkish'?'tag bull':b.stance==='Dovish'?'tag bear':'tag neut';
+    return `<div class="cbrow"><div class="bk"><b>${b.cc}</b><span>${escH(b.bank)}${live?' <span class="up" style="font-size:9px">LIVE</span>':''}</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-weight:600">${(+rate).toFixed(2)}%</span><span class="${st}">${b.stance}</span></div></div>`;
+  }).join('');
+  el.innerHTML=rows;
+  const m=document.getElementById('cbMeta');
+  if(m)m.innerHTML=(ff?('Fed live · others as of '+SNAP.asOf):('editorial · '+SNAP.asOf));
+}
 /* ===== Macro ===== */
-async function renderMacro(){
-  document.getElementById('cbWatch').innerHTML=SNAP.centralBanks.map(b=>{const st=b.stance==='Hawkish'?'tag bull':b.stance==='Dovish'?'tag bear':'tag neut';return `<div class="cbrow"><div class="bk"><b>${b.cc}</b><span>${b.bank}</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-weight:600">${b.rate.toFixed(2)}%</span><span class="${st}">${b.stance}</span></div></div>`;}).join('');
-  let tr=SNAP.treasury;try{const r=await mcp('economics',{endpoint:'treasury-rates',from_date:ymd(new Date(Date.now()-6*864e5)),to_date:ymd(new Date())});if(Array.isArray(r)&&r[0]){const x=r[0];tr={m3:x.month3,m6:x.month6,y1:x.year1,y2:x.year2,y3:x.year3,y5:x.year5,y7:x.year7,y10:x.year10,y20:x.year20,y30:x.year30};}}catch(e){}
-  drawCurve(tr);document.getElementById('curveSpread').textContent='2s10s '+((tr.y10-tr.y2)>=0?'+':'')+Math.round((tr.y10-tr.y2)*100)+'bp';
+async function renderMacro(force){
+  const cached=loadMacroCache();
+  paintCentralBanks(cached);            // paint instantly from cache/snapshot
+  paintMacroTiles(cached);
+  let tr=SNAP.treasury;
+  try{const r=await mcp('economics',{endpoint:'treasury-rates',from_date:ymd(new Date(Date.now()-6*864e5)),to_date:ymd(new Date())});
+    if(Array.isArray(r)&&r[0]){const x=r[0];tr={m3:x.month3,m6:x.month6,y1:x.year1,y2:x.year2,y3:x.year3,y5:x.year5,y7:x.year7,y10:x.year10,y20:x.year20,y30:x.year30};}}catch(e){}
+  drawCurve(tr);
+  const cs=document.getElementById('curveSpread');
+  if(cs)cs.textContent='2s10s '+((tr.y10-tr.y2)>=0?'+':'')+Math.round((tr.y10-tr.y2)*100)+'bp';
   safe(renderCal72);
-  document.getElementById('tilesInfl').innerHTML=SNAP.indicators.infl.map(tile).join('');
-  document.getElementById('tilesLabor').innerHTML=SNAP.indicators.labor.map(tile).join('');
   safe(renderGeoNews);
+  // then pull fresh macro prints (cached 6h unless forced) and repaint
+  try{const fresh=await refreshMacroData(!!force);paintCentralBanks(fresh);paintMacroTiles(fresh);}catch(e){}
 }
 /* ===== Geopolitical Overview ===== */
 let GEO_ONLY=false, GEO_CACHE=[];
