@@ -436,6 +436,15 @@ ul.tight li::marker{color:var(--org)}
   <div class="row2"><div class="field"><label>R multiple</label><input id="f-r" placeholder="e.g. 2.0"></div>
     <div class="field"><label>Mindset / State</label><select id="f-state"><option value="">—</option><option>Settled Authority</option><option>Grounded</option><option>Urgent</option><option>Doubt</option><option>Greed</option><option>Fear</option><option>Hesitant</option><option>Detached</option></select></div></div>
   <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="field"><label>Risk $</label><input id="f-risk" placeholder="e.g. 277"></div>
+    <div class="field"><label>Entry time <span class="subtle">ET</span></label><input id="f-time" placeholder="09:47"></div>
+    <div class="field"><label>Setup quality <span class="subtle">graded at entry</span></label><select id="f-setup"><option value="">—</option><option>A+</option><option>B</option><option>C</option></select></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>MFE <span class="subtle">— max it ran your way (R)</span></label><input id="f-mfe" placeholder="e.g. 4.2"></div>
+    <div class="field"><label>MAE <span class="subtle">— max it went against you (R)</span></label><input id="f-mae" placeholder="e.g. 0.6"></div>
+  </div>
+  <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
     <div class="field"><label>Profit Grade</label><select id="f-pgrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
     <div class="field"><label>Entry Grade</label><select id="f-egrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
     <div class="field"><label>Trade Management</label><select id="f-mgrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div></div>
@@ -460,6 +469,13 @@ ul.tight li::marker{color:var(--org)}
     <input id="setAnthKey" placeholder="Anthropic API key (sk-ant-…)" autocomplete="off" style="width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:9px;color:var(--ink);font-family:var(--mono);font-size:12px">
     <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span class="subtle">Vision model:</span>
       <select id="setVisionModel" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:6px;font-family:var(--mono)"><option value="claude-sonnet-5">Sonnet — accurate (recommended)</option><option value="claude-haiku-4-5-20251001">Haiku — cheaper, faster</option></select></div>
+    <hr class="d">
+    <h4 style="font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--org);margin:0 0 6px">Funded Account</h4>
+    <div class="subtle" style="margin-bottom:8px">Switches on target progress, drawdown headroom and daily-limit breach warnings in the weekly review. Needs <b>Risk $</b> logged on your trades to compute dollars. Leave blank to hide.</div>
+    <div class="row2"><div class="field"><label>Account size $</label><input id="setAcctSize" placeholder="e.g. 100000"></div>
+      <div class="field"><label>Profit target $</label><input id="setAcctTarget" placeholder="e.g. 110000"></div></div>
+    <div class="row2"><div class="field"><label>Daily loss limit $</label><input id="setAcctDay" placeholder="e.g. 2200"></div>
+      <div class="field"><label>Max drawdown $</label><input id="setAcctDD" placeholder="e.g. 4500"></div></div>
     <button class="btn grn" id="setSave" style="width:100%;margin-top:12px">Save</button>
     <div class="subtle" id="setStatus" style="margin-top:6px"></div>
   </div>
@@ -1303,7 +1319,7 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>document.getElementById(id).value='');const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
@@ -1670,11 +1686,16 @@ async function refreshLight(){
 let liveTimer=null;
 function applyInterval(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}if(LIVE_MS>0)liveTimer=setInterval(refreshLight,LIVE_MS);}
 function refreshAll(){SNAPSHOT_MODE=false;hideSnap();loadQuotes();loadCalendar();if(RENDERED.macro)safe(renderMacro);else safe(renderGeoNews);/* geo folded into 8AM refresh unconditionally */if(RENDERED.calendar){MV=curMonth();safe(loadMonthView);}}
-function openSettings(){document.getElementById('setKey').value=fmpKey();document.getElementById('setInterval').value=String(LIVE_MS||0);const ak=document.getElementById('setAnthKey');if(ak)ak.value=anthKey();const vm=document.getElementById('setVisionModel');if(vm)vm.value=visionModel();document.getElementById('setStatus').textContent='';document.getElementById('setModal').classList.add('open');}
+function openSettings(){document.getElementById('setKey').value=fmpKey();document.getElementById('setInterval').value=String(LIVE_MS||0);const ak=document.getElementById('setAnthKey');if(ak)ak.value=anthKey();const vm=document.getElementById('setVisionModel');if(vm)vm.value=visionModel();
+  const A=loadAcct();[['setAcctSize','size'],['setAcctTarget','target'],['setAcctDay','dayLoss'],['setAcctDD','maxDD']].forEach(p=>{const e=document.getElementById(p[0]);if(e)e.value=A[p[1]]||'';});
+  document.getElementById('setStatus').textContent='';document.getElementById('setModal').classList.add('open');}
 document.getElementById('settingsBtn').addEventListener('click',openSettings);
 document.getElementById('setX').addEventListener('click',()=>document.getElementById('setModal').classList.remove('open'));
 document.getElementById('setModal').addEventListener('click',e=>{if(e.target.id==='setModal')e.currentTarget.classList.remove('open');});
-document.getElementById('setSave').addEventListener('click',()=>{const k=document.getElementById('setKey').value.trim();try{lsSet('ct_fmp_key',k);LIVE_MS=+document.getElementById('setInterval').value||0;lsSet('ct_live_ms',String(LIVE_MS));const ak=document.getElementById('setAnthKey');if(ak)lsSet('ct_anthropic_key',ak.value.trim());const vm=document.getElementById('setVisionModel');if(vm)lsSet('ct_vision_model',vm.value);}catch(e){}const hasAnth=(document.getElementById('setAnthKey')||{}).value;document.getElementById('setStatus').innerHTML=k?'<span class="up">Saved — pulling live data…</span>':(hasAnth&&hasAnth.trim()?'<span class="up">Saved. Vision key stored — snapshot mode for quotes.</span>':'<span class="mut">Key cleared — snapshot mode.</span>');refreshAll();applyInterval();setTimeout(()=>document.getElementById('setModal').classList.remove('open'),1000);});
+document.getElementById('setSave').addEventListener('click',()=>{const k=document.getElementById('setKey').value.trim();try{lsSet('ct_fmp_key',k);LIVE_MS=+document.getElementById('setInterval').value||0;lsSet('ct_live_ms',String(LIVE_MS));const ak=document.getElementById('setAnthKey');if(ak)lsSet('ct_anthropic_key',ak.value.trim());const vm=document.getElementById('setVisionModel');if(vm)lsSet('ct_vision_model',vm.value);
+  const nv=id=>{const e=document.getElementById(id);return e?(parseFloat(String(e.value).replace(/[^0-9.\-]/g,''))||0):0;};
+  saveAcct({size:nv('setAcctSize'),target:nv('setAcctTarget'),dayLoss:nv('setAcctDay'),maxDD:nv('setAcctDD')});
+  if(RENDERED.pmr)safe(renderPmr);}catch(e){}const hasAnth=(document.getElementById('setAnthKey')||{}).value;document.getElementById('setStatus').innerHTML=k?'<span class="up">Saved — pulling live data…</span>':(hasAnth&&hasAnth.trim()?'<span class="up">Saved. Vision key stored — snapshot mode for quotes.</span>':'<span class="mut">Key cleared — snapshot mode.</span>');refreshAll();applyInterval();setTimeout(()=>document.getElementById('setModal').classList.remove('open'),1000);});
 
 /* ===== Daily schedules (ET-anchored): 8:00 AM full refresh · 8:35 AM auto-save brief ===== */
 function msUntilEt(hh,mm){const p=etParts();const cur=((p.h*60+p.m)*60+p.s)*1000;let diff=((hh*60+mm)*60*1000)-cur;if(diff<=0)diff+=864e5;return diff;}
@@ -1800,6 +1821,65 @@ function dayDossier(ds){
     hasPlan:pmHasContent(pm),hasJournal:pmrHasContent(jr),
     adhere:(jr&&jr.adhere)||'',breaks:(jr&&jr.breaks)||[]};
 }
+/* ===== Performance KPIs — expectancy, profit factor, drawdown, streaks ===== */
+const AKEY='ct_acct';
+function loadAcct(){try{return Object.assign({size:0,target:0,dayLoss:0,maxDD:0},JSON.parse(lsGet(AKEY)||'{}'));}catch(e){return {size:0,target:0,dayLoss:0,maxDD:0};}}
+function saveAcct(o){try{lsSet(AKEY,JSON.stringify(o));return true;}catch(e){return false;}}
+function tR(t){return +t.r||0;}
+function isClosed(t){return t.res==='Win'||t.res==='Loss'||t.res==='BE';}
+function byChrono(a,b){return String(a.date).localeCompare(String(b.date))||((a.id||0)-(b.id||0));}
+function tradeUsd(t){const rk=+t.risk||0;return rk>0?rk*tR(t):null;}
+function perfStats(trades){
+  const closed=trades.filter(isClosed).slice().sort(byChrono);
+  const wins=closed.filter(t=>t.res==='Win'),losses=closed.filter(t=>t.res==='Loss');
+  const gw=wins.reduce((a,t)=>a+Math.abs(tR(t)),0),gl=losses.reduce((a,t)=>a+Math.abs(tR(t)),0);
+  const avgW=wins.length?gw/wins.length:0,avgL=losses.length?gl/losses.length:0;
+  const totR=closed.reduce((a,t)=>a+tR(t),0);
+  const expectancy=closed.length?totR/closed.length:0;
+  let cum=0,peak=0,maxDD=0,cw=0,cl=0,mw=0,ml=0;
+  closed.forEach(t=>{cum+=tR(t);if(cum>peak)peak=cum;const dd=peak-cum;if(dd>maxDD)maxDD=dd;
+    if(t.res==='Win'){cw++;cl=0;}else if(t.res==='Loss'){cl++;cw=0;}
+    if(cw>mw)mw=cw;if(cl>ml)ml=cl;});
+  const usd=closed.map(tradeUsd).filter(x=>x!=null);
+  const mfe=closed.map(t=>+t.mfe||0).filter(x=>x>0);
+  const eff=closed.filter(t=>(+t.mfe||0)>0&&tR(t)>0).map(t=>tR(t)/(+t.mfe));
+  const mae=closed.map(t=>+t.mae||0).filter(x=>x>0);
+  return {n:trades.length,closed:closed.length,wins:wins.length,losses:losses.length,
+    wr:closed.length?Math.round(wins.length/closed.length*100):0,
+    totR,expectancy,avgW,avgL,gw,gl,
+    pf:gl>0?gw/gl:(gw>0?null:0),            // null = no losses yet (undefined PF)
+    payoff:avgL>0?avgW/avgL:(avgW>0?null:0),
+    maxDD,winStreak:mw,lossStreak:ml,
+    usd:usd.length?usd.reduce((a,b)=>a+b,0):null,
+    avgMfe:mfe.length?mfe.reduce((a,b)=>a+b,0)/mfe.length:null,
+    avgMae:mae.length?mae.reduce((a,b)=>a+b,0)/mae.length:null,
+    capture:eff.length?eff.reduce((a,b)=>a+b,0)/eff.length:null};
+}
+/* Edge attribution — where the edge actually lives */
+function attribBy(trades,keyFn){
+  const m={};
+  trades.filter(isClosed).forEach(t=>{const ks=keyFn(t);(Array.isArray(ks)?ks:[ks]).forEach(k=>{k=(k==null?'':String(k)).trim();if(!k)return;(m[k]=m[k]||[]).push(t);});});
+  return Object.keys(m).map(k=>{const s=perfStats(m[k]);return {k,n:s.closed,r:s.totR,wr:s.wr,exp:s.expectancy};}).sort((a,b)=>b.r-a.r);
+}
+function weekdayName(ds){return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(ds+'T12:00:00Z').getUTCDay()];}
+function tradeSeqs(t){return (t.seq&&t.seq.length)?t.seq:(t.model?String(t.model).split(' · ').filter(Boolean):[]);}
+/* Shadow-pattern metrics — the three tracked patterns, as numbers */
+function shadowMetrics(trades){
+  const closed=trades.filter(isClosed).slice().sort(byChrono);
+  const post=[],base=[];
+  closed.forEach((t,i)=>{(i>0&&closed[i-1].res==='Loss'?post:base).push(tR(t));});
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  const perDay={};trades.forEach(t=>{perDay[t.date]=(perDay[t.date]||0)+1;});
+  const dayCounts=Object.keys(perDay).map(d=>perDay[d]);
+  const risks=trades.map(t=>+t.risk||0).filter(x=>x>0);
+  const mean=risks.length?risks.reduce((a,b)=>a+b,0)/risks.length:0;
+  const sd=risks.length>1?Math.sqrt(risks.reduce((a,b)=>a+(b-mean)*(b-mean),0)/risks.length):0;
+  return {postLoss:avg(post),postLossN:post.length,baseline:avg(base),baselineN:base.length,
+    overtradeDays:Object.keys(perDay).filter(d=>perDay[d]>1).length,
+    maxPerDay:dayCounts.length?Math.max.apply(null,dayCounts):0,
+    riskMean:mean||null,riskSd:risks.length>1?sd:null,riskCv:mean?sd/mean:null,
+    riskMax:risks.length?Math.max.apply(null,risks):null,riskMin:risks.length?Math.min.apply(null,risks):null};
+}
 function weekDossier(mon){
   const days=weekDays(mon).map(dayDossier);
   const trades=[].concat.apply([],days.map(d=>d.trades));
@@ -1808,7 +1888,11 @@ function weekDossier(mon){
   const states={};trades.forEach(t=>{const k=(t.state||'').trim();if(k)states[k]=(states[k]||0)+1;});
   const adhere={Y:0,Partial:0,N:0};days.forEach(d=>{if(adhere[d.adhere]!=null)adhere[d.adhere]++;});
   const rs=trades.filter(t=>t.r!=null&&t.r!=='').map(t=>+t.r||0);
+  const clsOf={};days.forEach(d=>{clsOf[d.ds]=d.cls;});
   return {mon,label:weekLabel(mon),days,trades,stats,
+    perf:perfStats(trades),shadow:shadowMetrics(trades),
+    bySess:attribBy(trades,t=>t.sess),bySeq:attribBy(trades,tradeSeqs),
+    byDow:attribBy(trades,t=>weekdayName(t.date)),byCls:attribBy(trades,t=>clsOf[t.date]||''),
     plans:days.filter(d=>d.hasPlan).length,journals:days.filter(d=>d.hasJournal).length,
     traded:days.filter(d=>d.trades.length).length,
     violations:days.filter(d=>d.violation).map(d=>({ds:d.ds,v:d.violation})),
@@ -1946,7 +2030,54 @@ function weekReviewHtml(w){
   const s=w.stats,rc=s.totR>=0?'up':'down';
   const stat=(v,l,c)=>`<div class="s"><div class="v ${c||''}">${v}</div><div class="l">${l}</div></div>`;
   let h=`<div class="stat">${stat(s.n,'Trades')}${stat(s.closed?s.wr+'%':'—','Win rate','up')}${stat((s.totR>=0?'+':'')+s.totR.toFixed(1)+'R','Total R',rc)}${stat((s.avg>=0?'+':'')+s.avg.toFixed(1)+'R','Avg R',s.avg>=0?'up':'down')}${stat(w.best!=null?(w.best>0?'+':'')+w.best+'R':'—','Best')}${stat(w.worst!=null?(w.worst>0?'+':'')+w.worst+'R':'—','Worst')}</div>`;
+  const P=w.perf,S=w.shadow;
+  const nz=(v,d,suf)=>v==null?'—':((v>=0&&suf==='R'?'+':'')+v.toFixed(d==null?2:d)+(suf==='R'?'R':''));
+  h+=`<hr class="d"><div class="sec">Edge Quality <span class="subtle">— is the edge real?</span></div><div class="stat">`+
+    stat(nz(P.expectancy,2,'R'),'Expectancy/trade',P.expectancy>=0?'up':'down')+
+    stat(P.pf==null?(P.closed?'∞':'—'):P.pf.toFixed(2),'Profit factor',P.pf!=null&&P.pf>=1.5?'up':(P.pf!=null&&P.pf<1?'down':''))+
+    stat(P.payoff==null?(P.wins?'∞':'—'):P.payoff.toFixed(2),'Payoff ratio',P.payoff!=null&&P.payoff>=1?'up':'')+
+    stat(P.avgW?'+'+P.avgW.toFixed(1)+'R':'—','Avg win','up')+
+    stat(P.avgL?'-'+P.avgL.toFixed(1)+'R':'—','Avg loss','down')+
+    stat(P.maxDD?'-'+P.maxDD.toFixed(1)+'R':'0R','Max drawdown',P.maxDD?'down':'')+
+    `</div>`;
+  h+=`<div class="stat" style="margin-top:8px">`+
+    stat(P.winStreak||0,'Best streak','up')+stat(P.lossStreak||0,'Worst streak',P.lossStreak>=3?'down':'')+
+    stat(P.usd!=null?(P.usd>=0?'+$':'-$')+Math.abs(P.usd).toFixed(0):'—','Net $',P.usd!=null&&P.usd>=0?'up':(P.usd!=null?'down':''))+
+    stat(P.capture!=null?Math.round(P.capture*100)+'%':'—','Capture eff.',P.capture!=null&&P.capture>=0.6?'up':'')+
+    stat(P.avgMfe!=null?P.avgMfe.toFixed(1)+'R':'—','Avg MFE')+
+    stat(P.avgMae!=null?'-'+P.avgMae.toFixed(1)+'R':'—','Avg MAE')+
+    `</div>`;
   h+=`<hr class="d"><div class="sec">Coverage &amp; Discipline</div><div class="stat">${stat(w.plans+'/5','Frameworks')}${stat(w.journals+'/5','Journals')}${stat(w.traded+'/5','Days traded')}${stat(gradeLetter(w.pg),'Profit grade')}${stat(gradeLetter(w.eg),'Entry grade')}${stat(gradeLetter(w.mg),'Mgmt grade')}</div>`;
+  /* --- shadow patterns, as numbers --- */
+  const tilt=(S.postLoss!=null&&S.baseline!=null)?(S.postLoss-S.baseline):null;
+  h+=`<hr class="d"><div class="sec">Shadow Patterns <span class="subtle">— measured, not guessed</span></div>`;
+  h+=`<div class="kv"><span class="k">Identity Collapse — post-loss R</span><span class="v">${S.postLoss==null?'<span class="subtle">no trade followed a loss</span>':`<b class="${S.postLoss>=0?'up':'down'}">${nz(S.postLoss,2,'R')}</b> <span class="subtle">over ${S.postLossN} trade${S.postLossN!==1?'s':''} vs ${nz(S.baseline,2,'R')} baseline</span>${tilt!=null&&tilt<-0.3?' <span class="tag bear">tilt signal</span>':(tilt!=null&&tilt>=0?' <span class="tag bull">holds</span>':'')}`}</span></div>`;
+  h+=`<div class="kv"><span class="k">Overtrade — one per window</span><span class="v">${S.overtradeDays?`<b class="down">${S.overtradeDays} day${S.overtradeDays!==1?'s':''}</b> <span class="subtle">with more than one trade · max ${S.maxPerDay} in a day</span> <span class="tag bear">rule broken</span>`:'<span class="tag bull">held — one trade per day</span>'}</span></div>`;
+  h+=`<div class="kv"><span class="k">Oversize — risk consistency</span><span class="v">${S.riskMean==null?'<span class="subtle">log Risk $ on trades to measure this</span>':`avg <b>$${S.riskMean.toFixed(0)}</b> · spread ${S.riskCv!=null?Math.round(S.riskCv*100)+'%':'—'} · range $${S.riskMin.toFixed(0)}–$${S.riskMax.toFixed(0)}${S.riskCv!=null&&S.riskCv>0.25?' <span class="tag bear">inconsistent size</span>':' <span class="tag bull">consistent</span>'}`}</span></div>`;
+  /* --- edge attribution --- */
+  const attRow=(title,rows)=>rows.length?`<div class="kv"><span class="k">${title}</span><span class="v">${rows.slice(0,6).map(x=>`<span class="tag ${x.r>0?'bull':(x.r<0?'bear':'neut')}" style="margin:1px" title="${x.n} closed · ${x.wr}% WR · ${x.exp>=0?'+':''}${x.exp.toFixed(2)}R/trade">${escH(x.k)} ${x.r>=0?'+':''}${x.r.toFixed(1)}R</span>`).join(' ')}</span></div>`:'';
+  const att=attRow('By session',w.bySess)+attRow('By protocol sequence',w.bySeq)+attRow('By weekday',w.byDow)+attRow('By protocol day',w.byCls);
+  if(att)h+=`<hr class="d"><div class="sec">Where The Edge Lives <span class="subtle">— hover a tag for win rate &amp; expectancy</span></div>${att}`;
+  /* --- funded account guardrails --- */
+  const A=loadAcct();
+  if(A.size||A.target||A.dayLoss||A.maxDD){
+    const allClosed=loadTrades().filter(isClosed).slice().sort(byChrono);
+    const netUsd=allClosed.map(tradeUsd).filter(x=>x!=null).reduce((a,b)=>a+b,0);
+    let cum=0,peak=0,dd=0;allClosed.forEach(t=>{const u=tradeUsd(t);if(u==null)return;cum+=u;if(cum>peak)peak=cum;if(peak-cum>dd)dd=peak-cum;});
+    const dayUsd={};w.trades.filter(isClosed).forEach(t=>{const u=tradeUsd(t);if(u!=null)dayUsd[t.date]=(dayUsd[t.date]||0)+u;});
+    const worst=Object.keys(dayUsd).length?Math.min.apply(null,Object.keys(dayUsd).map(k=>dayUsd[k])):0;
+    h+=`<hr class="d"><div class="sec">Funded Account <span class="subtle">— account-wide, not just this week</span></div><div class="stat">`+
+      (A.target?stat(Math.max(0,Math.round(netUsd/A.target*100))+'%','Target progress',netUsd>=0?'up':'down'):'')+
+      (A.target?stat('$'+Math.max(0,A.target-netUsd).toFixed(0),'Left to target'):'')+
+      stat((netUsd>=0?'+$':'-$')+Math.abs(netUsd).toFixed(0),'Net P&L',netUsd>=0?'up':'down')+
+      (A.maxDD?stat('$'+Math.max(0,A.maxDD-dd).toFixed(0),'DD headroom',(A.maxDD-dd)<A.maxDD*0.3?'down':'up'):'')+
+      (A.dayLoss?stat((worst<0?'-$'+Math.abs(worst).toFixed(0):'$0'),'Worst day (wk)',worst<0&&Math.abs(worst)>A.dayLoss*0.7?'down':''):'')+
+      (A.dayLoss?stat('$'+A.dayLoss.toFixed(0),'Daily limit'):'')+
+      `</div>`;
+    if(A.dayLoss&&worst<0&&Math.abs(worst)>=A.dayLoss)h+=`<div class="kv"><span class="k">⚠ Breach</span><span class="v"><span class="tag bear">A day this week hit or exceeded your daily loss limit</span></span></div>`;
+  }else{
+    h+=`<hr class="d"><div class="subtle">Set your account size, profit target, daily loss limit and max drawdown in <b>Settings ⚙</b> to switch on funded-account tracking (target progress, drawdown headroom, daily-limit breaches).</div>`;
+  }
   const ad=w.adhere,adTot=ad.Y+ad.Partial+ad.N;
   if(adTot)h+=`<div class="kv" style="margin-top:10px"><span class="k">Plan vs execution</span><span class="v"><span class="tag bull">${ad.Y} followed</span> <span class="tag med">${ad.Partial} partial</span> <span class="tag bear">${ad.N} abandoned</span></span></div>`;
   const bk=Object.keys(w.breaks);
@@ -2092,6 +2223,8 @@ function tradeFieldsHtml(tr){
     <div class="kv"><span class="k">Model / Protocol Sequences</span><span class="v">${tr.model?String(tr.model).split(' · ').map(x=>`<span class="tag" style="margin:1px">${escH(x)}</span>`).join(' '):'—'}</span></div>
     <div class="kv"><span class="k">Session</span><span class="v">${escH(tr.sess||'—')}</span></div>
     <div class="kv"><span class="k">Result / R</span><span class="v">${tr.res} · ${rr}</span></div>
+    ${(tr.risk||tr.time||tr.setup)?`<div class="kv"><span class="k">Risk / Entry / Setup</span><span class="v">${tr.risk?'$'+escH(tr.risk):'—'} · ${escH(tr.time||'—')} · ${escH(tr.setup||'—')}${(tr.risk&&tr.r)?` <span class="tag ${(+tr.r)>=0?'bull':'bear'}">${(+tr.r)>=0?'+':'-'}$${Math.abs((+tr.risk||0)*(+tr.r||0)).toFixed(0)}</span>`:''}</span></div>`:''}
+    ${(tr.mfe||tr.mae)?`<div class="kv"><span class="k">MFE / MAE</span><span class="v">${tr.mfe?'+'+escH(tr.mfe)+'R':'—'} / ${tr.mae?'-'+escH(tr.mae)+'R':'—'}${(tr.mfe&&+tr.r>0)?` <span class="tag ${(+tr.r/+tr.mfe)>=0.6?'bull':'med'}">captured ${Math.round(+tr.r/+tr.mfe*100)}%</span>`:''}</span></div>`:''}
     <div class="kv"><span class="k">Mindset / State</span><span class="v">${escH(tr.state||'—')}</span></div>
     <div class="kv"><span class="k">Profit Grade</span><span class="v">${escH(tr.pgrade||'—')}</span></div>
     <div class="kv"><span class="k">Entry Grade</span><span class="v">${escH(tr.egrade||'—')}</span></div>
@@ -2135,11 +2268,11 @@ function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=
 function teSeqRender(){const c=document.getElementById('f-seq-chips');if(!c)return;c.innerHTML=teSeq.length?teSeq.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="rm" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">None selected — pick sequences above (add as many as you want).</span>';c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teSeq.splice(+x.dataset.i,1);teSeqRender();}));}
 function setTradeFields(tr){const setv=(id,v)=>{const el=document.getElementById(id);if(!el)return;
     if(el.tagName==='SELECT'&&v&&!Array.prototype.some.call(el.options,o=>o.value===String(v)||o.text===String(v))){const op=document.createElement('option');op.value=String(v);op.textContent=String(v);el.appendChild(op);}  /* keep legacy typed values */
-    el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();}
+    el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-risk',tr.risk);setv('f-time',tr.time);setv('f-setup',tr.setup);setv('f-mfe',tr.mfe);setv('f-mae',tr.mae);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();}
 function openLogModal(trade){
   const tt=document.getElementById('teTitle'),lb=document.getElementById('logBtn');
   if(trade&&trade.id!=null){editingTradeId=trade.id;setTradeFields(trade);if(tt)tt.textContent='Edit Trade';if(lb)lb.textContent='Save changes';}
-  else{editingTradeId=null;teShots=[];teSeq=[];['f-r','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;if(tt)tt.textContent='Log a Trade';if(lb)lb.textContent='+ Log Trade';}
+  else{editingTradeId=null;teShots=[];teSeq=[];['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const fd=document.getElementById('f-date');if(fd&&!fd.value)fd.value=etParts().date;if(tt)tt.textContent='Log a Trade';if(lb)lb.textContent='+ Log Trade';}
   teRenderShots();teSeqRender();const st=document.getElementById('te-status');if(st)st.textContent='';document.getElementById('tradeEntryModal').classList.add('open');
 }
 function closeLogModal(){document.getElementById('tradeEntryModal').classList.remove('open');}
