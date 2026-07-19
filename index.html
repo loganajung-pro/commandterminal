@@ -220,7 +220,6 @@ ul.tight li::marker{color:var(--org)}
     <div class="navi active" data-v="brief"><span class="tip">Market Brief</span><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
     <div class="navi" data-v="macro"><span class="tip">Macro Overview</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
     <div class="navi" data-v="calendar"><span class="tip">Protocol Calendar</span><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg></div>
-    <div class="navi" data-v="ideas"><span class="tip">Trade Ideas</span><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V6a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg></div>
     <div class="navi" data-v="journal"><span class="tip">Trade Journal</span><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 3v18M13 8h3M13 12h3"/></svg></div>
     <div class="navi" data-v="pmr"><span class="tip">Post Market Review</span><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></div>
     <div class="sp"></div>
@@ -339,35 +338,7 @@ ul.tight li::marker{color:var(--org)}
         <div class="calgrid" id="calHead"></div><div class="calgrid" id="calBody"></div></div>
     </section>
 
-    <!-- ===== TRADE IDEAS ===== -->
-    <section class="view" id="view-ideas">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div><div class="crumb">Matrix / <b>Trade Ideas & Framework</b></div></div>
-        <div class="navbtns"><button class="btn" id="prevMI">◄</button><span class="badge" id="ideasMonth" style="min-width:120px;text-align:center"></span><button class="btn" id="nextMI">►</button></div>
-      </div>
-      <div class="grid" style="grid-template-columns:1.1fr 1fr;align-items:start">
-        <div>
-          <div class="panel">
-            <div class="calgrid" id="iCalHead"></div><div class="calgrid" id="iCalBody"></div>
-            <div class="legend"><span class="lg"><span class="sw" style="background:var(--grn)"></span>Long</span><span class="lg"><span class="sw" style="background:var(--red)"></span>Short</span><span class="lg"><span class="sw" style="background:#a970ff"></span>Win</span><span class="lg"><span class="sw" style="background:var(--blue)"></span>Loss</span><span class="lg"><span class="frm"></span>Framework</span></div>
-          </div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec grn" id="perfTitle">Month Performance</h2>
-            <div class="stat" id="ideasStat"></div>
-            <hr class="d"><h2 class="sec">Equity Curve (R)</h2><div id="ideasEquity"></div></div>
-        </div>
-        <div class="panel" style="min-height:calc(100vh - 130px)">
-          <div class="ph" style="border-bottom:1px solid var(--line);padding:0 0 12px;margin-bottom:12px">
-            <div><h2 id="dayDetailTitle" style="font-size:16px;font-weight:600;margin:0">Day</h2><span class="subtle" id="fwDay"></span></div>
-            <div style="display:flex;gap:8px"><button class="btn grn" id="pmOpen" style="padding:7px 14px">Compose Framework</button></div>
-          </div>
-          <div id="pmView"></div>
-          <hr class="d">
-          <div class="sec grn" style="margin-bottom:8px">Trades This Day</div>
-          <div id="dayDetail"></div>
-        </div>
-      </div>
-    </section>
+    
 
     <!-- ===== JOURNAL ===== -->
     <section class="view" id="view-journal">
@@ -454,7 +425,7 @@ ul.tight li::marker{color:var(--org)}
         <div class="panel" style="min-height:calc(100vh - 150px)">
           <div class="ph" style="border-bottom:1px solid var(--line);padding:0 0 12px;margin-bottom:12px">
             <div><h2 id="pmrDayTitle" style="font-size:16px;font-weight:600;margin:0">Day</h2><span class="subtle" id="pmrDaySub">pick a day</span></div>
-            <button class="btn grn" id="pmrOpen" style="padding:7px 14px">＋ New / Edit Journal</button>
+            <div style="display:flex;gap:8px"><button class="btn" id="pmrFramework" style="padding:7px 14px">◆ Framework</button><button class="btn grn" id="pmrOpen" style="padding:7px 14px">＋ New / Edit Journal</button></div>
           </div>
           <div id="pmrDetail"></div>
         </div>
@@ -647,7 +618,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · framework-merge';
+const BUILD='2026-07-19 · ideas-removed';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -938,7 +909,6 @@ function ensureView(v){
   RENDERED[v]=true;
   if(v==="macro")safe(renderMacro);
   if(v==="calendar"){MV=curMonth();safe(loadMonthView);}
-  if(v==="ideas"){IV=curMonth();safe(renderIdeas);}
   if(v==="journal"){JV=curMonth();safe(renderJournal);}
   if(v==="pmr"){PV=curMonth();safe(renderPmr);}
 }
@@ -1342,27 +1312,6 @@ function loadFw(){try{return JSON.parse(lsGet(FKEY)||'{}');}catch(e){return {};}
 function saveFwAll(o){try{lsSet(FKEY,JSON.stringify(o));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
 let selDay=etParts().date, fwShots=[];
 function fmtDayLong(ds){try{return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date(ds+'T12:00:00'));}catch(e){return ds;}}
-function ideasCalendar(){
-  const t=loadTrades(),fw=loadFw(),pm=loadPm(),y=IV.y,m=IV.m;
-  document.getElementById('iCalHead').innerHTML=['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d=>`<div class="dow">${d}</div>`).join('');
-  const first=new Date(Date.UTC(y,m-1,1)),sd=(first.getUTCDay()+6)%7,di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());
-  let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';
-  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const framed=(fw[ds]||pmHasContent(pm[ds]))?'<span class="frm"></span>':'';
-    cells+=`<div class="cell iday ${ds===selDay?'sel':''} ${ds===td?'today':''}" data-d="${ds}" style="min-height:72px;cursor:pointer"><div class="dn">${d}${framed}</div><div>${dayDots(t,ds)}</div></div>`;}
-  document.getElementById('iCalBody').innerHTML=cells;
-  document.querySelectorAll('#iCalBody .iday').forEach(c=>c.addEventListener('click',()=>{selDay=c.dataset.d;renderIdeas();}));
-}
-function renderDayDetail(){
-  const el=document.getElementById('dayDetail');const t=loadTrades().filter(x=>x.date===selDay);
-  document.getElementById('dayDetailTitle').textContent=selDay?fmtDayLong(selDay):'Day';
-  document.getElementById('fwDay').textContent=selDay?(t.length+' logged trade'+(t.length!==1?'s':'')):'pick a day';
-  if(!selDay){el.innerHTML='<div class="subtle">Click any day on the calendar.</div>';return;}
-  if(!t.length){el.innerHTML='<div class="subtle">No trades logged this day. Log outcomes in the Journal tab.</div>';return;}
-  const closed=t.filter(x=>x.res==='Win'||x.res==='Loss'||x.res==='BE'),dayR=closed.reduce((a,x)=>a+(+x.r||0),0);
-  let h=`<div class="subtle" style="margin-bottom:8px">Day R: <b class="${dayR>=0?'up':'down'}">${dayR>=0?'+':''}${dayR.toFixed(1)}R</b> · ${t.length} trade${t.length!==1?'s':''}</div>`;
-  h+=t.map(x=>{const rt=x.res==='Open'?'tag blue':x.res==='Win'?'tag bull':x.res==='Loss'?'tag bear':'tag neut';return `<div class="tl"><div><b>${x.pair}</b> <span class="tag ${x.dir==='Long'?'bull':'bear'}">${x.dir}</span> <span class="${rt}">${x.res}${x.r?' '+(+x.r>0?'+':'')+x.r+'R':''}</span><br><span class="subtle">${x.model||''} · ${x.sess||''}</span>${x.notes?`<br><span class="subtle">${(x.notes+'').replace(/</g,'&lt;')}</span>`:''}</div></div>`;}).join('');
-  el.innerHTML=h;
-}
 /* Shared draggable-to-reorder screenshot strip (used by every editable chart section) */
 function renderShotStrip(containerId,arr,rerender){
   const c=document.getElementById(containerId);if(!c)return;
@@ -1378,17 +1327,6 @@ function renderShotStrip(containerId,arr,rerender){
   });
 }
 function shrinkImg(dataUrl,cb){try{const img=new Image();img.onload=()=>{const mx=1920;let w=img.width,hh=img.height;if(w>mx){hh=Math.round(hh*mx/w);w=mx;}const cv=document.createElement('canvas');cv.width=w;cv.height=hh;const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,hh);try{cb(cv.toDataURL('image/jpeg',0.92));}catch(e){cb(dataUrl);}};img.onerror=()=>cb(dataUrl);img.src=dataUrl;}catch(e){cb(dataUrl);}}
-function renderIdeas(){
-  document.getElementById('ideasMonth').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(IV.y,IV.m-1,1)));
-  const vk=`${IV.y}-${String(IV.m).padStart(2,'0')}`;if(selDay&&selDay.slice(0,7)!==vk)selDay=null;
-  ideasCalendar();renderPmView();renderDayDetail();
-  const mt=loadTrades().filter(x=>x.date.slice(0,7)===vk),s=computeStats(mt);
-  document.getElementById('perfTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(IV.y,IV.m-1,1)))+' Performance';
-  document.getElementById('ideasStat').innerHTML=`<div class="s"><div class="v">${s.n}</div><div class="l">Ideas</div></div><div class="s"><div class="v up">${s.wr}%</div><div class="l">Win rate</div></div><div class="s"><div class="v">${s.wins}</div><div class="l">Wins</div></div><div class="s"><div class="v down">${s.loss}</div><div class="l">Losses</div></div><div class="s"><div class="v ${s.avg>=0?'up':'down'}">${s.avg>=0?'+':''}${s.avg.toFixed(1)}R</div><div class="l">Avg R</div></div><div class="s"><div class="v ${s.totR>=0?'up':'down'}">${s.totR>=0?'+':''}${s.totR.toFixed(1)}R</div><div class="l">Total R</div></div>`;
-  document.getElementById('ideasEquity').innerHTML=equitySvg(mt);
-}
-document.getElementById('prevMI').addEventListener('click',()=>{let m=IV.m-1,y=IV.y;if(m<1){m=12;y--;}IV={y,m};renderIdeas();});
-document.getElementById('nextMI').addEventListener('click',()=>{let m=IV.m+1,y=IV.y;if(m>12){m=1;y++;}IV={y,m};renderIdeas();});
 /* ============================================================
    PROTOCOL SCORE — six dimensions of edge quality, 0–100 each.
    Five are the standard performance axes; the sixth (Protocol
@@ -1554,16 +1492,16 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
   const log=t.slice().sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('tlCount').textContent='('+t.length+')';
   document.getElementById('tradeLog').innerHTML=log.length?log.map(tr=>{const rt=tr.res==='Open'?'tag blue':tr.res==='Win'?'tag bull':tr.res==='Loss'?'tag bear':'tag neut';return `<div class="tl"><div class="trev" data-id="${tr.id}" style="cursor:pointer;flex:1"><b>${tr.pair}</b> <span class="tag ${tr.dir==='Long'?'bull':'bear'}">${tr.dir}</span> <span class="${rt}">${tr.res}${tr.r?' '+(+tr.r>0?'+':'')+tr.r+'R':''}</span><br><span class="subtle">${tr.date} · ${tr.model||''} · ${tr.sess||''}</span></div><span class="x" data-id="${tr.id}">✕</span></div>`;}).join(''):'<div class="subtle">No trades yet.</div>';
   document.querySelectorAll('#tradeLog .trev').forEach(x=>x.addEventListener('click',()=>openTradeReview(+x.dataset.id)));
-  document.querySelectorAll('#tradeLog .x').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();const id=+x.dataset.id;saveTrades(loadTrades().filter(t=>t.id!==id));renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);}));
+  document.querySelectorAll('#tradeLog .x').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();const id=+x.dataset.id;saveTrades(loadTrades().filter(t=>t.id!==id));renderJournal();if(RENDERED.pmr)safe(renderPmr);}));
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
 document.getElementById('impJson').addEventListener('click',()=>document.getElementById('impFile').click());
-document.getElementById('impFile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(Array.isArray(arr)){saveTrades(arr);renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);}}catch(e){alert('Invalid JSON');}};rd.readAsText(f);});
+document.getElementById('impFile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(Array.isArray(arr)){saveTrades(arr);renderJournal();if(RENDERED.pmr)safe(renderPmr);}}catch(e){alert('Invalid JSON');}};rd.readAsText(f);});
 
 /* ===== Daily Brief archive + pop-out ===== */
 function localBriefs(){try{return JSON.parse(lsGet('ct_briefs')||'{}');}catch(e){return {};}}
@@ -1758,7 +1696,7 @@ function syncFrameworkFromBrief(b){
     savePmAll(all);
   }catch(e){}
 }
-function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; syncFrameworkFromBrief(b); closeCompose(); goBrief(); safe(renderBriefCal); safe(renderIdeas); if(RENDERED.pmr)safe(renderPmr); expandMyBrief(b.date); }
+function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; syncFrameworkFromBrief(b); closeCompose(); goBrief(); safe(renderBriefCal);  if(RENDERED.pmr)safe(renderPmr); expandMyBrief(b.date); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
 function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);renderComposedCharts();}
 const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
@@ -1901,7 +1839,7 @@ function savePm(){
   const all=loadPm();const has=pmHasContent(obj);if(has)all[selDay]=obj;else delete all[selDay];
   if(!savePmAll(all))return;
   const st=cbEl('pm-status');if(st)st.innerHTML=has?('<span class="up">✓ Saved '+fmtDay(selDay)+'</span> <span class="subtle">— filled in on the main screen</span>'):'<span class="mut">Nothing to save yet — add a framework, POI, liquidity target, direction, or chart.</span>';
-  renderPmView();ideasCalendar();
+  renderPmView();
 }
 function renderPmView(){
   const el=cbEl('pmView');if(!el)return;
@@ -2348,6 +2286,8 @@ function dayDossierHtml(D){
     if(D.pm.scenario&&D.pm.scenario.length)h+=`<div class="narr">${D.pm.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`;
     if(p.key)h+=`<div class="kv"><span class="k">POI</span><span class="v">${escH(p.key)}</span></div>`;
     if(D.pm.liq)h+=`<div class="kv"><span class="k">Liquidity Target</span><span class="v">${escH(D.pm.liq)}</span></div>`;
+    const _fs=pmShotsFor(D.ds,D.pm);
+    if(_fs.length)h+=_fs.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('');
     h+='</div>';
   }else h+=`<div class="briefsec"><h4>Pre Market Framework</h4><div class="subtle">No framework written for this day.</div></div>`;
   if(D.trades.length){
@@ -2564,6 +2504,7 @@ function savePmr(){
 }
 if(cbEl('pmrOpen')){
   cbEl('pmrOpen').addEventListener('click',openPmrModal);
+  if(cbEl('pmrFramework'))cbEl('pmrFramework').addEventListener('click',()=>{const d=selWeekDay||selPmrDay;if(!d){alert('Pick a day on the calendar first.');return;}openCompose(d);});
   cbEl('pmrX').addEventListener('click',closePmrModal);
   cbEl('pmrModal').addEventListener('click',e=>{if(e.target.id==='pmrModal')closePmrModal();});
   cbEl('pmr-drop').addEventListener('click',()=>cbEl('pmr-file').click());
@@ -2630,7 +2571,7 @@ function openDayTrades(ds){curTradeId=null;const n=loadTrades().filter(t=>t.date
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
 function renderTradeShots(){renderShotStrip('tr-shots',tradeShots,renderTradeShots);}
 function trAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{tradeShots.push(u);renderTradeShots();});rd.readAsDataURL(file);}
-function saveTradeCharts(){if(curTradeId==null)return;const t=loadTrades();const i=t.findIndex(x=>x.id===curTradeId);if(i<0)return;t[i].shots=tradeShots.slice();saveTrades(t);const st=document.getElementById('tr-charts-status');if(st)st.innerHTML='<span class="up">✓ Charts saved — in the calendar & PDF</span>';renderJournal();safe(renderIdeas);if(RENDERED.pmr)safe(renderPmr);}
+function saveTradeCharts(){if(curTradeId==null)return;const t=loadTrades();const i=t.findIndex(x=>x.id===curTradeId);if(i<0)return;t[i].shots=tradeShots.slice();saveTrades(t);const st=document.getElementById('tr-charts-status');if(st)st.innerHTML='<span class="up">✓ Charts saved — in the calendar & PDF</span>';renderJournal();if(RENDERED.pmr)safe(renderPmr);}
 if(document.getElementById('tradeModalX')){
   document.getElementById('tradeModalX').addEventListener('click',closeTradeModal);
   document.getElementById('tradeModal').addEventListener('click',e=>{if(e.target.id==='tradeModal')closeTradeModal();});
