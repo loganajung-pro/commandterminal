@@ -291,7 +291,7 @@ ul.tight li::marker{color:var(--org)}
       <hr class="d">
       <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 4px">
         <button class="btn grn" id="saveBriefBtn" style="padding:13px 24px;font-size:14px">Save today's brief</button>
-        <button class="btn grn" id="composeBriefBtn" style="padding:13px 24px;font-size:14px">＋ Compose My Daily Brief</button>
+        <button class="btn grn" id="composeBriefBtn" style="padding:13px 24px;font-size:14px">＋ Compose Framework</button>
       </div>
       <div class="subtle" style="text-align:center;padding:0 0 14px">Save today's generated brief (📄 · auto-saves 8:35 AM ET) · Compose saves your own dated brief (📝) — both land in the Daily Briefings calendar.</div>
     </section>
@@ -359,7 +359,7 @@ ul.tight li::marker{color:var(--org)}
         <div class="panel" style="min-height:calc(100vh - 130px)">
           <div class="ph" style="border-bottom:1px solid var(--line);padding:0 0 12px;margin-bottom:12px">
             <div><h2 id="dayDetailTitle" style="font-size:16px;font-weight:600;margin:0">Day</h2><span class="subtle" id="fwDay"></span></div>
-            <div style="display:flex;gap:8px"><button class="btn grn" id="pmOpen" style="padding:7px 14px">Pre Market Framework</button></div>
+            <div style="display:flex;gap:8px"><button class="btn grn" id="pmOpen" style="padding:7px 14px">Compose Framework</button></div>
           </div>
           <div id="pmView"></div>
           <hr class="d">
@@ -532,13 +532,22 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <div class="modal" id="composeModal"><div class="box" style="max-width:840px">
   <span class="x" id="composeX">✕</span>
-  <h3>Compose Daily Briefing</h3>
-  <div class="subtle" id="composeDateLbl">Your own daily brief — attach annotated charts, mark your levels, write your read. Hit Done and it saves as a dated note in your Daily Briefings calendar (separate from the generated page brief).</div>
+  <h3>Compose Framework <span class="subtle" id="cbDayLbl"></span></h3>
+  <div class="subtle" id="composeDateLbl">Your full pre-market in one place — readiness, bias, levels, liquidity target, execution framework and charts. Saves to your Daily Briefings calendar and drives the Pre Market Framework panel in Trade Ideas.</div>
+  <div class="briefsec"><h4>Readiness <span class="subtle">— your state before the session · 1 poor → 5 excellent</span></h4>
+    <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="field"><label>Sleep</label><select id="cb-sleep"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      <div class="field"><label>Energy</label><select id="cb-energy"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      <div class="field"><label>Focus</label><select id="cb-focus"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+    </div>
+    <div class="field" style="margin-top:8px"><label>Non-negotiables done</label><div id="cb-routine" style="display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:4px"></div></div>
+  </div>
   <div class="briefsec"><h4>Session Read</h4>
     <div class="row2">
       <div class="field"><label>Date</label><input type="date" id="cb-date"></div>
       <div class="field"><label>Draw on Liquidity</label><select id="cb-draw"><option>HIGHER</option><option>LOWER</option><option>TWO-SIDED</option></select></div>
     </div>
+    <div class="field"><label>Liquidity Target <span class="subtle">— the specific draw you're hunting</span></label><input id="cb-liq" placeholder="PDH / PDL · equal highs / lows · session extreme · price…"></div>
     <div class="row2">
       <div class="field"><label>NQ bias</label><select id="cb-bias-NQ"><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral</option></select></div>
       <div class="field"><label>ES bias</label><select id="cb-bias-ES"><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral</option></select></div>
@@ -558,6 +567,8 @@ ul.tight li::marker{color:var(--org)}
   </div>
   <div class="briefsec"><h4>Overview</h4>
     <div class="field"><textarea id="cb-overview" style="min-height:90px" placeholder="Framing for the session — HTF draw, where price sits, what you're hunting. Blank line = new paragraph."></textarea></div></div>
+  <div class="briefsec"><h4>Execution Framework <span class="subtle">— the A→B plan you will actually trade</span></h4>
+    <div class="field"><textarea id="cb-framework" style="min-height:120px" placeholder="HTF bias · draw on liquidity · POI · time window · scenario A→B · displacement · CSD · entry trigger · invalidation. Blank line = new paragraph."></textarea></div></div>
   <div class="briefsec"><h4>Key Themes <span class="subtle">— one per line</span></h4>
     <div class="field"><textarea id="cb-themes" style="min-height:66px" placeholder="HTF draw higher across NQ/ES/YM&#10;One trade per focus window"></textarea></div></div>
   <div class="briefsec"><h4>Watch Today <span class="subtle">— one per line</span></h4>
@@ -636,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · tags';
+const BUILD='2026-07-19 · framework-merge';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1677,8 +1688,10 @@ function cbEl(id){return document.getElementById(id);}
 function cbRenderShots(){renderShotStrip('cb-shots',cbShots,cbRenderShots);}
 function cbAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{cbShots.push(u);cbRenderShots();});rd.readAsDataURL(file);}
 function cbBuildLevels(){const body=cbEl('cb-lvl-body');if(!body)return;body.innerHTML=['NQ','ES','YM'].map(k=>`<tr><td>${k}</td><td><input id="cb-pdh-${k}" class="cbin"></td><td><input id="cb-pdl-${k}" class="cbin"></td><td><input id="cb-open-${k}" class="cbin"></td><td><input id="cb-now-${k}" class="cbin"></td><td><input id="cb-lonH-${k}" class="cbin"></td><td><input id="cb-lonL-${k}" class="cbin"></td><td><input id="cb-asiaH-${k}" class="cbin"></td><td><input id="cb-asiaL-${k}" class="cbin"></td><td><input id="cb-mid-${k}" class="cbin"></td><td><input id="cb-key-${k}" class="cbin" style="text-align:left" placeholder="OB · FVG · equal highs…"></td></tr>`).join('');}
-function openCompose(){
-  const ds=etParts().date;cbEl('cb-date').value=ds;
+function openCompose(day){
+  const ds=(typeof day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day))?day:etParts().date;
+  cbEl('cb-date').value=ds;
+  const dl=cbEl('cbDayLbl');if(dl)dl.textContent='· '+fmtDayLong(ds);
   try{const s=drawState();cbEl('cb-draw').value=(s&&s.draw)?s.draw:'HIGHER';}catch(e){cbEl('cb-draw').value='HIGHER';}
   cbBuildLevels();
   const q=LASTQ||{};
@@ -1689,7 +1702,8 @@ function openCompose(){
       if(pl!=null)cbEl('cb-pdl-'+k).value=fmtN(pl);
       if(d.open!=null)cbEl('cb-open-'+k).value=fmtN(d.open);
       if(d.price!=null)cbEl('cb-now-'+k).value=fmtN(d.price);}});
-  cbShots=[];['cb-overview','cb-themes','cb-watch'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
+  cbShots=[];['cb-overview','cb-themes','cb-watch','cb-framework','cb-liq'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
+  ['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value='';});pmRenderRoutine([],'cb-routine');
   // Reopen keeps your work: load your own saved brief for this day if you've made one.
   const existing=myBriefs()[ds];if(existing)cbLoad(existing);
   cbRenderShots();cbEl('cb-status').textContent='';
@@ -1702,6 +1716,10 @@ function cbLoad(b){
   cbEl('cb-overview').value=(b.overview||[]).join('\n\n');
   cbEl('cb-themes').value=(b.themes||[]).join('\n');
   cbEl('cb-watch').value=(b.watch||[]).join('\n');
+  if(cbEl('cb-framework'))cbEl('cb-framework').value=(b.framework||[]).join('\n\n');
+  if(cbEl('cb-liq'))cbEl('cb-liq').value=b.liq||'';
+  const rd=b.ready||{};['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value=rd[k]||'';});
+  pmRenderRoutine(b.routine||[],'cb-routine');
   cbShots=(b.shots||[]).slice();
 }
 function closeCompose(){cbEl('composeModal').classList.remove('open');}
@@ -1715,12 +1733,32 @@ function buildComposedObject(){
   const themes=cbEl('cb-themes').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const watch=cbEl('cb-watch').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const gen=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual';
-  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],shots:cbShots.slice(),manual:true};
+  const framework=(cbEl('cb-framework')?cbEl('cb-framework').value:'').split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
+  const liq=g('cb-liq');
+  const ready={sleep:g('cb-sleep'),energy:g('cb-energy'),focus:g('cb-focus')};
+  const routine=pmRoutineVal('cb-routine');
+  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],framework,liq,ready,routine,shots:cbShots.slice(),manual:true};
 }
 /* Compose now builds YOUR OWN brief — saved separately, it does NOT overwrite the generated page brief. */
 function myBriefs(){try{return JSON.parse(lsGet('ct_mybriefs')||'{}');}catch(e){return {};}}
 function saveMyBrief(b){const all=myBriefs();all[b.date]=b;try{lsSet('ct_mybriefs',JSON.stringify(all));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
-function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; closeCompose(); goBrief(); safe(renderBriefCal); expandMyBrief(b.date); }
+/* The Compose Framework modal is now the single pre-market entry point.
+   On save it also writes the framework half through to ct_premarket so the
+   Trade Ideas panel, calendar markers and every KPI keep working unchanged.
+   Screenshots are NOT copied — they stay in the brief and are resolved on read. */
+function syncFrameworkFromBrief(b){
+  try{
+    const dirMap={bullish:'Long',bearish:'Short'};
+    const nqKey=((b.levels||[]).filter(l=>l.s==='NQ')[0]||{}).key||'';
+    const obj={date:b.date,dir:(dirMap[(b.bias&&b.bias.NQ)||'']||'—'),poi:{key:nqKey},liq:b.liq||'',
+      ready:b.ready||{},routine:(b.routine||[]).slice(),scenario:(b.framework||[]).slice(),
+      shots:[],fromBrief:true};
+    const all=loadPm();
+    if(pmHasContent(obj)||obj.scenario.length)all[b.date]=obj;else delete all[b.date];
+    savePmAll(all);
+  }catch(e){}
+}
+function doneCompose(){ const b=buildComposedObject(); b.mine=true; if(!saveMyBrief(b))return; syncFrameworkFromBrief(b); closeCompose(); goBrief(); safe(renderBriefCal); safe(renderIdeas); if(RENDERED.pmr)safe(renderPmr); expandMyBrief(b.date); }
 function goBrief(){document.querySelectorAll('.navi').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));const n=document.querySelector('.navi[data-v="brief"]');if(n)n.classList.add('active');const v=document.getElementById('view-brief');if(v)v.classList.add('active');}
 function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);renderComposedCharts();}
 const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
@@ -1815,6 +1853,11 @@ if(cbEl('composeBriefBtn')){
 const PMKEY='ct_premarket';
 function loadPm(){try{return JSON.parse(lsGet(PMKEY)||'{}');}catch(e){return {};}}
 function savePmAll(o){try{lsSet(PMKEY,JSON.stringify(o));return true;}catch(e){cbEl('pm-status').innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
+function pmShotsFor(ds,ex){
+  if(ex&&ex.shots&&ex.shots.length)return ex.shots;              // legacy records keep their own
+  try{const b=(typeof myBriefs==='function')?myBriefs()[ds]:null;if(b&&b.shots&&b.shots.length)return b.shots;}catch(e){}
+  return [];
+}
 function pmHasContent(ex){return !!(ex&&((ex.scenario&&ex.scenario.length)||(ex.shots&&ex.shots.length)||(ex.routine&&ex.routine.length)||(ex.ready&&(ex.ready.sleep||ex.ready.energy||ex.ready.focus))||(ex.liq&&String(ex.liq).trim())||(ex.poi&&(ex.poi.key||ex.poi.pdh||ex.poi.pdl||ex.poi.open||ex.poi.now))||(ex.dir&&ex.dir!=='—')));}
 let pmShots=[];
 /* One-time migration: fold any legacy inline "Framework / Plan" entries (ct_frameworks)
@@ -1863,7 +1906,7 @@ function savePm(){
 function renderPmView(){
   const el=cbEl('pmView');if(!el)return;
   const ex=selDay?loadPm()[selDay]:null;
-  if(!pmHasContent(ex)){el.innerHTML=selDay?`<div class="panel" style="border-style:dashed"><div class="subtle" style="padding:6px 0">No framework for ${fmtDay(selDay)} yet — hit <b>Pre Market Framework</b> above to build it. It fills in here once saved.</div></div><hr class="d">`:'';return;}
+  if(!pmHasContent(ex)){el.innerHTML=selDay?`<div class="panel" style="border-style:dashed"><div class="subtle" style="padding:6px 0">No framework for ${fmtDay(selDay)} yet — hit <b>Compose Framework</b> above to build it. It fills in here once saved.</div></div><hr class="d">`:'';return;}
   const p=ex.poi||{};
   const dirTag=(ex.dir&&ex.dir!=='—')?`<span class="tag ${ex.dir==='Long'?'bull':'bear'}">${ex.dir}</span>`:'';
   let poi='';
@@ -1872,9 +1915,10 @@ function renderPmView(){
   if(p.pdh||p.pdl)poi+=`<div class="kv"><span class="k">PDH / PDL</span><span class="v">${escH(p.pdh||'—')} / ${escH(p.pdl||'—')}</span></div>`;
   if(p.open||p.now)poi+=`<div class="kv"><span class="k">Open / Now</span><span class="v">${escH(p.open||'—')} / ${escH(p.now||'—')}</span></div>`;
   const scen=(ex.scenario&&ex.scenario.length)?`<div class="sec" style="margin-top:12px">Framework</div><div class="narr">${ex.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`:'';
-  const shots=(ex.shots&&ex.shots.length)?`<div class="sec" style="margin-top:12px">Annotated Charts</div>${ex.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}`:'';
+  const _sh=pmShotsFor(selDay,ex);
+  const shots=_sh.length?`<div class="sec" style="margin-top:12px">Annotated Charts</div>${_sh.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}`:'';
   el.innerHTML=`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec grn" style="margin:0">Pre Market Framework — NQ ${dirTag}</h2><div style="display:flex;gap:8px;align-items:center"><button class="btn" id="pmEdit" style="padding:4px 10px">✎ Edit</button><button class="btn" id="pmPdf" style="padding:4px 10px">⬇ PDF</button><span class="subtle">${fmtDay(selDay)}</span></div></div>${scen}${poi?`<div style="margin-top:12px">${poi}</div>`:''}${shots}</div><hr class="d">`;
-  const eb=document.getElementById('pmEdit');if(eb)eb.addEventListener('click',openPm);
+  const eb=document.getElementById('pmEdit');if(eb)eb.addEventListener('click',()=>{if(selDay)openCompose(selDay);});
   const pb=document.getElementById('pmPdf');if(pb)pb.addEventListener('click',()=>printDoc('Pre Market Framework — '+fmtDayLong(selDay),pmPrintHtml(ex)));
 }
 function pmPrintHtml(ex){
@@ -1890,7 +1934,7 @@ function pmPrintHtml(ex){
   return `${scen}<div class="briefsec">${poi}</div>${shots}`;
 }
 if(cbEl('pmOpen')){
-  cbEl('pmOpen').addEventListener('click',openPm);
+  cbEl('pmOpen').addEventListener('click',()=>{if(!selDay){alert('Pick a day on the calendar first.');return;}openCompose(selDay);});
   cbEl('pmX').addEventListener('click',closePm);
   cbEl('pmModal').addEventListener('click',e=>{if(e.target.id==='pmModal')closePm();});
   cbEl('pm-drop').addEventListener('click',()=>cbEl('pm-file').click());
@@ -1969,11 +2013,11 @@ function pmrRenderMissed(){
 }
 /* ---- Pre-market non-negotiables ---- */
 const ROUTINE=['Coherence work','Pre-market review','Framework written','Physical / movement'];
-function pmRenderRoutine(sel){
-  const c=document.getElementById('pm-routine');if(!c)return;const on=sel||[];
+function pmRenderRoutine(sel,cid){
+  const c=document.getElementById(cid||'pm-routine');if(!c)return;const on=sel||[];
   c.innerHTML=ROUTINE.map(rt=>`<label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11.5px"><input type="checkbox" class="pmrt" value="${escH(rt)}" ${on.indexOf(rt)>=0?'checked':''}> ${escH(rt)}</label>`).join('');
 }
-function pmRoutineVal(){return Array.prototype.slice.call(document.querySelectorAll('#pm-routine .pmrt')).filter(x=>x.checked).map(x=>x.value);}
+function pmRoutineVal(cid){return Array.prototype.slice.call(document.querySelectorAll('#'+(cid||'pm-routine')+' .pmrt')).filter(x=>x.checked).map(x=>x.value);}
 function readinessOf(pm){if(!pm||!pm.ready)return null;const v=['sleep','energy','focus'].map(k=>+pm.ready[k]||0).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
 let PV=curMonth(), selPmrDay=etParts().date, selWeek=null, selWeekDay=null, pmrShots=[], pmrDebriefData=null;
 const COACH_DEBRIEF_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro layers L1–L4 + Execution Protocol Framework).
