@@ -111,6 +111,9 @@ ul.tight li::marker{color:var(--org)}
 .geo-row .gh a:hover{text-decoration:underline}
 .geo-row .gx{color:var(--mut);display:block;margin-top:3px;line-height:1.4}
 .geo-row .gp{color:var(--faint);display:block;margin-top:2px;font-size:11px;letter-spacing:.02em}
+/* week selection in the Post Market Review calendar */
+.cell.wksel{background:rgba(53,208,127,.10);border-color:var(--grn-dim)}
+.wkrow:hover{border-color:var(--grn-dim)}
 /* calendar */
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .sumcard{border:1px solid var(--line);border-radius:9px;padding:14px;text-align:center}
@@ -386,9 +389,22 @@ ul.tight li::marker{color:var(--org)}
       <div class="grid" style="grid-template-columns:1.1fr 1fr;align-items:start">
         <div>
           <div class="panel">
+            <div style="display:flex;gap:6px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap">
+              <div style="display:flex;gap:5px;align-items:center">
+                <button class="btn" id="pvPrevY" title="Previous year" style="padding:5px 8px">◄◄</button>
+                <button class="btn" id="prevPV" title="Previous month" style="padding:5px 9px">◄</button>
+                <select id="pvMonth" class="btn" style="padding:5px 8px"></select>
+                <select id="pvYear" class="btn" style="padding:5px 8px"></select>
+                <button class="btn" id="nextPV" title="Next month" style="padding:5px 9px">►</button>
+                <button class="btn" id="pvNextY" title="Next year" style="padding:5px 8px">►►</button>
+              </div>
+              <button class="btn grn" id="pvToday" style="padding:5px 12px">Today</button>
+            </div>
             <div class="calgrid" id="pmrCalHead"></div><div class="calgrid" id="pmrCalBody"></div>
-            <div class="legend" style="margin-top:8px"><span class="lg"><span class="brdot">📓</span> Journal saved</span><span class="lg"><span class="sw" style="background:var(--blue)"></span>Today</span></div>
+            <div class="legend" style="margin-top:8px"><span class="lg"><span class="brdot">📓</span> Journal saved</span><span class="lg"><span class="sw" style="background:var(--blue)"></span>Today</span><span class="lg"><span class="sw" style="background:var(--grn)"></span>Selected week</span><span class="lg subtle">click Sat/Sun for the week review</span></div>
           </div>
+          <hr class="d">
+          <div class="panel"><h2 class="sec grn">Weekly Summary <span class="subtle">— Mon–Fri · click a week to review it</span></h2><div id="pmrWeeks"></div></div>
           <hr class="d">
           <div class="panel"><h2 class="sec grn">Month Summary</h2><div class="stat" id="pmrStat"></div></div>
         </div>
@@ -418,7 +434,7 @@ ul.tight li::marker{color:var(--org)}
   <div class="row2"><div class="field"><label>Session</label><select id="f-sess"><option>NY AM</option><option>NY PM</option><option>London</option><option>Asia</option></select></div>
     <div class="field"><label>Result</label><select id="f-res"><option>Open</option><option>Win</option><option>Loss</option><option>BE</option></select></div></div>
   <div class="row2"><div class="field"><label>R multiple</label><input id="f-r" placeholder="e.g. 2.0"></div>
-    <div class="field"><label>Mindset / State</label><input id="f-state" placeholder="Settled Authority?"></div></div>
+    <div class="field"><label>Mindset / State</label><select id="f-state"><option value="">—</option><option>Settled Authority</option><option>Grounded</option><option>Urgent</option><option>Doubt</option><option>Greed</option><option>Fear</option><option>Hesitant</option><option>Detached</option></select></div></div>
   <div class="row2" style="grid-template-columns:1fr 1fr 1fr">
     <div class="field"><label>Profit Grade</label><select id="f-pgrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
     <div class="field"><label>Entry Grade</label><select id="f-egrade"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>F</option></select></div>
@@ -523,6 +539,12 @@ ul.tight li::marker{color:var(--org)}
     <div id="pmr-shots"></div>
     <div class="field" style="margin-top:8px"><textarea id="pmr-technical" style="min-height:56px" placeholder="Notes on the technicals — what the charts show, what you'd mark differently."></textarea></div></div>
   <div class="briefsec"><h4>Market Review</h4><div class="field"><textarea id="pmr-market" style="min-height:70px" placeholder="Broader market read — what the day meant, what to carry into tomorrow."></textarea></div></div>
+  <div class="briefsec"><h4>Plan vs Execution <span class="subtle">— links your pre-market framework to what you actually did</span></h4>
+    <div class="field"><label>Did you trade the framework you wrote?</label>
+      <select id="pmr-adhere"><option value="">—</option><option value="Y">Yes — followed the plan</option><option value="Partial">Partial — deviated somewhat</option><option value="N">No — abandoned the plan</option></select></div>
+    <div class="field" style="margin-top:8px"><label>Rule breaks — tick anything that happened</label>
+      <div id="pmr-breaks" style="display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:4px"></div></div>
+  </div>
   <div style="margin-top:6px;display:flex;align-items:center;gap:10px"><button class="btn" id="pmr-debrief-btn" type="button">🧠 Coaches Debrief</button><span class="subtle" id="pmr-debrief-hint">Coach reads your six answers and reflects back where psychology or protocol slipped — tied to your L1–L4 layers and shadow patterns. Needs an Anthropic key (Settings ⚙).</span></div>
   <div id="pmr-debrief" style="margin-top:10px"></div>
   <button class="btn grn" id="pmr-save" style="width:100%;margin-top:8px">Save Journal</button>
@@ -1677,8 +1699,14 @@ function startDailySchedules(){
 const PMRKEY='ct_pmr';
 function loadPmr(){try{return JSON.parse(lsGet(PMRKEY)||'{}');}catch(e){return {};}}
 function savePmrAll(o){try{lsSet(PMRKEY,JSON.stringify(o));return true;}catch(e){const st=cbEl('pmr-status');if(st)st.innerHTML='<span class="down">Storage full — remove a screenshot and save again.</span>';return false;}}
-function pmrHasContent(x){return !!(x&&(['surface','inner','risk','framework','technical','market'].some(k=>x[k]&&String(x[k]).trim())||(x.shots&&x.shots.length)));}
-let PV=curMonth(), selPmrDay=etParts().date, pmrShots=[], pmrDebriefData=null;
+function pmrHasContent(x){return !!(x&&(['surface','inner','risk','framework','technical','market'].some(k=>x[k]&&String(x[k]).trim())||(x.shots&&x.shots.length)||(x.adhere&&String(x.adhere).trim())||(x.breaks&&x.breaks.length)));}
+function pmrRenderBreaks(sel){
+  const c=document.getElementById('pmr-breaks');if(!c)return;
+  const on=sel||[];
+  c.innerHTML=RULE_BREAKS.map((b,i)=>`<label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11.5px"><input type="checkbox" class="pmrbrk" value="${escH(b)}" ${on.indexOf(b)>=0?'checked':''}> ${escH(b)}</label>`).join('');
+}
+function pmrBreaksVal(){return Array.prototype.slice.call(document.querySelectorAll('#pmr-breaks .pmrbrk')).filter(x=>x.checked).map(x=>x.value);}
+let PV=curMonth(), selPmrDay=etParts().date, selWeek=null, pmrShots=[], pmrDebriefData=null;
 const COACH_DEBRIEF_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro layers L1–L4 + Execution Protocol Framework).
 
 The 4 Pillars To Success — MASTER FILTER for every comment you make. In the briefing / pre-market, the 4 Pillars filter the whole conversation. In post-market reviews, L1–L4 is the primary lens but the 4 Pillars still sit above it:
@@ -1740,6 +1768,124 @@ async function pmrDebrief(){
     say('up','✓ Debrief ready — it saves with your journal.');
   }catch(e){say('down','Debrief failed: '+escH((e&&e.message)||'error'));}
 }
+/* ============================================================
+   WEEK ROLL-UP + CROSS-STORE DOSSIER
+   Nothing is duplicated. Every store is already keyed YYYY-MM-DD,
+   so a day/week "record" is assembled on read from the live stores:
+     ct_briefs / ct_mybriefs · ct_premarket · ct_trades · ct_pmr
+   Only the weekly coach review is persisted (ct_weekly, keyed by Monday).
+   ============================================================ */
+const WKEY='ct_weekly';
+function loadWeekly(){try{return JSON.parse(lsGet(WKEY)||'{}');}catch(e){return {};}}
+function saveWeeklyAll(o){try{lsSet(WKEY,JSON.stringify(o));return true;}catch(e){return false;}}
+const RULE_BREAKS=['Oversize','Back-to-back','FOMO / chase','Moved stop','Outside window','Revenge'];
+function mondayOf(ds){const d=new Date(ds+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10);}
+function weekDays(mon){const o=[];for(let i=0;i<5;i++)o.push(dsShift(mon,i));return o;}
+function weekLabel(mon){const f=x=>new Intl.DateTimeFormat('en-US',{timeZone:'UTC',month:'short',day:'numeric'}).format(new Date(x+'T12:00:00Z'));return f(mon)+' – '+f(dsShift(mon,4));}
+function weeksInMonth(y,m){const mm=String(m).padStart(2,'0'),dim=new Date(Date.UTC(y,m,0)).getUTCDate();const last=`${y}-${mm}-${String(dim).padStart(2,'0')}`;const out=[];let mon=mondayOf(`${y}-${mm}-01`);while(mon<=last){out.push(mon);mon=dsShift(mon,7);}return out;}
+function gradeVal(g){return {A:4,B:3,C:2,D:1,F:0}[g];}
+function gradeAvg(ts,k){const v=ts.map(t=>t[k]).filter(x=>gradeVal(x)!=null);return v.length?v.reduce((a,x)=>a+gradeVal(x),0)/v.length:null;}
+function gradeLetter(n){return n==null?'—':(n>=3.5?'A':n>=2.5?'B':n>=1.5?'C':n>=0.5?'D':'F');}
+function dayDossier(ds){
+  const pm=loadPm()[ds]||null, jr=loadPmr()[ds]||null;
+  const trades=loadTrades().filter(t=>t.date===ds);
+  const brief=getBriefs()[ds]||null;
+  const mine=(typeof myBriefs==='function')?(myBriefs()[ds]||null):null;
+  let cls='',why='';
+  try{const c=classifyDay((MONTHCAL||[]).filter(e=>etDateStr(utcToEt(e.date))===ds),ds);cls=c.cls;why=c.why;}catch(e){}
+  const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE');
+  const r=closed.reduce((a,t)=>a+(+t.r||0),0);
+  const violation=trades.length?(cls==='skip'?'Traded a NO-TRADE day':(cls==='caution'?'Traded a CAUTION day':null)):null;
+  return {ds,pm,jr,trades,closed,r,brief,mine,cls,why,violation,
+    hasPlan:pmHasContent(pm),hasJournal:pmrHasContent(jr),
+    adhere:(jr&&jr.adhere)||'',breaks:(jr&&jr.breaks)||[]};
+}
+function weekDossier(mon){
+  const days=weekDays(mon).map(dayDossier);
+  const trades=[].concat.apply([],days.map(d=>d.trades));
+  const stats=computeStats(trades);
+  const breaks={};days.forEach(d=>(d.breaks||[]).forEach(b=>{breaks[b]=(breaks[b]||0)+1;}));
+  const states={};trades.forEach(t=>{const k=(t.state||'').trim();if(k)states[k]=(states[k]||0)+1;});
+  const adhere={Y:0,Partial:0,N:0};days.forEach(d=>{if(adhere[d.adhere]!=null)adhere[d.adhere]++;});
+  const rs=trades.filter(t=>t.r!=null&&t.r!=='').map(t=>+t.r||0);
+  return {mon,label:weekLabel(mon),days,trades,stats,
+    plans:days.filter(d=>d.hasPlan).length,journals:days.filter(d=>d.hasJournal).length,
+    traded:days.filter(d=>d.trades.length).length,
+    violations:days.filter(d=>d.violation).map(d=>({ds:d.ds,v:d.violation})),
+    breaks,states,adhere,
+    best:rs.length?Math.max.apply(null,rs):null,worst:rs.length?Math.min.apply(null,rs):null,
+    pg:gradeAvg(trades,'pgrade'),eg:gradeAvg(trades,'egrade'),mg:gradeAvg(trades,'mgrade'),
+    debrief:(loadWeekly()[mon]||{}).debrief||null};
+}
+const COACH_WEEK_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro L1–L4 + Execution Protocol Framework).
+
+The 4 Pillars To Success are the master filter for every comment you make:
+1. Bring Forth the Right Mind — mind and being complete, without attachment to outcome and without judgment of what should or shouldn't be happening.
+2. Self Control — consistency is key; self control opens you to consistency. Take the next right action.
+3. Supreme Self Is the Highest Value — impress the mind as often as possible with the truth that you are supreme in your being.
+4. The True Will — the personal will's only function is to hold the mind open so the higher mind expresses freely.
+
+Target operating state: "Settled Authority" — grounded, clear, unhurried, non-attached, executing from completion not from need.
+
+Shadow patterns: Hesitation Before Entry (L2), Identity Collapse After Loss (L1+L4), Oversize / Overtrade (L1+L2).
+
+You are reviewing an ENTIRE WEEK (Mon–Fri), not a single day. Below is the aggregated record: results, grades, plan-vs-execution adherence, rule breaks, state at execution, protocol-day violations, and the daily journals. Read the WEEK as a pattern — what repeated, what compounded, what improved across the five days. Cite specific days and numbers. If the week was clean, say so plainly and reinforce the identity; do NOT invent problems.
+
+Return ONLY strict JSON — no prose, no code fences:
+{"theme":"the single defining pattern of this week in one or two sentences — the through-line across the five days","wins":"what genuinely held: protocol, state, discipline — cite days and numbers","leaks":"where the edge leaked — the repeated behaviour, which shadow pattern and which layer (L1–L4), cited with days","recode":"the exact belief to shift for next week, stated as the new true belief","action":"one concrete embodied action to run every session next week","anchor":"tie back to the proven identity and the vision — make the target feel inevitable, not distant"}
+
+Each field 2–4 sentences, direct, in the coach's voice (second person, "you").`;
+function weekDebriefHtml(d){
+  if(!d)return '';
+  const row=(t,v)=>v&&String(v).trim()?`<div class="briefsec"><h4>${t}</h4><div class="narr"><p>${escH(v)}</p></div></div>`:'';
+  return `<div class="panel" style="border-color:var(--grn-dim);background:rgba(53,208,127,.05)"><h2 class="sec grn">Coach's Week Review</h2>${row('The Theme',d.theme)}${row('What Held',d.wins)}${row('Where It Leaked',d.leaks)}${row('The Recode',d.recode)}${row('Embodied Action',d.action)}${row('Anchor',d.anchor)}</div>`;
+}
+function weekDigestText(w){
+  const g=n=>gradeLetter(n);
+  let s='WEEK REVIEW — '+w.label+' (Mon–Fri)\n';
+  s+=`Totals: ${w.stats.n} trades · ${w.stats.closed} closed · ${w.stats.wr}% win rate · ${(w.stats.totR>=0?'+':'')+w.stats.totR.toFixed(1)}R total · ${(w.stats.avg>=0?'+':'')+w.stats.avg.toFixed(1)}R avg · best ${w.best!=null?w.best+'R':'—'} · worst ${w.worst!=null?w.worst+'R':'—'}\n`;
+  s+=`Coverage: frameworks ${w.plans}/5 · journals ${w.journals}/5 · days traded ${w.traded}/5\n`;
+  s+=`Grades: profit ${g(w.pg)} · entry ${g(w.eg)} · management ${g(w.mg)}\n`;
+  s+=`Plan vs execution: ${w.adhere.Y} followed · ${w.adhere.Partial} partial · ${w.adhere.N} abandoned\n`;
+  const bk=Object.keys(w.breaks);s+='Rule breaks: '+(bk.length?bk.map(k=>k+' x'+w.breaks[k]).join(', '):'none logged')+'\n';
+  const stk=Object.keys(w.states);s+='State at execution: '+(stk.length?stk.map(k=>k+' x'+w.states[k]).join(', '):'not logged')+'\n';
+  s+='Protocol violations: '+(w.violations.length?w.violations.map(v=>v.ds+' '+v.v).join('; '):'none')+'\n\n';
+  w.days.forEach(D=>{
+    s+='--- '+D.ds+' ('+fmtDay(D.ds)+') · protocol day: '+(D.cls||'n/a')+' ---\n';
+    if(D.hasPlan){s+='Pre-market framework'+((D.pm.dir&&D.pm.dir!=='—')?' ['+D.pm.dir+']':'')+': '+((D.pm.scenario||[]).join(' ')||'(none)')+'\n';
+      if(D.pm.poi&&D.pm.poi.key)s+='POI: '+D.pm.poi.key+'\n';
+      if(D.pm.liq)s+='Liquidity target: '+D.pm.liq+'\n';}
+    else s+='No pre-market framework written.\n';
+    if(D.trades.length)D.trades.forEach(t=>{s+=`Trade: ${t.pair||''} ${t.dir||''} ${t.sess||''} ${t.model||''} → ${t.res||''} ${t.r?t.r+'R':''} · state ${t.state||'n/a'} · grades P${t.pgrade||'-'}/E${t.egrade||'-'}/M${t.mgrade||'-'}${t.notes?' · notes: '+t.notes:''}\n`;});
+    else s+='No trades logged.\n';
+    if(D.adhere)s+='Plan vs execution: '+D.adhere+'\n';
+    if(D.breaks&&D.breaks.length)s+='Rule breaks: '+D.breaks.join(', ')+'\n';
+    if(D.hasJournal){const j=D.jr;
+      ['surface','inner','risk','framework','technical','market'].forEach(k=>{if(j[k]&&String(j[k]).trim())s+=k+': '+j[k]+'\n';});
+      if(j.debrief&&j.debrief.diagnosis)s+='(daily coach diagnosis: '+j.debrief.diagnosis+')\n';}
+    else s+='No journal written.\n';
+    s+='\n';
+  });
+  return s;
+}
+async function weekDebrief(){
+  if(!selWeek)return;
+  const hint=document.getElementById('wk-debrief-hint');const say=(c,m)=>{if(hint)hint.innerHTML='<span class="'+c+'">'+m+'</span>';};
+  const w=weekDossier(selWeek);
+  if(!w.stats.n&&!w.journals){say('down','Nothing logged this week yet — no trades and no journals to review.');return;}
+  const key=anthKey();if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
+  say('mut','Coach is reviewing your week…');
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:2000,messages:[{role:'user',content:[{type:'text',text:COACH_WEEK_PROMPT+'\n\n'+weekDigestText(w)}]}]})});
+    if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
+    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
+    const data=parseJsonLoose(txt);if(!data)throw new Error('Could not parse the review.');
+    const all=loadWeekly();all[selWeek]=Object.assign({},all[selWeek]||{},{week:selWeek,debrief:data});
+    if(!saveWeeklyAll(all)){say('down','Could not save the review — storage full.');return;}
+    const box=document.getElementById('wk-debrief');if(box)box.innerHTML=weekDebriefHtml(data);
+    say('up','✓ Week review saved.');safe(renderPmrWeeks);
+  }catch(e){say('down','Week review failed: '+escH((e&&e.message)||'error'));}
+}
 function pmrCalendar(){
   const y=PV.y,m=PV.m;const mo=document.getElementById('pmrMonth');if(mo)mo.textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1)));
   const head=document.getElementById('pmrCalHead'),body=document.getElementById('pmrCalBody');if(!head||!body)return;
@@ -1747,21 +1893,105 @@ function pmrCalendar(){
   const first=new Date(Date.UTC(y,m-1,1)),sd=(first.getUTCDay()+6)%7,di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());
   const jr=loadPmr();let cells='';
   for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';
+  const wkSet=selWeek?weekDays(selWeek):[];
   for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const has=pmrHasContent(jr[ds]);
-    cells+=`<div class="cell pmrday ${ds===selPmrDay?'sel':''} ${ds===td?'today':''}" data-d="${ds}" style="min-height:72px;cursor:pointer"><div class="dn">${d}${has?' <span class="brdot" title="Journal saved">📓</span>':''}</div></div>`;}
+    const D=dayDossier(ds);
+    const marks=(D.hasPlan?'<span title="Pre market framework" style="color:var(--org)">◆</span>':'')+(D.trades.length?`<span title="${D.trades.length} trade(s)" style="color:${D.r>=0?'var(--grn)':'var(--red)'}">●</span>`:'');
+    cells+=`<div class="cell pmrday ${ds===selPmrDay?'sel':''} ${wkSet.indexOf(ds)>=0?'wksel':''} ${ds===td?'today':''}" data-d="${ds}" style="min-height:72px;cursor:pointer"><div class="dn">${d}${has?' <span class="brdot" title="Journal saved">📓</span>':''}</div><div style="font-size:10px;letter-spacing:2px">${marks}</div></div>`;}
   body.innerHTML=cells;
-  body.querySelectorAll('.pmrday').forEach(c=>c.addEventListener('click',()=>{selPmrDay=c.dataset.d;renderPmr();}));
+  body.querySelectorAll('.pmrday').forEach(c=>c.addEventListener('click',()=>{
+    const ds=c.dataset.d,dow=new Date(ds+'T12:00:00Z').getUTCDay();
+    if(dow===6||dow===0){selWeek=mondayOf(ds);selPmrDay=null;}   // Sat/Sun → the week's full review
+    else{selPmrDay=ds;selWeek=null;}
+    renderPmr();
+  }));
+}
+/* ---- One day, assembled from every store ---- */
+function dayDossierHtml(D){
+  let h='';
+  if(D.cls){const tg={trade:'bull',caution:'med',skip:'bear'}[D.cls]||'neut',lb={trade:'TRADE',caution:'CAUTION',skip:'NO TRADE'}[D.cls]||'';
+    h+=`<div class="kv"><span class="k">Protocol day</span><span class="v"><span class="tag ${tg}">${lb}</span>${D.violation?` <span class="tag bear" style="margin-left:6px">⚠ ${escH(D.violation)}</span>`:''}</span></div>`;}
+  if(D.brief||D.mine){
+    const b=D.mine||D.brief;const bits=[];
+    if(b&&b.draw)bits.push('Draw '+escH(b.draw));
+    if(b&&b.bias)Object.keys(b.bias).forEach(k=>bits.push(k+' '+escH(b.bias[k])));
+    h+=`<div class="briefsec"><h4>Daily Brief</h4><div class="subtle">${D.mine?'Your composed brief':'Generated brief'} saved for this day.${bits.length?' — '+bits.join(' · '):''}</div></div>`;
+  }
+  if(D.hasPlan){const p=D.pm.poi||{};
+    h+=`<div class="briefsec"><h4>Pre Market Framework${(D.pm.dir&&D.pm.dir!=='—')?` <span class="tag ${D.pm.dir==='Long'?'bull':'bear'}">${escH(D.pm.dir)}</span>`:''}</h4>`;
+    if(D.pm.scenario&&D.pm.scenario.length)h+=`<div class="narr">${D.pm.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`;
+    if(p.key)h+=`<div class="kv"><span class="k">POI</span><span class="v">${escH(p.key)}</span></div>`;
+    if(D.pm.liq)h+=`<div class="kv"><span class="k">Liquidity Target</span><span class="v">${escH(D.pm.liq)}</span></div>`;
+    h+='</div>';
+  }else h+=`<div class="briefsec"><h4>Pre Market Framework</h4><div class="subtle">No framework written for this day.</div></div>`;
+  if(D.trades.length){
+    h+=`<div class="briefsec"><h4>Trades <span class="subtle">— ${D.trades.length} · ${D.r>=0?'+':''}${D.r.toFixed(1)}R</span></h4>`+
+      D.trades.map(t=>{const rt=t.res==='Open'?'tag blue':t.res==='Win'?'tag bull':t.res==='Loss'?'tag bear':'tag neut';
+        const gr=['pgrade','egrade','mgrade'].map((k,i)=>t[k]?`${['P','E','M'][i]}:${escH(t[k])}`:'').filter(Boolean).join(' · ');
+        return `<div class="tl"><div><b>${escH(t.pair||'')}</b> <span class="tag ${t.dir==='Long'?'bull':'bear'}">${escH(t.dir||'')}</span> <span class="${rt}">${escH(t.res||'')}${t.r?' '+(+t.r>0?'+':'')+t.r+'R':''}</span><br><span class="subtle">${escH(t.model||'')}${t.sess?' · '+escH(t.sess):''}${t.state?' · '+escH(t.state):''}${gr?' · '+gr:''}</span></div></div>`;}).join('')+'</div>';
+  }else h+=`<div class="briefsec"><h4>Trades</h4><div class="subtle">No trades logged.</div></div>`;
+  if(D.adhere||(D.breaks&&D.breaks.length)){
+    const at={Y:'bull',Partial:'med',N:'bear'}[D.adhere]||'neut',al={Y:'Followed the plan',Partial:'Partial — deviated',N:'Abandoned the plan'}[D.adhere]||'';
+    h+='<div class="briefsec"><h4>Discipline</h4>';
+    if(D.adhere)h+=`<div class="kv"><span class="k">Plan vs execution</span><span class="v"><span class="tag ${at}">${al}</span></span></div>`;
+    if(D.breaks&&D.breaks.length)h+=`<div class="kv"><span class="k">Rule breaks</span><span class="v">${D.breaks.map(b=>`<span class="tag bear" style="margin:1px">${escH(b)}</span>`).join(' ')}</span></div>`;
+    h+='</div>';
+  }
+  h+=D.hasJournal?('<hr class="d">'+pmrDetailHtml(D.jr)):`<div class="briefsec"><h4>Journal</h4><div class="subtle">No journal for this day. Click ＋ New / Edit Journal to write one.</div></div>`;
+  return h;
+}
+/* ---- The week, rolled up Mon–Fri ---- */
+function weekReviewHtml(w){
+  const s=w.stats,rc=s.totR>=0?'up':'down';
+  const stat=(v,l,c)=>`<div class="s"><div class="v ${c||''}">${v}</div><div class="l">${l}</div></div>`;
+  let h=`<div class="stat">${stat(s.n,'Trades')}${stat(s.closed?s.wr+'%':'—','Win rate','up')}${stat((s.totR>=0?'+':'')+s.totR.toFixed(1)+'R','Total R',rc)}${stat((s.avg>=0?'+':'')+s.avg.toFixed(1)+'R','Avg R',s.avg>=0?'up':'down')}${stat(w.best!=null?(w.best>0?'+':'')+w.best+'R':'—','Best')}${stat(w.worst!=null?(w.worst>0?'+':'')+w.worst+'R':'—','Worst')}</div>`;
+  h+=`<hr class="d"><div class="sec">Coverage &amp; Discipline</div><div class="stat">${stat(w.plans+'/5','Frameworks')}${stat(w.journals+'/5','Journals')}${stat(w.traded+'/5','Days traded')}${stat(gradeLetter(w.pg),'Profit grade')}${stat(gradeLetter(w.eg),'Entry grade')}${stat(gradeLetter(w.mg),'Mgmt grade')}</div>`;
+  const ad=w.adhere,adTot=ad.Y+ad.Partial+ad.N;
+  if(adTot)h+=`<div class="kv" style="margin-top:10px"><span class="k">Plan vs execution</span><span class="v"><span class="tag bull">${ad.Y} followed</span> <span class="tag med">${ad.Partial} partial</span> <span class="tag bear">${ad.N} abandoned</span></span></div>`;
+  const bk=Object.keys(w.breaks);
+  if(bk.length)h+=`<div class="kv"><span class="k">Rule breaks</span><span class="v">${bk.map(k=>`<span class="tag bear" style="margin:1px">${escH(k)} ×${w.breaks[k]}</span>`).join(' ')}</span></div>`;
+  const stk=Object.keys(w.states);
+  if(stk.length)h+=`<div class="kv"><span class="k">State at execution</span><span class="v">${stk.map(k=>`<span class="tag ${/settled|grounded/i.test(k)?'bull':'med'}" style="margin:1px">${escH(k)} ×${w.states[k]}</span>`).join(' ')}</span></div>`;
+  if(w.violations.length)h+=`<div class="kv"><span class="k">Protocol violations</span><span class="v">${w.violations.map(v=>`<span class="tag bear" style="margin:1px">${fmtDay(v.ds)} — ${escH(v.v)}</span>`).join(' ')}</span></div>`;
+  h+='<hr class="d"><div class="sec">Day by Day</div>';
+  h+=w.days.map(D=>{
+    const tg={trade:'bull',caution:'med',skip:'bear'}[D.cls]||'neut',lb={trade:'TRADE',caution:'CAUTION',skip:'NO TRADE'}[D.cls]||'—';
+    const rTxt=D.trades.length?`<span class="${D.r>=0?'up':'down'}" style="font-weight:600">${D.r>=0?'+':''}${D.r.toFixed(1)}R</span>`:'<span class="subtle">no trades</span>';
+    return `<div class="tl wkday" data-d="${D.ds}" style="cursor:pointer"><div style="flex:1"><b>${fmtDay(D.ds)}</b> <span class="tag ${tg}" style="font-size:9px">${lb}</span>${D.violation?' <span class="tag bear" style="font-size:9px">⚠</span>':''}<br><span class="subtle">${D.hasPlan?'◆ framework':'no framework'} · ${D.hasJournal?'📓 journal':'no journal'} · ${D.trades.length} trade${D.trades.length!==1?'s':''}</span></div><div style="text-align:right">${rTxt}</div></div>`;
+  }).join('');
+  h+=`<hr class="d"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn grn" id="wk-debrief-btn" style="padding:6px 12px">🧠 Coach's Week Review</button><span class="subtle" id="wk-debrief-hint">Coach reads the whole week — R, grades, adherence, breaks, and your journals. Needs an Anthropic key (Settings ⚙).</span></div><div id="wk-debrief" style="margin-top:10px">${w.debrief?weekDebriefHtml(w.debrief):''}</div>`;
+  return h;
 }
 function renderPmrDetail(){
-  const el=document.getElementById('pmrDetail');if(!el)return;const x=loadPmr()[selPmrDay];
+  const el=document.getElementById('pmrDetail');if(!el)return;
   const t=document.getElementById('pmrDayTitle'),sub=document.getElementById('pmrDaySub');
+  if(selWeek){
+    const w=weekDossier(selWeek);
+    if(t)t.textContent='Week of '+w.label;
+    if(sub)sub.textContent=w.stats.n+' trade'+(w.stats.n!==1?'s':'')+' · '+w.journals+'/5 journals · Mon–Fri roll-up';
+    const body=weekReviewHtml(w);
+    el.innerHTML=`<div style="text-align:right;margin-bottom:8px"><button class="btn" id="wkPdf" style="padding:4px 10px">⬇ PDF</button></div>`+body;
+    const pb=document.getElementById('wkPdf');if(pb)pb.addEventListener('click',()=>printDoc('Week Review — '+w.label,body));
+    const db=document.getElementById('wk-debrief-btn');if(db)db.addEventListener('click',weekDebrief);
+    el.querySelectorAll('.wkday').forEach(x=>x.addEventListener('click',()=>{selPmrDay=x.dataset.d;selWeek=null;renderPmr();}));
+    return;
+  }
   if(t)t.textContent=selPmrDay?fmtDayLong(selPmrDay):'Day';
-  if(sub)sub.textContent=!selPmrDay?'pick a day':(pmrHasContent(x)?'journal saved':'no journal yet');
-  if(!selPmrDay){el.innerHTML='<div class="subtle">Click any day on the calendar.</div>';return;}
-  if(!pmrHasContent(x)){el.innerHTML='<div class="subtle">No journal for this day. Click ＋ New / Edit Journal to write one.</div>';return;}
-  const body=pmrDetailHtml(x);
+  if(!selPmrDay){el.innerHTML='<div class="subtle">Click any day for its full record — or a Sat/Sun (or a week in Weekly Summary) for the week review.</div>';if(sub)sub.textContent='pick a day';return;}
+  const D=dayDossier(selPmrDay);
+  if(sub)sub.textContent=(D.hasJournal?'journal saved':'no journal yet')+(D.trades.length?' · '+D.trades.length+' trade'+(D.trades.length!==1?'s':''):'')+(D.hasPlan?' · framework':'');
+  const body=dayDossierHtml(D);
   el.innerHTML=`<div style="text-align:right;margin-bottom:8px"><button class="btn" id="pmrPdf" style="padding:4px 10px">⬇ PDF</button></div>`+body;
   const pb=document.getElementById('pmrPdf');if(pb)pb.addEventListener('click',()=>printDoc('Post Market Review — '+fmtDayLong(selPmrDay),body));
+}
+function renderPmrWeeks(){
+  const el=document.getElementById('pmrWeeks');if(!el)return;
+  el.innerHTML=weeksInMonth(PV.y,PV.m).map(mon=>{
+    const w=weekDossier(mon),rc=w.stats.totR>=0?'up':'down';
+    const on=(selWeek===mon)?' style="cursor:pointer;border-color:var(--grn);background:rgba(53,208,127,.07)"':' style="cursor:pointer"';
+    return `<div class="tl wkrow" data-w="${mon}"${on}><div style="flex:1"><b>${w.label}</b>${w.debrief?' <span class="tag grn" style="font-size:9px">COACH</span>':''}${w.violations.length?' <span class="tag bear" style="font-size:9px">⚠ '+w.violations.length+'</span>':''}<br><span class="subtle">${w.stats.n} trade${w.stats.n!==1?'s':''} · ${w.plans}/5 frameworks · ${w.journals}/5 journals</span></div><div style="text-align:right"><span class="${rc}" style="font-weight:600">${w.stats.totR>=0?'+':''}${w.stats.totR.toFixed(1)}R</span><br><span class="subtle">${w.stats.closed?w.stats.wr+'% WR':'—'}</span></div></div>`;
+  }).join('');
+  el.querySelectorAll('.wkrow').forEach(x=>x.addEventListener('click',()=>{selWeek=(selWeek===x.dataset.w)?null:x.dataset.w;if(selWeek)selPmrDay=null;renderPmr();}));
 }
 function pmrDetailHtml(x){
   const sec=(title,val)=>val&&String(val).trim()?`<div class="briefsec"><h4>${title}</h4><div class="narr">${String(val).split(/\n{2,}/).map(p=>'<p>'+escH(p)+'</p>').join('')}</div></div>`:'';
@@ -1769,14 +1999,28 @@ function pmrDetailHtml(x){
   const debrief=x.debrief?pmrDebriefHtml(x.debrief)+'<hr class="d">':'';
   return debrief+sec('Surface Level Circumstance',x.surface)+sec('Conscious Inner Circumstance',x.inner)+sec('Risk Management',x.risk)+sec('Framework / Protocol Execution',x.framework)+shots+sec('Technical Review — notes',x.technical)+sec('Market Review',x.market);
 }
+function syncPvPickers(){
+  const ms=document.getElementById('pvMonth'),ys=document.getElementById('pvYear');
+  if(ms&&!ms.dataset.b){ms.dataset.b='1';ms.innerHTML=Array.from({length:12},(_,i)=>`<option value="${i+1}">${new Intl.DateTimeFormat('en-US',{month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2000,i,1)))}</option>`).join('');ms.addEventListener('change',()=>{PV={y:PV.y,m:+ms.value};selWeek=null;renderPmr();});}
+  if(ys&&!ys.dataset.b){ys.dataset.b='1';const cy=curMonth().y;let o='';for(let y=cy-6;y<=cy+2;y++)o+=`<option value="${y}">${y}</option>`;ys.innerHTML=o;ys.addEventListener('change',()=>{PV={y:+ys.value,m:PV.m};selWeek=null;renderPmr();});}
+  if(ms)ms.value=String(PV.m);
+  if(ys){if(!Array.from(ys.options).some(o=>+o.value===PV.y)){const op=document.createElement('option');op.value=String(PV.y);op.textContent=String(PV.y);ys.appendChild(op);}ys.value=String(PV.y);}
+}
 function renderPmr(){
   const vk=`${PV.y}-${String(PV.m).padStart(2,'0')}`;if(selPmrDay&&selPmrDay.slice(0,7)!==vk)selPmrDay=null;
-  pmrCalendar();renderPmrDetail();
+  syncPvPickers();
+  pmrCalendar();renderPmrWeeks();renderPmrDetail();
   const jr=loadPmr();const n=Object.keys(jr).filter(k=>k.slice(0,7)===vk&&pmrHasContent(jr[k])).length;
-  const st=document.getElementById('pmrStat');if(st)st.innerHTML=`<div class="s"><div class="v">${n}</div><div class="l">Journals</div></div>`;
+  const mTrades=loadTrades().filter(t=>t.date.slice(0,7)===vk),ms=computeStats(mTrades);
+  const st=document.getElementById('pmrStat');
+  if(st)st.innerHTML=`<div class="s"><div class="v">${n}</div><div class="l">Journals</div></div><div class="s"><div class="v">${ms.n}</div><div class="l">Trades</div></div><div class="s"><div class="v up">${ms.closed?ms.wr:0}%</div><div class="l">Win rate</div></div><div class="s"><div class="v ${ms.totR>=0?'up':'down'}">${ms.totR>=0?'+':''}${ms.totR.toFixed(1)}R</div><div class="l">Total R</div></div>`;
 }
-if(document.getElementById('prevPV'))document.getElementById('prevPV').addEventListener('click',()=>{let m=PV.m-1,y=PV.y;if(m<1){m=12;y--;}PV={y,m};renderPmr();});
-if(document.getElementById('nextPV'))document.getElementById('nextPV').addEventListener('click',()=>{let m=PV.m+1,y=PV.y;if(m>12){m=1;y++;}PV={y,m};renderPmr();});
+function pvGo(dy,dm){let y=PV.y+ (dy||0), m=PV.m+(dm||0);if(m<1){m=12;y--;}if(m>12){m=1;y++;}PV={y,m};selWeek=null;renderPmr();}
+if(document.getElementById('prevPV'))document.getElementById('prevPV').addEventListener('click',()=>pvGo(0,-1));
+if(document.getElementById('nextPV'))document.getElementById('nextPV').addEventListener('click',()=>pvGo(0,1));
+if(document.getElementById('pvPrevY'))document.getElementById('pvPrevY').addEventListener('click',()=>pvGo(-1,0));
+if(document.getElementById('pvNextY'))document.getElementById('pvNextY').addEventListener('click',()=>pvGo(1,0));
+if(document.getElementById('pvToday'))document.getElementById('pvToday').addEventListener('click',()=>{PV=curMonth();selPmrDay=etParts().date;selWeek=null;renderPmr();});
 function pmrRenderShots(){renderShotStrip('pmr-shots',pmrShots,pmrRenderShots);}
 function pmrAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{pmrShots.push(u);pmrRenderShots();});rd.readAsDataURL(file);}
 function openPmrModal(){
@@ -1784,6 +2028,8 @@ function openPmrModal(){
   cbEl('pmrDayLbl').textContent='· '+fmtDayLong(selPmrDay);
   const ex=loadPmr()[selPmrDay]||{};
   ['surface','inner','risk','framework','technical','market'].forEach(k=>{const el=cbEl('pmr-'+k);if(el)el.value=ex[k]||'';});
+  const ad=cbEl('pmr-adhere');if(ad)ad.value=ex.adhere||'';
+  pmrRenderBreaks(ex.breaks||[]);
   pmrShots=(ex.shots||[]).slice();pmrRenderShots();
   pmrDebriefData=ex.debrief||null;const _pv=cbEl('pmr-debrief');if(_pv)_pv.innerHTML=pmrDebriefData?pmrDebriefHtml(pmrDebriefData):'';
   cbEl('pmr-status').textContent='';cbEl('pmrModal').classList.add('open');
@@ -1791,7 +2037,7 @@ function openPmrModal(){
 function closePmrModal(){cbEl('pmrModal').classList.remove('open');}
 function savePmr(){
   if(!selPmrDay)return;const g=id=>cbEl(id)?cbEl(id).value.trim():'';
-  const obj={date:selPmrDay,surface:g('pmr-surface'),inner:g('pmr-inner'),risk:g('pmr-risk'),framework:g('pmr-framework'),technical:g('pmr-technical'),market:g('pmr-market'),shots:pmrShots.slice(),debrief:pmrDebriefData||null};
+  const obj={date:selPmrDay,surface:g('pmr-surface'),inner:g('pmr-inner'),risk:g('pmr-risk'),framework:g('pmr-framework'),technical:g('pmr-technical'),market:g('pmr-market'),adhere:g('pmr-adhere'),breaks:pmrBreaksVal(),shots:pmrShots.slice(),debrief:pmrDebriefData||null};
   const all=loadPmr();if(pmrHasContent(obj))all[selPmrDay]=obj;else delete all[selPmrDay];
   if(!savePmrAll(all))return;
   closePmrModal();renderPmr();
@@ -1868,7 +2114,9 @@ if(document.getElementById('tradeModalX')){
 function teRenderShots(){renderShotStrip('te-shots',teShots,teRenderShots);}
 function teAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{teShots.push(u);teRenderShots();});rd.readAsDataURL(file);}
 function teSeqRender(){const c=document.getElementById('f-seq-chips');if(!c)return;c.innerHTML=teSeq.length?teSeq.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="rm" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">None selected — pick sequences above (add as many as you want).</span>';c.querySelectorAll('.rm').forEach(x=>x.addEventListener('click',()=>{teSeq.splice(+x.dataset.i,1);teSeqRender();}));}
-function setTradeFields(tr){const setv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();}
+function setTradeFields(tr){const setv=(id,v)=>{const el=document.getElementById(id);if(!el)return;
+    if(el.tagName==='SELECT'&&v&&!Array.prototype.some.call(el.options,o=>o.value===String(v)||o.text===String(v))){const op=document.createElement('option');op.value=String(v);op.textContent=String(v);el.appendChild(op);}  /* keep legacy typed values */
+    el.value=(v==null?'':v);};setv('f-date',tr.date);setv('f-pair',tr.pair);setv('f-dir',tr.dir);setv('f-sess',tr.sess);setv('f-res',tr.res);setv('f-r',tr.r);setv('f-state',tr.state);setv('f-pgrade',tr.pgrade);setv('f-egrade',tr.egrade);setv('f-mgrade',tr.mgrade);setv('f-notes',tr.notes);teSeq=(tr.seq&&tr.seq.length)?tr.seq.slice():(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);teShots=(tr.shots||[]).slice();}
 function openLogModal(trade){
   const tt=document.getElementById('teTitle'),lb=document.getElementById('logBtn');
   if(trade&&trade.id!=null){editingTradeId=trade.id;setTradeFields(trade);if(tt)tt.textContent='Edit Trade';if(lb)lb.textContent='Save changes';}
