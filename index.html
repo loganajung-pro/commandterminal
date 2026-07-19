@@ -647,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · macro-explain';
+const BUILD='2026-07-19 · macro-diagnostics';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -810,11 +810,14 @@ function hideSnap(){const el=document.getElementById('diag');if(el){el.style.dis
 /* ---- Direct FMP REST (independent of Claude; uses your own API key) ---- */
 function fmpKey(){try{return (lsGet('ct_fmp_key')||'').trim();}catch(e){return '';}}
 async function fmpGet(path){
-  const key=fmpKey();if(!key)throw new Error('nokey');
+  const key=fmpKey();if(!key)throw new Error('No FMP key saved in Settings');
   const sep=path.indexOf('?')>=0?'&':'?';
   const r=await fetch('https://financialmodelingprep.com'+path+sep+'apikey='+encodeURIComponent(key),{cache:'no-store'});
-  if(!r.ok)throw new Error('http '+r.status);
-  return await r.json();
+  let body=null;try{body=await r.json();}catch(e){}
+  const apiMsg=body&&(body['Error Message']||body.message||body.error);
+  if(!r.ok)throw new Error('HTTP '+r.status+(apiMsg?' — '+apiMsg:''));
+  if(apiMsg)throw new Error(apiMsg);           // FMP often returns 200 with an error body
+  return body;
 }
 async function fmpRoute(tool,args){
   if(tool==='quote'){ // STABLE api: one symbol per call
@@ -1304,17 +1307,34 @@ function loadMacroCache(){try{return JSON.parse(lsGet(MKEY)||'{}');}catch(e){ret
 function saveMacroCache(o){try{lsSet(MKEY,JSON.stringify(o));}catch(e){}}
 function agoTxt(ts){if(!ts)return 'never';const m=Math.round((Date.now()-ts)/60000);
   if(m<1)return 'just now';if(m<60)return m+'m ago';const h=Math.round(m/60);if(h<24)return h+'h ago';return Math.round(h/24)+'d ago';}
-async function fetchMacroIndicators(){
-  const out={};
-  await Promise.all(MACRO_IND.map(async d=>{
+let MACRO_ERR=null;
+/* FMP has served economic data from more than one path over time and it is a
+   paid add-on on some plans — so try each shape and keep the real error. */
+async function fmpTryPaths(paths){
+  let last=null;
+  for(let i=0;i<paths.length;i++){
     try{
-      const r=await mcp('econIndicator',{name:d.name});
-      const a=(Array.isArray(r)?r:[]).filter(x=>x&&x.date&&x.value!=null&&isFinite(+x.value))
+      const j=await fmpGet(paths[i]);
+      const a=Array.isArray(j)?j:(pickArr(j)||[]);
+      if(a&&a.length)return {ok:true,data:a};
+      last='endpoint returned no rows';
+    }catch(e){last=(e&&e.message)||'request failed';}
+  }
+  return {ok:false,err:last};
+}
+async function fetchMacroIndicators(){
+  const out={};MACRO_ERR=null;
+  if(!fmpKey()){MACRO_ERR='nokey';return out;}
+  for(let i=0;i<MACRO_IND.length;i++){
+    const d=MACRO_IND[i],enc=encodeURIComponent(d.name);
+    const r=await fmpTryPaths(['/stable/economic-indicators?name='+enc,'/api/v4/economic?name='+enc]);
+    if(r.ok){
+      const a=r.data.filter(x=>x&&x.date&&x.value!=null&&isFinite(+x.value))
         .sort((x,y)=>String(y.date).localeCompare(String(x.date)));
       if(a.length)out[d.name]={date:String(a[0].date).slice(0,10),v:+a[0].value,prev:a[1]?+a[1].value:null,
         series:a.slice(0,36).map(x=>({d:String(x.date).slice(0,10),v:+x.value})).reverse()};
-    }catch(e){}
-  }));
+    }else if(!MACRO_ERR)MACRO_ERR=r.err;
+  }
   return out;
 }
 async function refreshMacroData(force){
@@ -1349,7 +1369,12 @@ function paintMacroTiles(cache){
   document.querySelectorAll('.indtile').forEach(el=>el.addEventListener('click',()=>openIndicator(el.dataset.ind)));
   const live=!!t.infl.length;
   const st=document.getElementById('macroStamp');
-  if(st)st.innerHTML=live?('live · updated '+agoTxt(cache&&cache.ts)):('<span class="down">snapshot data ('+SNAP.asOf+') — add an FMP key in Settings ⚙ for live prints</span>');
+  if(st){
+    if(live)st.innerHTML='live · updated '+agoTxt(cache&&cache.ts);
+    else if(MACRO_ERR==='nokey'||!fmpKey())st.innerHTML='<span class="down">snapshot ('+SNAP.asOf+') — no FMP key saved in Settings ⚙</span>';
+    else if(MACRO_ERR)st.innerHTML='<span class="down">snapshot ('+SNAP.asOf+') — FMP said: '+escH(String(MACRO_ERR).slice(0,150))+'</span>';
+    else st.innerHTML='<span class="down">snapshot ('+SNAP.asOf+') — hit ⟳ Refresh to pull live prints</span>';
+  }
   return live;
 }
 function paintCentralBanks(cache){
