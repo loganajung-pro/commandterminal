@@ -647,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · vision-fix';
+const BUILD='2026-07-19 · parse-fix';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2136,7 +2136,46 @@ function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 /* ===== Vision: read levels off chart screenshots (Anthropic API, your key, browser-side) ===== */
 function anthKey(){try{return (lsGet('ct_anthropic_key')||'').trim();}catch(e){return '';}}
 function visionModel(){try{return (lsGet('ct_vision_model')||'').trim()||'claude-sonnet-5';}catch(e){return 'claude-sonnet-5';}}
-function parseJsonLoose(t){if(!t)return null;let s=String(t).trim();s=s.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)s=s.slice(a,b+1);try{return JSON.parse(s);}catch(e){return null;}}
+/* Long prose fields break naive JSON parsing two ways: raw newlines inside
+   string literals (illegal in JSON) and truncation when the model runs out of
+   tokens mid-object. Repair both before giving up. */
+function repairJson(s){
+  let out='',inStr=false,esc=false;
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(esc){out+=c;esc=false;continue;}
+    if(c==='\\'){out+=c;esc=true;continue;}
+    if(c==='"'){inStr=!inStr;out+=c;continue;}
+    if(inStr){
+      if(c==='\n'){out+='\\n';continue;}
+      if(c==='\r'){continue;}
+      if(c==='\t'){out+='\\t';continue;}
+    }
+    out+=c;
+  }
+  if(inStr)out+='"';                       // unterminated string from truncation
+  return out.replace(/,\s*([}\]])/g,'$1');  // trailing commas
+}
+function parseJsonLoose(t){
+  if(!t)return null;
+  let s=String(t).trim();
+  s=s.replace(/```(?:json)?/gi,'').trim();
+  const a=s.indexOf('{'),b=s.lastIndexOf('}');
+  if(a>=0&&b>a)s=s.slice(a,b+1); else if(a>=0)s=s.slice(a);
+  try{return JSON.parse(s);}catch(e){}
+  try{return JSON.parse(repairJson(s));}catch(e){}
+  return null;
+}
+/* Last resort: pull whatever complete "key":"value" pairs exist, even from a
+   truncated object, so a long read is never thrown away entirely. */
+function salvageFields(txt,keys){
+  const o={};let any=false;
+  keys.forEach(k=>{
+    const m=new RegExp('"'+k+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"').exec(String(txt));
+    if(m&&m[1]){o[k]=m[1].replace(/\\n/g,' ').replace(/\\"/g,'"').replace(/\\\\/g,'\\').trim();any=true;}
+  });
+  return any?o:null;
+}
 const CHART_PROMPT=`You are reading annotated futures index charts (NQ = Nasdaq 100, ES = S&P 500, YM = Dow). Each image is one instrument with price levels the trader has marked. Identify the instrument from the ticker/title on the chart, then read the marked horizontal price levels and the current price.
 
 Return ONLY strict JSON — no prose, no code fences — in exactly this shape:
@@ -3400,10 +3439,17 @@ async function cbCoachRead(){
     'Instruments in play: NQ (primary), ES, YM — SMT is judged across these three.'].join('\n');
   content.push({type:'text',text:COACH_CHART_PROMPT+'\n\nCONTEXT\n'+ctx});
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:3000,messages:[{role:'user',content}]})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:6000,messages:[{role:'user',content}]})});
     if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
     const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
-    const data=parseJsonLoose(txt);if(!data)throw new Error('Could not parse the read.');
+    const cut=(j.stop_reason==='max_tokens');
+    let data=parseJsonLoose(txt);
+    if(!data)data=salvageFields(txt,['draw','phase','liquidity','poi','sequence','rebalance','invalidation','standaside']);
+    if(!data){
+      const peek=String(txt).replace(/\s+/g,' ').slice(0,220);
+      throw new Error((cut?'the reply was cut off before it finished. ':'')+'Could not parse the read. The coach replied with: "'+escH(peek)+'…"');
+    }
+    if(cut)data.standaside=(data.standaside||'')+' [note: the reply hit the length limit — some sections may be short.]';
     data.ts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET';
     cbCoachData=data;
     const prev=document.getElementById('cb-coach');if(prev)prev.innerHTML=coachReadHtml(data);
