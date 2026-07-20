@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Matrix // Command Terminal</title>
+<title>Supreme // Command Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -235,7 +235,7 @@ ul.tight li::marker{color:var(--org)}
       <span class="clk"><b id="clkUtc">--:--:--</b> UTC</span>
       <span class="badge sess" id="sessBadge">—</span>
     </div>
-    <div class="c">MATRIX <span style="color:var(--grn)">//</span> COMMAND TERMINAL <span class="subtle" id="buildStamp" style="font-size:9px;letter-spacing:.08em;opacity:.5" title="Build version — if this does not match the latest file, you are on a cached or stale copy"></span></div>
+    <div class="c">SUPREME <span style="color:var(--grn)">//</span> COMMAND TERMINAL <span class="subtle" id="buildStamp" style="font-size:9px;letter-spacing:.08em;opacity:.5" title="Build version — if this does not match the latest file, you are on a cached or stale copy"></span></div>
     <div class="r">
       <span class="badge" id="liveAgo">—</span>
       <span class="badge" id="mktStatus">—</span>
@@ -274,9 +274,9 @@ ul.tight li::marker{color:var(--org)}
         </div>
         <div>
           <div class="panel">
-            <div class="ph" style="border:0;padding:0 0 10px">
+            <div class="ph" style="border:0;padding:0 0 10px;flex-wrap:wrap;gap:8px">
               <h2 class="sec grn" id="briefCalTitle" style="margin:0">Daily Briefings</h2>
-              <div class="navbtns"><button class="btn" id="prevBV" style="padding:5px 10px">◄</button><button class="btn" id="nextBV" style="padding:5px 10px">►</button></div>
+              <div class="navbtns" style="gap:8px"><button class="btn grn" id="composeBriefBtn" style="padding:5px 12px">＋ Compose Framework</button><button class="btn" id="prevBV" style="padding:5px 10px">◄</button><button class="btn" id="nextBV" style="padding:5px 10px">►</button></div>
             </div>
             <div class="calgrid" id="briefCalHead"></div><div class="calgrid" id="briefCalBody"></div>
             <div class="legend" style="margin-top:8px"><span class="lg"><span class="brdot">📄</span> Saved brief</span><span class="lg"><span class="sw" style="background:var(--blue)"></span>Today</span></div>
@@ -290,9 +290,8 @@ ul.tight li::marker{color:var(--org)}
       <hr class="d">
       <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 4px">
         <button class="btn grn" id="saveBriefBtn" style="padding:13px 24px;font-size:14px">Save today's brief</button>
-        <button class="btn grn" id="composeBriefBtn" style="padding:13px 24px;font-size:14px">＋ Compose Framework</button>
       </div>
-      <div class="subtle" style="text-align:center;padding:0 0 14px">Save today's generated brief (📄 · auto-saves 8:35 AM ET) · Compose saves your own dated brief (📝) — both land in the Daily Briefings calendar.</div>
+      <div class="subtle" style="text-align:center;padding:0 0 14px">Save today's generated brief (📄 · auto-saves 8:35 AM ET) · Compose Framework sits above the Daily Briefings calendar — both land there.</div>
     </section>
 
     <!-- ===== MACRO ===== -->
@@ -647,7 +646,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · coach-tape';
+const BUILD='2026-07-19 · supreme';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
