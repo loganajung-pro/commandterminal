@@ -647,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · parse-fix';
+const BUILD='2026-07-19 · time-theory';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -3297,7 +3297,7 @@ Assess specifically:
 - Time: inside a focus window or outside it?
 - If annotated charts are attached, verify their marked levels against the price digest.
 
-Be direct and specific — cite prices and times from the data. If execution was clean, say so plainly; do NOT invent faults.
+Be direct, terse and specific — trader's shorthand, cut filler. Cite the times from the data. ALWAYS name the timeframe when referencing price action (Daily / H4 / H1 / M15 / M5 / M1) — e.g. "M1 CSD confirmed at 09:47", never just "CSD confirmed". If execution was clean, say so plainly; do NOT invent faults.
 
 Return ONLY strict JSON — no prose, no code fences:
 {"entry":"entry quality — POI, confirmation vs anticipation, timing (1-3 sentences)","stop":"stop placement judgement (1-2 sentences)","exit":"exit quality vs what MFE shows was available (1-2 sentences)","grade":"A|B|C|F — execution grade, outcome-independent","verdict":"the one lesson from this tape, in the mentor's voice, second person (1-2 sentences)"}`;
@@ -3392,22 +3392,34 @@ FRACTAL — the same sequence runs on Daily, H4, H1, M15 and M1. Daily accumulat
 THE REAL QUESTIONS (not indicators, patterns or support/resistance)
 Is price delivering aggressively? What time cycle are we in? Is delivery slowing? Is price respecting bullish arrays, bearish arrays, or neither? Did delivery change? Does price have an objective right now? Is this repricing or continuation? Is this accumulation or expansion?
 
-EXECUTION — determine HTF draw → identify POI → wait for delivery window → observe SMT or sweep → wait for displacement/CSD → execute.`;
+EXECUTION — determine HTF draw → identify POI → wait for delivery window → observe SMT or sweep → wait for displacement/CSD → execute.
+
+TIME THEORY — AMD CYCLES (time is the driver, price is the output)
+The algorithm is programmed on TIME, not price. The same AMD delivery repeats fractally on every cycle: yearly, monthly, weekly, daily. Master the time and price becomes predictable. Time first, price second — the move is already scheduled; the job is to be positioned when the algorithm delivers it.
+Every cycle runs 0→1.0 and delivers in three phases by Fibonacci time:
+· ACCUMULATION 0→0.382 — range build, algorithm loads, quiet/coiled. Never chase here.
+· MANIPULATION 0.382→0.618 — the judas swing, liquidity raid AGAINST true intent, traps retail. Never trust this move.
+· DISTRIBUTION 0.618→1.0 — the real move, expansion in the intended direction. The payday.
+Play: get positioned during/after Manipulation, ride Distribution in the HTF direction.
+DAILY cycle (00:00→16:00 ET): Accumulation 00:00–06:07 (Asian range) · Manipulation 06:07–09:53 (London/NY-open judas) · Distribution 09:53–16:00 (NY expansion — the daily payday).
+WEEKLY cycle (Mon 00:00→Fri 16:00): Accumulation Mon→~Tue eve · Manipulation ~Tue eve→~Wed eve (midweek reversal) · Distribution ~Wed eve→Fri.
+MONTHLY: Accumulation day 1→~11 · Manipulation ~11→~19 · Distribution ~19→month end.
+FRACTAL NESTING — each phase contains its own AMD. HTF cycle sets direction; LTF AMD times the entry. Highest-probability entry = HTF cycle in Distribution WHILE LTF cycle is finishing Manipulation. Time confluence across timeframes = A+ setup. Always locate price within the AMD clock of the relevant cycle before calling a direction.`;
 
 const COACH_CHART_PROMPT=`You are this trader's 1-on-1 mentor — a savant who scaled from nothing past $100M — and you share their Execution Protocol Framework exactly as written below. Read their annotated chart screenshots THROUGH this framework and write their Price Read for the session.
 
 `+PROTOCOL_KB+`
 
 CRITICAL OUTPUT RULES
-- Write in the language of DELIVERY, not the language of levels. Do NOT list price levels, numeric values, ticks or figures. The trader does not want a levels readout — they can already see their own numbers. Describe structure, delivery state and intent in words.
-- Refer to structure by name: previous day high/low, equal highs/lows, session highs/lows, premium/discount, the imbalance, the orderblock, the breaker, the sweep — never by number.
-- Be specific and detailed. Say what phase of the delivery sequence price is currently in, what has already happened, and what must happen next for the model to trigger.
-- Judge POI quality against the five qualification conditions explicitly.
-- Explicitly call whether the current move is DELIVERY or REBALANCING.
-- If the charts are unclear or the sequence is incomplete, say so plainly. Do not invent a setup that is not on the screen. Standing aside is a valid read.
+- BE TERSE. Sharp, declarative, high-signal. Trader's shorthand, not paragraphs. Cut every filler word. If it doesn't carry information, delete it. A pro reads this in ten seconds.
+- ALWAYS NAME THE TIMEFRAME before any price statement. Never say "price swept the high" — say "M1 swept the London high" or "H4 tapped the daily SIBI". Every structural reference gets its timeframe: Daily / H4 / H1 / M15 / M5 / M1. No exceptions. If you cannot tell the timeframe from the chart, say which chart you are reading.
+- FILTER THROUGH TIME. Locate price in the AMD clock before any directional call — state the daily phase (Accumulation / Manipulation / Distribution) and, if visible, the LTF phase. Flag time confluence (HTF Distribution + LTF finishing Manipulation) or its absence. Name the delivery window.
+- Language of DELIVERY, never levels. NO price numbers, ticks or figures — the trader sees their own numbers. Name structure: PDH/PDL, equal highs/lows, session H/L, premium/discount, the FVG, the OB, the breaker, the sweep.
+- Judge POI against the 5 conditions in shorthand. Call DELIVERY vs REBALANCING outright.
+- If the sequence is incomplete or the chart is unclear, say so in one line. Never invent a setup. Stand-aside is a valid read.
 
-Return ONLY strict JSON — no prose, no code fences:
-{"draw":"HTF draw on liquidity and the delivery narrative behind it — where the algorithm is trying to take price and why (3-5 sentences)","phase":"exactly where price sits in the delivery sequence right now, naming the phase, and what has already completed (3-5 sentences)","liquidity":"the liquidity picture — what has been engineered, what has been swept, what remains resting as the draw, and whether the last move was engineered manipulation (3-5 sentences)","poi":"the POI you would trade from, judged against the five qualification conditions — alignment with HTF draw, opposing the short-term move, logical repricing location, inside a timing window, capable of displacement (3-5 sentences)","sequence":"what must happen next, in protocol order, for the model to trigger — sweep, SMT, time window, CSD, displacement — and what would confirm each (4-6 sentences)","rebalance":"is the current move delivery or rebalancing, and which PD arrays price is respecting (2-4 sentences)","invalidation":"what kills this read and puts you flat or reverses the narrative (2-3 sentences)","standaside":"the conditions under which the correct action is no trade at all (1-2 sentences)"}`;
+Return ONLY strict JSON — no prose, no code fences. Keep each field TIGHT (aim 1-3 short sentences; sequence up to 4). Timeframe-tag every price reference:
+{"draw":"HTF draw + the delivery narrative — where the algo is taking price and why. Name the HTF timeframe.","phase":"AMD phase of the daily cycle now (+ LTF phase if visible), where price sits in the delivery sequence, what's already done. Timeframe-tagged.","liquidity":"what's engineered, what's swept, what rests as the draw, and whether the last move was engineered manipulation. Timeframe-tagged.","poi":"the POI to trade from, scored against the 5 conditions (HTF-aligned · opposes short-term move · logical reprice · in a window · can displace). Name the POI's timeframe.","sequence":"what must fire next, in protocol order — sweep → SMT → time window → CSD → displacement — each timeframe-tagged, with the confirm for each.","rebalance":"DELIVERY or REBALANCING, and which PD arrays price respects. Timeframe-tagged.","invalidation":"what kills the read. Timeframe-tagged.","standaside":"one line: when the correct action is no trade."}`;
 /* Renders the coach's framework read. Deliberately no numbers — this is a
    delivery narrative, not a levels table. */
 function coachReadHtml(d){
