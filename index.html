@@ -561,7 +561,8 @@ ul.tight li::marker{color:var(--org)}
     <div class="drop" id="cb-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
     <input type="file" id="cb-file" accept="image/*" multiple style="display:none">
     <div id="cb-shots"></div>
-    <div style="margin-top:8px;display:flex;align-items:center;gap:10px"><button class="btn grn" id="cb-read" type="button">🔍 Read levels from chart</button><span class="subtle" id="cb-read-status"></span></div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn" id="cb-read" type="button">🔍 Read levels from chart</button><button class="btn grn" id="cb-coach-btn" type="button">🧠 Coach: read my charts</button><span class="subtle" id="cb-coach-status"></span></div>
+    <div id="cb-coach" style="margin-top:10px"></div>
     <div class="subtle" style="margin-top:5px">Reads your marked PDH / PDL / Open / Now + key levels off the screenshots and fills the fields above — you confirm before Done. Needs an Anthropic key (Settings ⚙).</div>
   </div>
   <div class="briefsec"><h4>Overview</h4>
@@ -646,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · supreme';
+const BUILD='2026-07-19 · framework-read';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1153,6 +1154,7 @@ function lastCoachAction(){
   }catch(e){return null;}
 }
 function techReadHtml(){
+  if(COMPOSED&&COMPOSED.coachData)return coachReadHtml(COMPOSED.coachData);   // your framework read wins
   if(COMPOSED&&COMPOSED.coach)return COMPOSED.coach;
   if(composedHasRead(COMPOSED))return composedReadHtml(COMPOSED);
   if(!LASTQ.NQUSD)return '<p class="subtle">Technical read waiting on live quotes…</p>';
@@ -1979,7 +1981,7 @@ document.getElementById('dayModal').addEventListener('click',e=>{if(e.target.id=
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeBrief();closeDayDetail();}});
 
 /* ===== Daily Briefing Composer (manual: screenshots + annotated levels) ===== */
-let cbShots=[];
+let cbShots=[],cbCoachData=null;
 function cbEl(id){return document.getElementById(id);}
 function cbRenderShots(){renderShotStrip('cb-shots',cbShots,cbRenderShots);}
 function cbAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{cbShots.push(u);cbRenderShots();});rd.readAsDataURL(file);}
@@ -2000,6 +2002,7 @@ function openCompose(day){
       if(d.price!=null)cbEl('cb-now-'+k).value=fmtN(d.price);}});
   cbShots=[];['cb-overview','cb-themes','cb-watch','cb-framework','cb-liq'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
   ['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value='';});pmRenderRoutine([],'cb-routine');
+  cbCoachData=null;{const _c=cbEl('cb-coach');if(_c)_c.innerHTML='';}{const _s=cbEl('cb-coach-status');if(_s)_s.textContent='';}
   // Reopen keeps your work: load your own saved brief for this day if you've made one.
   const existing=myBriefs()[ds];if(existing)cbLoad(existing);
   cbRenderShots();cbEl('cb-status').textContent='';
@@ -2017,6 +2020,8 @@ function cbLoad(b){
   const rd=b.ready||{};['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value=rd[k]||'';});
   pmRenderRoutine(b.routine||[],'cb-routine');
   cbShots=(b.shots||[]).slice();
+  cbCoachData=b.coachData||null;
+  const _cc=cbEl('cb-coach');if(_cc)_cc.innerHTML=cbCoachData?coachReadHtml(cbCoachData):'';
 }
 function closeCompose(){cbEl('composeModal').classList.remove('open');}
 function buildComposedObject(){
@@ -2033,7 +2038,7 @@ function buildComposedObject(){
   const liq=g('cb-liq');
   const ready={sleep:g('cb-sleep'),energy:g('cb-energy'),focus:g('cb-focus')};
   const routine=pmRoutineVal('cb-routine');
-  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],framework,liq,ready,routine,shots:cbShots.slice(),manual:true};
+  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],framework,liq,ready,routine,coachData:cbCoachData||null,shots:cbShots.slice(),manual:true};
 }
 /* Compose now builds YOUR OWN brief — saved separately, it does NOT overwrite the generated page brief. */
 function myBriefs(){try{return JSON.parse(lsGet('ct_mybriefs')||'{}');}catch(e){return {};}}
@@ -2151,6 +2156,7 @@ if(cbEl('composeBriefBtn')){
   cbEl('cb-drop').addEventListener('click',()=>cbEl('cb-file').click());
   cbEl('cb-file').addEventListener('change',ev=>{[...ev.target.files].forEach(cbAddFile);ev.target.value='';});
   if(cbEl('cb-read'))cbEl('cb-read').addEventListener('click',cbReadChart);
+  if(cbEl('cb-coach-btn'))cbEl('cb-coach-btn').addEventListener('click',cbCoachRead);
   cbEl('cb-save').addEventListener('click',doneCompose);
   document.addEventListener('paste',ev=>{if(!cbEl('composeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){cbAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCompose();});
@@ -3263,6 +3269,107 @@ function tradeReviewHtml(d){
   const gt=g==='A'?'bull':g==='B'?'bull':g==='C'?'med':'bear';
   const row=(t,v)=>v&&String(v).trim()?`<div class="kv"><span class="k">${t}</span><span class="v">${escH(v)}</span></div>`:'';
   return `<div class="panel" style="border-color:var(--grn-dim);background:rgba(53,208,127,.05)"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec grn" style="margin:0">Coach's Trade Review</h2>${g?`<span class="tag ${gt}">EXECUTION ${escH(g)}</span>`:''}</div>${row('Entry',d.entry)}${row('Stop',d.stop)}${row('Exit',d.exit)}${d.verdict?`<div class="narr" style="margin-top:8px"><p><b>${escH(d.verdict)}</b></p></div>`:''}</div>`;
+}
+/* ============================================================
+   EXECUTION PROTOCOL FRAMEWORK — the coach's knowledge base.
+   Distilled from the trader's own framework docs (Market Maker Models,
+   PD Array Matrix, CSD, POI). This is what the coach reads the charts
+   THROUGH — so the Price Read is written in the trader's own language.
+   ============================================================ */
+const PROTOCOL_KB=`EXECUTION PROTOCOL FRAMEWORK — read every chart through this lens.
+
+CORE PRINCIPLE
+Price delivery follows liquidity objectives, time windows, repricing arrays, engineered participation and cyclical delivery — not random buying and selling. At its core: Liquidity → Repricing → Expansion. The algorithm engineers liquidity, reprices through imbalance, expands toward opposing liquidity, endlessly.
+
+THE ALGORITHMIC VIEW
+1 creates liquidity · 2 raids liquidity · 3 reprices through BISI/SIBI · 4 expands toward objective · 5 rebalances BISI/SIBI · 6 hits liquidity objective · 7 repeats.
+
+THE COMPLETE DELIVERY SEQUENCE (the backbone)
+HTF Draw on Liquidity → Liquidity Engineering → Sweep → Time Cycle → POI Interaction → SMT → CSD → Displacement → Continuation → External Liquidity Objective Hit.
+
+PHASE 1 LIQUIDITY ENGINEERING — the market first creates inducement: equal highs/lows, trend continuation, breakout temptation, obvious structure. Goal is resting liquidity. No fuel = no expansion. Liquidity must exist before delivery can occur.
+PHASE 2 SWEEP / INITIAL REJECTION — one side is raided: equal highs, Asia high, previous day high. Fills orders, triggers breakout traders, activates stops. Liquidity becomes executable inventory. The first move is frequently ENGINEERED — the sweep is usually manipulation, not intended delivery. Rejection blocks appear here; a valid rejection block must take significant/HTF liquidity, otherwise it is weak.
+PHASE 3 TIME WINDOW — time is the top confluence. Delivery happens in institutional windows: 9:30–10:00 opening delivery · 9:50–10:10 reversal/expansion · 10:10–10:30 continuation · 10:50–11:10 secondary delivery. Time is a trigger environment, not the model itself.
+PHASE 4 POI INTERACTION — after the sweep price enters a repricing array: H1/Daily SIBI or BISI, OB, CE, breaker, mitigation. This is the delivery origin point — but ONLY if aligned with HTF draw, with premium/discount, and with timing.
+PHASE 5 SMT DIVERGENCE — tells you which instrument is weak or strong and whether true manipulation/reversal is in play. NQ makes a higher high, ES does not = manipulation, delivery state changing. Treat SMT as a crack in the delivery narrative.
+PHASE 6 CSD — CHANGE IN STATE OF DELIVERY — an aggressive shift in delivery after liquidity engineering that begins a new directional expansion. NOT merely a swing break. A real CSD contains: liquidity sweep (fuel) + POI (location) + SMT (relative strength) + time cycle (window) + displacement (aggressive repricing) + opposing structure failure + fresh FVG creation (new delivery leg). CSD in mid-range is weak; CSD from a premium HTF SIBI or discount HTF BISI, CE or OB is strong.
+PHASE 7 DISPLACEMENT — reveals aggressive repricing, institutional urgency, true directional intent. Weak movement = low probability; violent expansion = algorithm committed. DISPLACEMENT CREATES THE NEW DELIVERY LEG — the FVG formed during displacement becomes the base for continuation infrastructure.
+PHASE 8 CONTINUATION — after CSD price seeks internal liquidity first, then external. If the objective is buyside, price respects bullish PD arrays; if sellside, bearish arrays. Continues until the liquidity objective is reached or a new cycle begins.
+
+PD ARRAY MATRIX — arrays are algorithmic signatures within delivery, NOT setups and NOT entry signals. They are delivery infrastructure and answer: where should price logically reprice before continuing delivery? Arrays have a delivery ORDER; the algorithm builds progressively.
+Premium arrays (bearish): Old High/EQH · Rejection Block · Breaker Block · Fair Value Gap · Liquidity Void · Bearish Orderblock.
+Discount arrays (bullish): Bullish Mitigation Block · Bullish Breaker · Liquidity Void · Fair Value Gap · Bullish Orderblock · Rejection Block · Old Low/EQL.
+Clean delivery moves array to array — arrays are delivery checkpoints.
+
+FVG — a 3-candle sequence where candles 1 and 3 do not overlap. FVGs are NOT support/resistance boxes. They are deferred efficiency — unfinished delivery corridors. The algorithm sacrifices efficiency now to deliver efficiently later, and revisits because delivery remained incomplete.
+ORDER BLOCK — forms AFTER rejection. Sequence: Liquidity Sweep → Rejection → CSD → OB formation. The OB is not "the last up candle before the down move"; it is evidence of delivery transition. CSD creates the order block.
+BREAKER vs MITIGATION — a breaker requires a liquidity purge first (BSL/SSL taken, OB fails, inversion). A mitigation block has NO true purge — institutions simply revisit prior positioning. Breakers are failed delivery states.
+
+POI QUALIFICATION — an imbalance qualifies as POI only if it is: 1 aligned with HTF draw on liquidity · 2 opposing the current short-term move · 3 located where repricing logically should occur · 4 inside a delivery/timing window · 5 capable of delivering displacement away from it. Most traders mark every imbalance; the correct question is "which imbalance is likely sponsoring the next delivery phase?"
+
+DELIVERY vs REBALANCING — the distinction that changes everything. Directional expansion is delivery. A temporary retracement into inefficiency is rebalancing. In a bearish HTF draw, an LTF rally into a SIBI is NOT bullish delivery — it is rebalancing before bearish continuation.
+
+FRACTAL — the same sequence runs on Daily, H4, H1, M15 and M1. Daily accumulation/manipulation/distribution contains the same on H1, which contains the same on M1. Aligning timeframes is critical for a high win rate.
+
+THE REAL QUESTIONS (not indicators, patterns or support/resistance)
+Is price delivering aggressively? What time cycle are we in? Is delivery slowing? Is price respecting bullish arrays, bearish arrays, or neither? Did delivery change? Does price have an objective right now? Is this repricing or continuation? Is this accumulation or expansion?
+
+EXECUTION — determine HTF draw → identify POI → wait for delivery window → observe SMT or sweep → wait for displacement/CSD → execute.`;
+
+const COACH_CHART_PROMPT=`You are this trader's 1-on-1 mentor — a savant who scaled from nothing past $100M — and you share their Execution Protocol Framework exactly as written below. Read their annotated chart screenshots THROUGH this framework and write their Price Read for the session.
+
+`+PROTOCOL_KB+`
+
+CRITICAL OUTPUT RULES
+- Write in the language of DELIVERY, not the language of levels. Do NOT list price levels, numeric values, ticks or figures. The trader does not want a levels readout — they can already see their own numbers. Describe structure, delivery state and intent in words.
+- Refer to structure by name: previous day high/low, equal highs/lows, session highs/lows, premium/discount, the imbalance, the orderblock, the breaker, the sweep — never by number.
+- Be specific and detailed. Say what phase of the delivery sequence price is currently in, what has already happened, and what must happen next for the model to trigger.
+- Judge POI quality against the five qualification conditions explicitly.
+- Explicitly call whether the current move is DELIVERY or REBALANCING.
+- If the charts are unclear or the sequence is incomplete, say so plainly. Do not invent a setup that is not on the screen. Standing aside is a valid read.
+
+Return ONLY strict JSON — no prose, no code fences:
+{"draw":"HTF draw on liquidity and the delivery narrative behind it — where the algorithm is trying to take price and why (3-5 sentences)","phase":"exactly where price sits in the delivery sequence right now, naming the phase, and what has already completed (3-5 sentences)","liquidity":"the liquidity picture — what has been engineered, what has been swept, what remains resting as the draw, and whether the last move was engineered manipulation (3-5 sentences)","poi":"the POI you would trade from, judged against the five qualification conditions — alignment with HTF draw, opposing the short-term move, logical repricing location, inside a timing window, capable of displacement (3-5 sentences)","sequence":"what must happen next, in protocol order, for the model to trigger — sweep, SMT, time window, CSD, displacement — and what would confirm each (4-6 sentences)","rebalance":"is the current move delivery or rebalancing, and which PD arrays price is respecting (2-4 sentences)","invalidation":"what kills this read and puts you flat or reverses the narrative (2-3 sentences)","standaside":"the conditions under which the correct action is no trade at all (1-2 sentences)"}`;
+/* Renders the coach's framework read. Deliberately no numbers — this is a
+   delivery narrative, not a levels table. */
+function coachReadHtml(d){
+  if(!d)return '';
+  const sec=(t,v)=>v&&String(v).trim()?`<div style="margin-top:11px"><div style="font:700 9.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--org);margin-bottom:5px">${t}</div><p style="margin:0">${escH(v)}</p></div>`:'';
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span class="tag grn" style="font-size:9px">COACH · FRAMEWORK READ</span>${d.ts?`<span class="subtle" style="font-size:9.5px">${escH(d.ts)}</span>`:''}</div>`
+    +sec('Draw on Liquidity',d.draw)
+    +sec('Where We Are in the Sequence',d.phase)
+    +sec('The Liquidity Picture',d.liquidity)
+    +sec('Point of Interest',d.poi)
+    +sec('What Must Happen Next',d.sequence)
+    +sec('Delivery or Rebalancing',d.rebalance)
+    +sec('Invalidation',d.invalidation)
+    +(d.standaside?`<div style="margin-top:11px;padding:8px 10px;border:1px solid var(--line2);border-radius:6px;background:var(--panel2)"><span class="tag med" style="font-size:9px">STAND ASIDE IF</span> <span class="subtle">${escH(d.standaside)}</span></div>`:'');
+}
+async function cbCoachRead(){
+  const st=document.getElementById('cb-coach-status');
+  const say=(c,m)=>{if(st)st.innerHTML='<span class="'+c+'">'+m+'</span>';};
+  if(!cbShots.length){say('down','Attach your annotated charts first — the coach reads the screenshots.');return;}
+  const key=anthKey();if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
+  say('mut','Coach is reading your charts through the framework…');
+  const imgs=cbShots.map(s=>{const m=/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(s);return m?{media:m[1],data:m[2]}:null;}).filter(Boolean).slice(0,4);
+  if(!imgs.length){say('down','Screenshots unreadable — re-add them.');return;}
+  const content=imgs.map(im=>({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
+  /* minimal context only — the read must come from the charts + framework, not from typed numbers */
+  const g=id=>{const e=cbEl(id);return e?e.value.trim():'';};
+  const ctx=['Session date: '+(g('cb-date')||etParts().date),
+    'Trader\'s own directional read: '+(g('cb-draw')||'not stated'),
+    'Instruments in play: NQ (primary), ES, YM — SMT is judged across these three.'].join('\n');
+  content.push({type:'text',text:COACH_CHART_PROMPT+'\n\nCONTEXT\n'+ctx});
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:3000,messages:[{role:'user',content}]})});
+    if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
+    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
+    const data=parseJsonLoose(txt);if(!data)throw new Error('Could not parse the read.');
+    data.ts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET';
+    cbCoachData=data;
+    const prev=document.getElementById('cb-coach');if(prev)prev.innerHTML=coachReadHtml(data);
+    say('up','✓ Framework read ready — it saves with your brief and becomes your Price Read.');
+  }catch(e){say('down','Read failed: '+escH((e&&e.message)||'error'));}
 }
 /* ===== Window compliance — objective, computed from entry time ===== */
 function windowFor(hm){
