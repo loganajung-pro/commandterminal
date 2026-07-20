@@ -632,6 +632,10 @@ ul.tight li::marker{color:var(--org)}
       <input id="ms-r" placeholder="would-be R" style="width:110px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:8px;color:var(--ink);font-family:var(--mono);font-size:12px">
       <button class="btn grn" id="ms-add" type="button" style="padding:8px 14px">+ Add</button>
     </div>
+    <div style="margin-top:6px">
+      <select id="ms-seq-pick" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:8px;font-family:var(--mono);font-size:12px"><option value="">＋ Add protocol sequence…</option><option>HTF POI HIT</option><option>Liquidity Target</option><option>0930 distribution</option><option>1030 reversal</option><option>0940-1015</option><option>London SMT</option><option>Asia SMT</option><option>90M SMT</option><option>30M SMT</option><option>M1 SMT</option><option>Daily ES SMT</option><option>Daily YM SMT</option><option>CSD</option><option>Rejection Block</option><option>Breaker Block</option><option>Mitigation Block</option><option>IFVG</option></select>
+      <div id="ms-seq-chips" style="margin-top:6px"></div>
+    </div>
     <input id="ms-why" placeholder="Why you didn't take it — hesitation? doubt? waiting for more confirmation?" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:8px;color:var(--ink);font-family:var(--mono);font-size:12px">
     <div class="subtle" style="margin-top:8px;margin-bottom:2px">Tags <span style="opacity:.7">— same categories as the trade journal · optional</span></div>
     <div id="ms-tags" class="tagrid"></div>
@@ -650,7 +654,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · compose-poi';
+const BUILD='2026-07-19 · missed-seq';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2399,6 +2403,13 @@ function pmrRenderBreaks(sel){
 function pmrBreaksVal(){return Array.prototype.slice.call(document.querySelectorAll('#pmr-breaks .pmrbrk')).filter(x=>x.checked).map(x=>x.value);}
 /* ---- Missed trades (hesitation log) ---- */
 let pmrMissed=[];
+/* Missed-trade protocol-sequence picker — same options as the trade journal. */
+let msSeq=[];
+function msSeqRender(){
+  const c=document.getElementById('ms-seq-chips');if(!c)return;
+  c.innerHTML=msSeq.length?msSeq.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="msseqrm" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">No sequences — pick from the dropdown above (add as many as you want).</span>';
+  c.querySelectorAll('.msseqrm').forEach(x=>x.addEventListener('click',()=>{msSeq.splice(+x.dataset.i,1);msSeqRender();}));
+}
 /* Missed-trade tag picker — reuses the trade journal's TAG_GROUPS so a
    skipped setup carries the same context as a taken one. */
 let msTags={};
@@ -2427,7 +2438,7 @@ function pmrRenderMissed(){
   const c=document.getElementById('ms-list');if(!c)return;
   if(!pmrMissed.length){c.innerHTML='<div class="subtle">Nothing logged. Every setup you saw and skipped belongs here — that is the only way hesitation becomes measurable.</div>';return;}
   const tot=pmrMissed.reduce((a,m)=>a+(+m.r||0),0);
-  c.innerHTML=pmrMissed.map((m,i)=>`<div class="tl"><div style="flex:1"><b>${escH(m.setup||'(setup)')}</b> <span class="tag ${m.dir==='Long'?'bull':'bear'}">${escH(m.dir||'')}</span>${m.r?` <span class="tag med">would-be ${escH(String(m.r))}R</span>`:''}${m.why?`<br><span class="subtle">${escH(m.why)}</span>`:''}${missedTagChips(m)}</div><span class="x msrm" data-i="${i}" style="cursor:pointer">✕</span></div>`).join('')
+  c.innerHTML=pmrMissed.map((m,i)=>`<div class="tl"><div style="flex:1"><b>${escH(m.setup||'(setup)')}</b> <span class="tag ${m.dir==='Long'?'bull':'bear'}">${escH(m.dir||'')}</span>${m.r?` <span class="tag med">would-be ${escH(String(m.r))}R</span>`:''}${(m.seq&&m.seq.length)?`<br>${m.seq.map(x=>`<span class="tag grn" style="margin:1px;font-size:9px">${escH(x)}</span>`).join(' ')}`:''}${m.why?`<br><span class="subtle">${escH(m.why)}</span>`:''}${missedTagChips(m)}</div><span class="x msrm" data-i="${i}" style="cursor:pointer">✕</span></div>`).join('')
     +`<div class="subtle" style="margin-top:6px">${pmrMissed.length} missed · <b class="down">${tot>=0?'+':''}${tot.toFixed(1)}R</b> left on the table</div>`;
   c.querySelectorAll('.msrm').forEach(x=>x.addEventListener('click',()=>{pmrMissed.splice(+x.dataset.i,1);pmrRenderMissed();}));
 }
@@ -2994,7 +3005,7 @@ function openPmrModal(){
   const ex=loadPmr()[selPmrDay]||{};
   ['surface','inner','risk','framework','technical','market'].forEach(k=>{const el=cbEl('pmr-'+k);if(el)el.value=ex[k]||'';});
   const ad=cbEl('pmr-adhere');if(ad)ad.value=ex.adhere||'';
-  pmrRenderBreaks(ex.breaks||[]);pmrMissed=(ex.missed||[]).slice();pmrRenderMissed();msTags={};msTagsRender();
+  pmrRenderBreaks(ex.breaks||[]);pmrMissed=(ex.missed||[]).slice();pmrRenderMissed();msSeq=[];msSeqRender();msTags={};msTagsRender();
   pmrShots=(ex.shots||[]).slice();pmrRenderShots();
   pmrDebriefData=ex.debrief||null;const _pv=cbEl('pmr-debrief');if(_pv)_pv.innerHTML=pmrDebriefData?pmrDebriefHtml(pmrDebriefData):'';
   cbEl('pmr-status').textContent='';cbEl('pmrModal').classList.add('open');
@@ -3017,13 +3028,17 @@ if(cbEl('pmrOpen')){
   if(cbEl('pmr-debrief-btn'))cbEl('pmr-debrief-btn').addEventListener('click',pmrDebrief);
   if(cbEl('ms-add'))cbEl('ms-add').addEventListener('click',()=>{
     const gv=id=>{const e=cbEl(id);return e?e.value.trim():'';};
-    const setup=gv('ms-setup');if(!setup){const st=cbEl('pmr-status');if(st)st.innerHTML='<span class="down">Describe the setup you missed first.</span>';return;}
+    let setup=gv('ms-setup');
+    if(!setup&&msSeq.length)setup=msSeq.join(' · ');   // build the setup from the picked sequences
+    if(!setup){const st=cbEl('pmr-status');if(st)st.innerHTML='<span class="down">Describe the setup, or pick at least one protocol sequence.</span>';return;}
     const tags=msTagsVal();
-    pmrMissed.push(Object.assign({setup,dir:gv('ms-dir')||'Long',r:gv('ms-r'),why:gv('ms-why')},Object.keys(tags).length?{tags}:{}));
+    const extra={};if(msSeq.length)extra.seq=msSeq.slice();if(Object.keys(tags).length)extra.tags=tags;
+    pmrMissed.push(Object.assign({setup,dir:gv('ms-dir')||'Long',r:gv('ms-r'),why:gv('ms-why')},extra));
     ['ms-setup','ms-r','ms-why'].forEach(id=>{const e=cbEl(id);if(e)e.value='';});
-    msTags={};msTagsRender();
+    msSeq=[];msSeqRender();msTags={};msTagsRender();
     pmrRenderMissed();
   });
+  if(cbEl('ms-seq-pick'))cbEl('ms-seq-pick').addEventListener('change',e=>{const v=e.target.value;if(v){if(msSeq.indexOf(v)<0)msSeq.push(v);msSeqRender();}e.target.value='';});
   cbEl('pmr-save').addEventListener('click',savePmr);
   document.addEventListener('paste',ev=>{if(!cbEl('pmrModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){pmrAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closePmrModal();});
