@@ -546,6 +546,7 @@ ul.tight li::marker{color:var(--org)}
       <div class="field"><label>Date</label><input type="date" id="cb-date"></div>
       <div class="field"><label>Draw on Liquidity</label><select id="cb-draw"><option>HIGHER</option><option>LOWER</option><option>TWO-SIDED</option></select></div>
     </div>
+    <div class="field"><label>Point of Interest <span class="subtle">— the array you'll reprice from</span></label><input id="cb-poi" placeholder="OB · FVG / imbalance · breaker · mitigation · CE · SIBI / BISI…"></div>
     <div class="field"><label>Liquidity Target <span class="subtle">— the specific draw you're hunting</span></label><input id="cb-liq" placeholder="PDH / PDL · equal highs / lows · session extreme · price…"></div>
     <div class="row2">
       <div class="field"><label>NQ bias</label><select id="cb-bias-NQ"><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral</option></select></div>
@@ -632,7 +633,9 @@ ul.tight li::marker{color:var(--org)}
       <button class="btn grn" id="ms-add" type="button" style="padding:8px 14px">+ Add</button>
     </div>
     <input id="ms-why" placeholder="Why you didn't take it — hesitation? doubt? waiting for more confirmation?" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:8px;color:var(--ink);font-family:var(--mono);font-size:12px">
-    <div id="ms-list" style="margin-top:8px"></div>
+    <div class="subtle" style="margin-top:8px;margin-bottom:2px">Tags <span style="opacity:.7">— same categories as the trade journal · optional</span></div>
+    <div id="ms-tags" class="tagrid"></div>
+    <div id="ms-list" style="margin-top:10px"></div>
   </div>
   <div class="briefsec"><h4>Plan vs Execution <span class="subtle">— links your pre-market framework to what you actually did</span></h4>
     <div class="field"><label>Did you trade the framework you wrote?</label>
@@ -647,7 +650,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · time-theory';
+const BUILD='2026-07-19 · compose-poi';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2039,7 +2042,7 @@ function openCompose(day){
       if(pl!=null)cbEl('cb-pdl-'+k).value=fmtN(pl);
       if(d.open!=null)cbEl('cb-open-'+k).value=fmtN(d.open);
       if(d.price!=null)cbEl('cb-now-'+k).value=fmtN(d.price);}});
-  cbShots=[];['cb-overview','cb-themes','cb-watch','cb-framework','cb-liq'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
+  cbShots=[];['cb-overview','cb-themes','cb-watch','cb-framework','cb-poi','cb-liq'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
   ['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value='';});pmRenderRoutine([],'cb-routine');
   cbCoachData=null;{const _c=cbEl('cb-coach');if(_c)_c.innerHTML='';}{const _s=cbEl('cb-coach-status');if(_s)_s.textContent='';}
   // Reopen keeps your work: load your own saved brief for this day if you've made one.
@@ -2055,6 +2058,7 @@ function cbLoad(b){
   cbEl('cb-themes').value=(b.themes||[]).join('\n');
   cbEl('cb-watch').value=(b.watch||[]).join('\n');
   if(cbEl('cb-framework'))cbEl('cb-framework').value=(b.framework||[]).join('\n\n');
+  if(cbEl('cb-poi'))cbEl('cb-poi').value=b.poi||'';
   if(cbEl('cb-liq'))cbEl('cb-liq').value=b.liq||'';
   const rd=b.ready||{};['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value=rd[k]||'';});
   pmRenderRoutine(b.routine||[],'cb-routine');
@@ -2075,9 +2079,10 @@ function buildComposedObject(){
   const gen=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual';
   const framework=(cbEl('cb-framework')?cbEl('cb-framework').value:'').split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
   const liq=g('cb-liq');
+  const poi=g('cb-poi');
   const ready={sleep:g('cb-sleep'),energy:g('cb-energy'),focus:g('cb-focus')};
   const routine=pmRoutineVal('cb-routine');
-  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],framework,liq,ready,routine,coachData:cbCoachData||null,shots:cbShots.slice(),manual:true};
+  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],framework,poi,liq,ready,routine,coachData:cbCoachData||null,shots:cbShots.slice(),manual:true};
 }
 /* Compose now builds YOUR OWN brief — saved separately, it does NOT overwrite the generated page brief. */
 function myBriefs(){try{return JSON.parse(lsGet('ct_mybriefs')||'{}');}catch(e){return {};}}
@@ -2090,7 +2095,7 @@ function syncFrameworkFromBrief(b){
   try{
     const dirMap={bullish:'Long',bearish:'Short'};
     const nqKey=((b.levels||[]).filter(l=>l.s==='NQ')[0]||{}).key||'';
-    const obj={date:b.date,dir:(dirMap[(b.bias&&b.bias.NQ)||'']||'—'),poi:{key:nqKey},liq:b.liq||'',
+    const obj={date:b.date,dir:(dirMap[(b.bias&&b.bias.NQ)||'']||'—'),poi:{key:(b.poi||nqKey||'')},liq:b.liq||'',
       ready:b.ready||{},routine:(b.routine||[]).slice(),scenario:(b.framework||[]).slice(),
       shots:[],fromBrief:true};
     const all=loadPm();
@@ -2394,11 +2399,35 @@ function pmrRenderBreaks(sel){
 function pmrBreaksVal(){return Array.prototype.slice.call(document.querySelectorAll('#pmr-breaks .pmrbrk')).filter(x=>x.checked).map(x=>x.value);}
 /* ---- Missed trades (hesitation log) ---- */
 let pmrMissed=[];
+/* Missed-trade tag picker — reuses the trade journal's TAG_GROUPS so a
+   skipped setup carries the same context as a taken one. */
+let msTags={};
+function msTagsRender(){
+  const c=document.getElementById('ms-tags');if(!c)return;
+  c.innerHTML=TAG_GROUPS.map(g=>{
+    const sel=msTags[g.id]||[];
+    return `<div class="field"><label>${escH(g.label)}${sel.length?` <span class="subtle">(${sel.length})</span>`:''}</label>
+      <select class="mstagpick" data-g="${g.id}"><option value="">＋ add…</option>${g.opts.map(o=>`<option${sel.indexOf(o)>=0?' disabled':''}>${escH(o)}</option>`).join('')}</select>
+      <div class="tagchips" data-g="${g.id}" style="margin-top:4px">${sel.length?sel.map((v,i)=>`<span class="tag grn" style="margin:2px;display:inline-flex;align-items:center;gap:5px">${escH(v)} <span class="mstgrm" data-g="${g.id}" data-i="${i}" style="cursor:pointer">✕</span></span>`).join(''):'<span class="subtle">none</span>'}</div></div>`;
+  }).join('');
+  c.querySelectorAll('.mstagpick').forEach(s=>s.addEventListener('change',()=>{
+    const g=s.dataset.g,v=s.value;if(!v)return;
+    msTags[g]=msTags[g]||[];if(msTags[g].indexOf(v)<0)msTags[g].push(v);
+    msTagsRender();
+  }));
+  c.querySelectorAll('.mstgrm').forEach(x=>x.addEventListener('click',()=>{const g=x.dataset.g;(msTags[g]||[]).splice(+x.dataset.i,1);msTagsRender();}));
+}
+function msTagsVal(){const o={};TAG_GROUPS.forEach(g=>{const v=(msTags[g.id]||[]).filter(Boolean);if(v.length)o[g.id]=v;});return o;}
+function missedTagChips(m){
+  if(!m.tags)return '';
+  const rows=TAG_GROUPS.map(g=>{const v=(m.tags[g.id]||[]);return v.length?v.map(x=>`<span class="tag ${g.id==='mistake'?'bear':(g.id==='distract'?'med':'neut')}" style="margin:1px;font-size:9px">${escH(x)}</span>`).join(' '):'';}).filter(Boolean).join(' ');
+  return rows?`<br>${rows}`:'';
+}
 function pmrRenderMissed(){
   const c=document.getElementById('ms-list');if(!c)return;
   if(!pmrMissed.length){c.innerHTML='<div class="subtle">Nothing logged. Every setup you saw and skipped belongs here — that is the only way hesitation becomes measurable.</div>';return;}
   const tot=pmrMissed.reduce((a,m)=>a+(+m.r||0),0);
-  c.innerHTML=pmrMissed.map((m,i)=>`<div class="tl"><div style="flex:1"><b>${escH(m.setup||'(setup)')}</b> <span class="tag ${m.dir==='Long'?'bull':'bear'}">${escH(m.dir||'')}</span>${m.r?` <span class="tag med">would-be ${escH(String(m.r))}R</span>`:''}${m.why?`<br><span class="subtle">${escH(m.why)}</span>`:''}</div><span class="x msrm" data-i="${i}" style="cursor:pointer">✕</span></div>`).join('')
+  c.innerHTML=pmrMissed.map((m,i)=>`<div class="tl"><div style="flex:1"><b>${escH(m.setup||'(setup)')}</b> <span class="tag ${m.dir==='Long'?'bull':'bear'}">${escH(m.dir||'')}</span>${m.r?` <span class="tag med">would-be ${escH(String(m.r))}R</span>`:''}${m.why?`<br><span class="subtle">${escH(m.why)}</span>`:''}${missedTagChips(m)}</div><span class="x msrm" data-i="${i}" style="cursor:pointer">✕</span></div>`).join('')
     +`<div class="subtle" style="margin-top:6px">${pmrMissed.length} missed · <b class="down">${tot>=0?'+':''}${tot.toFixed(1)}R</b> left on the table</div>`;
   c.querySelectorAll('.msrm').forEach(x=>x.addEventListener('click',()=>{pmrMissed.splice(+x.dataset.i,1);pmrRenderMissed();}));
 }
@@ -2965,7 +2994,7 @@ function openPmrModal(){
   const ex=loadPmr()[selPmrDay]||{};
   ['surface','inner','risk','framework','technical','market'].forEach(k=>{const el=cbEl('pmr-'+k);if(el)el.value=ex[k]||'';});
   const ad=cbEl('pmr-adhere');if(ad)ad.value=ex.adhere||'';
-  pmrRenderBreaks(ex.breaks||[]);pmrMissed=(ex.missed||[]).slice();pmrRenderMissed();
+  pmrRenderBreaks(ex.breaks||[]);pmrMissed=(ex.missed||[]).slice();pmrRenderMissed();msTags={};msTagsRender();
   pmrShots=(ex.shots||[]).slice();pmrRenderShots();
   pmrDebriefData=ex.debrief||null;const _pv=cbEl('pmr-debrief');if(_pv)_pv.innerHTML=pmrDebriefData?pmrDebriefHtml(pmrDebriefData):'';
   cbEl('pmr-status').textContent='';cbEl('pmrModal').classList.add('open');
@@ -2989,8 +3018,10 @@ if(cbEl('pmrOpen')){
   if(cbEl('ms-add'))cbEl('ms-add').addEventListener('click',()=>{
     const gv=id=>{const e=cbEl(id);return e?e.value.trim():'';};
     const setup=gv('ms-setup');if(!setup){const st=cbEl('pmr-status');if(st)st.innerHTML='<span class="down">Describe the setup you missed first.</span>';return;}
-    pmrMissed.push({setup,dir:gv('ms-dir')||'Long',r:gv('ms-r'),why:gv('ms-why')});
+    const tags=msTagsVal();
+    pmrMissed.push(Object.assign({setup,dir:gv('ms-dir')||'Long',r:gv('ms-r'),why:gv('ms-why')},Object.keys(tags).length?{tags}:{}));
     ['ms-setup','ms-r','ms-why'].forEach(id=>{const e=cbEl(id);if(e)e.value='';});
+    msTags={};msTagsRender();
     pmrRenderMissed();
   });
   cbEl('pmr-save').addEventListener('click',savePmr);
