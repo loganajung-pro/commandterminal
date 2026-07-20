@@ -563,7 +563,7 @@ ul.tight li::marker{color:var(--org)}
     <div id="cb-shots"></div>
     <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn" id="cb-read" type="button">🔍 Read levels from chart</button><button class="btn grn" id="cb-coach-btn" type="button">🧠 Coach: read my charts</button><span class="subtle" id="cb-coach-status"></span></div>
     <div id="cb-coach" style="margin-top:10px"></div>
-    <div class="subtle" style="margin-top:5px">Reads your marked PDH / PDL / Open / Now + key levels off the screenshots and fills the fields above — you confirm before Done. Needs an Anthropic key (Settings ⚙).</div>
+    <div class="subtle" style="margin-top:5px">Reads your marked PDH / PDL / Open / Now + key levels off the screenshots and fills the fields above — you confirm before Done. Needs an Anthropic key (Settings ⚙).<br><b>PNG or JPG only.</b> HEIC screenshots (iPhone / Continuity) cannot be read — on Mac open in Preview → File → Export → JPEG, or set Screenshot to PNG.</div>
   </div>
   <div class="briefsec"><h4>Overview</h4>
     <div class="field"><textarea id="cb-overview" style="min-height:90px" placeholder="Framing for the session — HTF draw, where price sits, what you're hunting. Blank line = new paragraph."></textarea></div></div>
@@ -647,7 +647,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · framework-read';
+const BUILD='2026-07-19 · vision-fix';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1686,7 +1686,46 @@ function renderShotStrip(containerId,arr,rerender){
     el.addEventListener('drop',e=>{e.preventDefault();el.style.outline='';const to=+el.dataset.i;if(dragI==null||dragI===to)return;const m=arr.splice(dragI,1)[0];arr.splice(to,0,m);dragI=null;rerender();});
   });
 }
-function shrinkImg(dataUrl,cb){try{const img=new Image();img.onload=()=>{const mx=1920;let w=img.width,hh=img.height;if(w>mx){hh=Math.round(hh*mx/w);w=mx;}const cv=document.createElement('canvas');cv.width=w;cv.height=hh;const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,hh);try{cb(cv.toDataURL('image/jpeg',0.92));}catch(e){cb(dataUrl);}};img.onerror=()=>cb(dataUrl);img.src=dataUrl;}catch(e){cb(dataUrl);}}
+/* Re-encode every attached image to JPEG, scaled by its LONG edge.
+   Two reasons this matters for the coach reading charts:
+   1568px is the point above which the vision API downsamples server-side —
+   going in larger actively destroys small chart text. And scaling by width
+   alone left tall/portrait screenshots full size. */
+function shrinkImg(dataUrl,cb){
+  try{
+    const img=new Image();
+    img.onload=()=>{
+      const MX=1568;let w=img.width,h=img.height;const long=Math.max(w,h);
+      if(long>MX){const r=MX/long;w=Math.max(1,Math.round(w*r));h=Math.max(1,Math.round(h*r));}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      const ctx=cv.getContext('2d');
+      ctx.fillStyle='#0b0d10';ctx.fillRect(0,0,w,h);          // JPEG has no alpha — flatten first
+      ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+      ctx.drawImage(img,0,0,w,h);
+      try{cb(cv.toDataURL('image/jpeg',0.9));}catch(e){cb(dataUrl);}
+    };
+    img.onerror=()=>cb(dataUrl);   // browser could not decode it — kept as-is, caught later by visionParts
+    img.src=dataUrl;
+  }catch(e){cb(dataUrl);}
+}
+/* The vision API accepts JPEG, PNG, GIF and WebP only. HEIC screenshots —
+   common on macOS via iPhone/Continuity — silently reached the API before
+   this and were rejected, which looked like "the coach can't read my charts". */
+const VISION_OK=/^image\/(jpeg|jpg|png|gif|webp)$/i;
+function visionParts(shots,max){
+  const parts=[],skipped=[];let bytes=0;
+  (shots||[]).slice(0,max||4).forEach((s,i)=>{
+    const m=/^data:([^;,]+);base64,([\s\S]*)$/.exec(String(s||''));
+    if(!m){skipped.push('#'+(i+1)+' unreadable');return;}
+    const type=String(m[1]).toLowerCase(),data=m[2];
+    if(!VISION_OK.test(type)){skipped.push('#'+(i+1)+' '+type.replace('image/','').toUpperCase()+' — convert to PNG or JPG');return;}
+    const b=Math.round(data.length*0.75);
+    if(b>4.5*1024*1024){skipped.push('#'+(i+1)+' too large ('+(b/1048576).toFixed(1)+'MB)');return;}
+    bytes+=b;
+    parts.push({type:'image',source:{type:'base64',media_type:(type==='image/jpg'?'image/jpeg':type),data:data}});
+  });
+  return {parts,skipped,bytes};
+}
 /* ============================================================
    PROTOCOL SCORE — six dimensions of edge quality, 0–100 each.
    Five are the standard performance axes; the sixth (Protocol
@@ -2124,9 +2163,9 @@ async function cbReadChart(){
   const key=anthKey();
   if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
   say('mut','Reading chart…');
-  const imgs=cbShots.map(s=>{const m=/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(s);return m?{media:m[1],data:m[2]}:null;}).filter(Boolean);
-  if(!imgs.length){say('down','Screenshots unreadable — re-add them.');return;}
-  const content=imgs.map(im=>({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
+  const vp=visionParts(cbShots,4);
+  if(!vp.parts.length){say('down','No usable charts. '+(vp.skipped.join(' · ')||'Re-add them.')+' — PNG or JPG required.');return;}
+  const content=vp.parts.slice();
   content.push({type:'text',text:CHART_PROMPT});
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:1024,messages:[{role:'user',content}]})});
@@ -3251,7 +3290,7 @@ async function coachTradeReview(id){
     window:(w===false?'OUTSIDE all focus windows':w?w.label:'no time logged'),
     result:tr.res,r:tr.r,plannedRR:tr.prr,mfe:tr.mfe,mae:tr.mae,setupGrade:tr.setup,state:tr.state,exitBehaviour:tr.exit,notes:tr.notes},null,1);
   const content=[];
-  (tr.shots||[]).slice(0,3).forEach(sh=>{const m=/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(sh);if(m)content.push({type:'image',source:{type:'base64',media_type:m[1],data:m[2]}});});
+  visionParts(tr.shots,3).parts.forEach(pt=>content.push(pt));
   content.push({type:'text',text:COACH_TRADE_PROMPT+'\n\n'+rec+'\n\n'+barsDigest(bars,tr)});
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:1200,messages:[{role:'user',content}]})});
@@ -3351,9 +3390,9 @@ async function cbCoachRead(){
   if(!cbShots.length){say('down','Attach your annotated charts first — the coach reads the screenshots.');return;}
   const key=anthKey();if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
   say('mut','Coach is reading your charts through the framework…');
-  const imgs=cbShots.map(s=>{const m=/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(s);return m?{media:m[1],data:m[2]}:null;}).filter(Boolean).slice(0,4);
-  if(!imgs.length){say('down','Screenshots unreadable — re-add them.');return;}
-  const content=imgs.map(im=>({type:'image',source:{type:'base64',media_type:im.media,data:im.data}}));
+  const vp=visionParts(cbShots,4);
+  if(!vp.parts.length){say('down','No usable charts. '+(vp.skipped.join(' · ')||'Re-add them.')+'<br>The vision API takes PNG, JPG, GIF or WebP — HEIC screenshots are rejected.');return;}
+  const content=vp.parts.slice();
   /* minimal context only — the read must come from the charts + framework, not from typed numbers */
   const g=id=>{const e=cbEl(id);return e?e.value.trim():'';};
   const ctx=['Session date: '+(g('cb-date')||etParts().date),
@@ -3368,7 +3407,7 @@ async function cbCoachRead(){
     data.ts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET';
     cbCoachData=data;
     const prev=document.getElementById('cb-coach');if(prev)prev.innerHTML=coachReadHtml(data);
-    say('up','✓ Framework read ready — it saves with your brief and becomes your Price Read.');
+    say('up','✓ Framework read ready — it saves with your brief and becomes your Price Read.'+(vp.skipped.length?' <span class="down">Skipped '+vp.skipped.length+': '+escH(vp.skipped.join(' · '))+'</span>':''));
   }catch(e){say('down','Read failed: '+escH((e&&e.message)||'error'));}
 }
 /* ===== Window compliance — objective, computed from entry time ===== */
