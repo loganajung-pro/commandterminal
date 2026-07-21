@@ -276,22 +276,19 @@ ul.tight li::marker{color:var(--org)}
           <div class="panel">
             <div class="ph" style="border:0;padding:0 0 10px;flex-wrap:wrap;gap:8px">
               <h2 class="sec grn" id="briefCalTitle" style="margin:0">Daily Briefings</h2>
-              <div class="navbtns" style="gap:8px"><button class="btn grn" id="composeBriefBtn" style="padding:5px 12px">＋ Compose Framework</button><button class="btn" id="prevBV" style="padding:5px 10px">◄</button><button class="btn" id="nextBV" style="padding:5px 10px">►</button></div>
+              <div class="navbtns" style="gap:8px"><button class="btn" id="saveBriefBtn" style="padding:5px 12px">💾 Save Daily Brief</button><button class="btn grn" id="composeBriefBtn" style="padding:5px 12px">＋ Compose Framework</button><button class="btn" id="prevBV" style="padding:5px 10px">◄</button><button class="btn" id="nextBV" style="padding:5px 10px">►</button></div>
             </div>
             <div class="calgrid" id="briefCalHead"></div><div class="calgrid" id="briefCalBody"></div>
             <div class="legend" style="margin-top:8px"><span class="lg"><span class="brdot">📄</span> Saved brief</span><span class="lg"><span class="sw" style="background:var(--blue)"></span>Today</span></div>
             <hr class="d">
-            <div class="subtle"><b>📝 My brief</b> — click the day to expand it below. <b>📄 Generated</b> — click the icon to pop the full review. Save the generated brief up top; it also auto-saves 8:35 AM ET.</div>
+            <div class="subtle"><b>📝 My brief</b> — click the day to expand it below. <b>📄 Generated</b> — click the icon to pop the full review. Save the generated brief with the 💾 button in the bar above.</div>
           </div>
           <div id="myBriefView"></div>
         </div>
       </div>
       <div id="composedCharts"></div>
       <hr class="d">
-      <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 4px">
-        <button class="btn grn" id="saveBriefBtn" style="padding:13px 24px;font-size:14px">Save today's brief</button>
-      </div>
-      <div class="subtle" style="text-align:center;padding:0 0 14px">Save today's generated brief (📄 · auto-saves 8:35 AM ET) · Compose Framework sits above the Daily Briefings calendar — both land there.</div>
+      <div class="subtle" style="text-align:center;padding:0 0 14px">Save Daily Brief and Compose Framework both sit in the Daily Briefings bar on the right — hit save when you're ready.</div>
     </section>
 
     <!-- ===== MACRO ===== -->
@@ -654,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · missed-seq';
+const BUILD='2026-07-19 · save-manual';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1946,7 +1943,7 @@ function expandMyBrief(ds){
   const c=document.getElementById('myBriefClose');if(c)c.addEventListener('click',()=>{el.innerHTML='';});
 }
 function openMyBriefModal(ds){const b=myBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='My Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen||'')+' · your brief';document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'My Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
-function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent='Auto-saved '+(b.gen||'8:35 AM ET');document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'Daily Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
+function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen?('Generated '+b.gen):'Saved brief');document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'Daily Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function closeBrief(){document.getElementById('briefModal').classList.remove('open');}
 /* ===== Protocol Calendar — day detail popout (time cycles + protocol read + events) ===== */
 function phaseFull(p){return p==='ACC'?'Accumulation':p==='MAN'?'Manipulation':'Distribution';}
@@ -2385,8 +2382,7 @@ function weeklyMaintenance(){
   }
 }
 function startDailySchedules(){
-  scheduleDailyAt(8,0,async()=>{try{await refreshAll();}catch(e){}setTimeout(saveTodayBriefSilent,20000);}); // 8:00 AM ET: pull quotes + prev-day/week + intraday session/gap levels, then auto-save the brief
-  scheduleDailyAt(8,35,saveTodayBriefSilent); // 8:35 AM ET backstop — re-lock brief once all levels have settled
+  scheduleDailyAt(8,0,async()=>{try{await refreshAll();}catch(e){}}); // 8:00 AM ET: pull quotes + prev-day/week + intraday session/gap levels. No auto-save — you save when you're ready.
   scheduleDailyAt(17,0,weeklyMaintenance);    // 5:00 PM ET daily check → fires only on Sundays (new-week calendar + last-Sunday month roll)
 }
 
