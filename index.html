@@ -331,7 +331,7 @@ ul.tight li::marker{color:var(--org)}
       </div>
       <hr class="d">
       <div class="panel"><div class="ph" style="border:0;padding:0 0 12px">
-        <div><h2 class="sec" id="calTitle" style="color:var(--ink);font-size:15px;letter-spacing:0;text-transform:none"></h2><span class="subtle" id="calToday"></span></div>
+        <div><h2 class="sec" id="calTitle" style="color:var(--ink);font-size:15px;letter-spacing:0;text-transform:none"></h2><span class="subtle" id="calToday"></span> <span class="subtle" id="calSource" style="margin-left:6px"></span></div>
         <div class="navbtns"><button class="btn" id="prevM">◄ Prev</button><button class="btn" id="nextM">Next ►</button></div></div>
         <div class="calgrid" id="calHead"></div><div class="calgrid" id="calBody"></div></div>
     </section>
@@ -651,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · forexfactory';
+const BUILD='2026-07-19 · ff-proxy';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1297,35 +1297,62 @@ async function fetchCalChunked(f,t){const ch=[];let s=new Date(f+'T00:00:00Z'),e
    (CORS/offline) it falls back to FMP so the calendar is never dead.
    ============================================================ */
 const FF_URLS=['https://nfs.faireconomy.media/ff_calendar_lastweek.json','https://nfs.faireconomy.media/ff_calendar_thisweek.json','https://nfs.faireconomy.media/ff_calendar_nextweek.json'];
-let FF_CACHE=null,FF_TS=0,FF_ERR=null;
+/* Browsers block a direct cross-origin fetch to the feed (CORS). Try direct first
+   in case it's allowed, then route through public CORS proxies. Note: proxies pass
+   your (non-sensitive) calendar request through a third party. */
+const CORS_WRAPS=[u=>u,u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://corsproxy.io/?url='+encodeURIComponent(u)];
+let FF_CACHE=null,FF_TS=0,FF_ERR=null,FF_LIVE=false,FF_MIN=null,FF_MAX=null;
 function ffImpact(v){v=String(v||'').toLowerCase();if(v.indexOf('high')>=0)return 'High';if(v.indexOf('medium')>=0)return 'Medium';if(v.indexOf('low')>=0)return 'Low';return null;}
 function ffToUtc(iso){const d=new Date(iso);if(isNaN(d.getTime()))return null;const p=n=>String(n).padStart(2,'0');return d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate())+' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':00';}
+async function ffFetchJson(url){
+  for(let i=0;i<CORS_WRAPS.length;i++){
+    try{const r=await fetch(CORS_WRAPS[i](url),{cache:'no-store'});if(!r.ok)continue;const j=await r.json();if(j)return j;}catch(e){}
+  }
+  return null;
+}
 async function ffFetchAll(force){
   if(!force&&FF_CACHE&&(Date.now()-FF_TS)<3600000)return FF_CACHE;
   const out=[];let ok=0;
   await Promise.all(FF_URLS.map(async u=>{
-    try{
-      const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
-      const arr=await r.json();
-      (Array.isArray(arr)?arr:[]).forEach(e=>{
-        if(String(e.country||'').toUpperCase()!=='USD')return;      // USD only
-        const imp=ffImpact(e.impact);if(!imp)return;                // drop Holiday / none
-        const dt=ffToUtc(e.date);if(!dt)return;
-        out.push({date:dt,event:String(e.title||''),impact:imp,estimate:(e.forecast||''),previous:(e.previous||''),country:'US',src:'ff'});
-      });
-      ok++;
-    }catch(e){FF_ERR=(e&&e.message)||'fetch failed';}
+    const arr=await ffFetchJson(u);
+    if(!Array.isArray(arr)){FF_ERR='feed blocked (CORS) — even via proxy';return;}
+    ok++;
+    arr.forEach(e=>{
+      if(String(e.country||'').toUpperCase()!=='USD')return;      // USD only
+      const imp=ffImpact(e.impact);if(!imp)return;                // drop Holiday / none
+      const dt=ffToUtc(e.date);if(!dt)return;
+      out.push({date:dt,event:String(e.title||''),impact:imp,estimate:(e.forecast||''),previous:(e.previous||''),country:'US',src:'ff'});
+    });
   }));
-  if(ok===0){FF_ERR=FF_ERR||'ForexFactory feed unreachable';return null;}   // total failure → let caller fall back
-  FF_ERR=null;
+  if(ok===0){FF_LIVE=false;return null;}                          // total failure → caller uses FMP
+  FF_ERR=null;FF_LIVE=true;
   const seen={},dd=[];out.forEach(e=>{const k=e.date+'|'+e.event;if(!seen[k]){seen[k]=1;dd.push(e);}});
+  const days=dd.map(e=>etDateStr(utcToEt(e.date))).sort();
+  FF_MIN=days[0]||null;FF_MAX=days[days.length-1]||null;
   FF_CACHE=dd;FF_TS=Date.now();return dd;
 }
-/* Events for a date range: ForexFactory first, FMP only if the feed can't be reached at all. */
+/* ForexFactory owns its ~3-week window; FMP fills everything outside it (out to 2027).
+   That's the only way to have FF folders near-term AND full coverage long-term. */
 async function calEventsFor(fromDs,toDs){
   const ff=await ffFetchAll(false);
-  if(ff)return ff.filter(e=>{const d=etDateStr(utcToEt(e.date));return d>=fromDs&&d<=toDs;});
-  try{return await fetchCalChunked(fromDs,toDs);}catch(e){return [];}
+  const out=[];
+  if(ff&&ff.length){
+    ff.forEach(e=>{const d=etDateStr(utcToEt(e.date));if(d>=fromDs&&d<=toDs)out.push(e);});
+    const needBefore=fromDs<FF_MIN, needAfter=toDs>FF_MAX;
+    if(needBefore||needAfter){
+      try{
+        const fmp=await fetchCalChunked(fromDs,toDs);
+        fmp.forEach(e=>{const d=etDateStr(utcToEt(e.date));if(d<FF_MIN||d>FF_MAX){if(d>=fromDs&&d<=toDs)out.push(e);}});  // FF owns its window; FMP only outside it
+      }catch(e){}
+    }
+    return out;
+  }
+  try{return await fetchCalChunked(fromDs,toDs);}catch(e){return [];}   // feed unreachable → pure FMP
+}
+function calSourceLabel(){
+  const el=document.getElementById('calSource');if(!el)return;
+  if(FF_LIVE)el.innerHTML='<span class="up">● ForexFactory</span> <span class="subtle">near-term · FMP beyond</span>';
+  else el.innerHTML='<span class="down">● FMP</span> <span class="subtle">ForexFactory blocked (CORS)</span>';
 }
 async function loadCalendar(){
   const now=new Date(),ms=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),1)),me=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()+1,0)),re=new Date(Math.max(me.getTime(),now.getTime()+8*864e5));
@@ -1657,7 +1684,7 @@ async function loadMonthView(){
   const first=new Date(Date.UTC(MV.y,MV.m-1,1)),last=new Date(Date.UTC(MV.y,MV.m,0));
   document.getElementById('calBody').innerHTML='<div class="subtle" style="padding:10px">Loading…</div>';
   const look=new Date(last.getTime()+864e5);   // +1 day so month-end can see if the 1st is CPI/PPI/NFP
-  try{const raw=await calEventsFor(ymd(first),ymd(look));const seen=new Set();MONTHCAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);MONTHCAL.push(e);}}});renderMonthPlan();}catch(e){document.getElementById('calBody').innerHTML='<div class="down" style="padding:10px">Calendar unavailable.</div>';}
+  try{const raw=await calEventsFor(ymd(first),ymd(look));const seen=new Set();MONTHCAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);MONTHCAL.push(e);}}});renderMonthPlan();safe(calSourceLabel);}catch(e){document.getElementById('calBody').innerHTML='<div class="down" style="padding:10px">Calendar unavailable.</div>';}
 }
 function renderMonthPlan(){
   const y=MV.y,m=MV.m;document.getElementById('calTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1)));
