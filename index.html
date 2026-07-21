@@ -256,7 +256,7 @@ ul.tight li::marker{color:var(--org)}
       <hr class="d">
       <div class="grid" style="grid-template-columns:2fr 1fr">
         <div>
-          <div class="panel"><h2 class="sec">Coaches Technical Read</h2><div id="coachDaily" class="narr">Reading…</div></div>
+          <div class="panel"><h2 class="sec">Coaches Conscious Framework</h2><div id="coachDaily" class="narr">Reading…</div></div>
           <hr class="d">
           <div class="grid" style="grid-template-columns:1fr 1fr">
             <div class="panel"><h2 class="sec">Key Themes</h2><ul class="tight" id="keyThemes"><li>…</li></ul></div>
@@ -651,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · save-manual';
+const BUILD='2026-07-19 · forexfactory';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1000,7 +1000,7 @@ function renderOverview(){
   const dir=draw==='HIGHER'?'longs from discount POIs':draw==='LOWER'?'shorts from premium POIs':'standing down until the triad picks a side';
   document.getElementById('overview').innerHTML=`<p>The NQ/ES/YM triad reads <b>${draw}</b> on HTF structure (NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM}). NQ is in <b>${zone}</b> of its daily range at ${fmtN(nq.price)}. Draw on liquidity favors ${dir}.</p><p>Scheduled risk today: ${evTxt}.${fomc?' FOMC on the docket — the 2:45–3:15 window is the tradeable read; let the release deliver, then trade the reaction.':''} Until a POI meets a time window with a correlated SMT and a CSD, there is no trade. Protocol first.</p>`;
 }
-/* ===== Premarket Conscious Framework — sourced from The Mastery of Self (Larson) + Identity Pro L1–L4.
+/* ===== Coaches Conscious Framework — sourced from The Mastery of Self (Larson) + Identity Pro L1–L4.
    Single focus per day, rotates deterministically by date. This is the priming to step into the session with. ===== */
 const CONSCIOUS_FRAMEWORKS=[
  {f:"Master, don't control",q:"He who has attained the mastery of self never tries to control anything or anybody, not even himself. His object is not to control himself, but to make the best possible use of himself.",p:7,c:"Control is the old identity forcing the tape. Today you drop the grip entirely — you are not here to control price, wins, or losses. You are here to make the fullest use of a regulated state and a proven protocol.",s:"Before the open, name one thing you were trying to control yesterday, and set it down. Trade to express, not to control.",src:"Mastery of Self p.7 · L1 Identity Core"},
@@ -1051,8 +1051,7 @@ function consciousIndex(ds){const t=Date.parse((ds||etParts().date)+'T12:00:00Z'
 function consciousHtml(ds){
   const c=CONSCIOUS_FRAMEWORKS[consciousIndex(ds)];if(!c)return '';
   return `<div style="border-left:2px solid var(--grn);padding-left:12px">
-    <div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--grn)">Premarket Conscious Framework</div>
-    <div style="font-weight:700;font-size:15px;margin:7px 0 9px;color:var(--ink)">Today&rsquo;s focus &middot; ${escH(c.f)}</div>
+    <div style="font-weight:700;font-size:15px;margin:0 0 9px;color:var(--ink)">Today&rsquo;s focus &middot; ${escH(c.f)}</div>
     <blockquote style="margin:0 0 9px;padding:9px 11px;background:rgba(53,208,127,.06);border-radius:5px;color:var(--ink);font-style:italic">&ldquo;${escH(c.q)}&rdquo;<span style="display:block;margin-top:5px;font-style:normal;font-size:11px;color:var(--mut)">&mdash; The Mastery of Self &middot; p.${c.p}</span></blockquote>
     <p style="margin:0 0 9px">${escH(c.c)}</p>
     <p style="margin:0"><b style="color:var(--grn)">Step in:</b> ${escH(c.s)}</p>
@@ -1290,9 +1289,47 @@ function renderKeyThemes(){
 /* ===== Calendar fetch (shared) ===== */
 function ymd(d){return d.toISOString().slice(0,10);}
 async function fetchCalChunked(f,t){const ch=[];let s=new Date(f+'T00:00:00Z'),end=new Date(t+'T00:00:00Z');while(s<=end){let e=new Date(s.getTime()+6*864e5);if(e>end)e=end;ch.push([ymd(s),ymd(e)]);s=new Date(e.getTime()+864e5);}let out=[];for(const c of ch){try{const r=await mcp('economics',{endpoint:'economics-calendar',country:'US',from_date:c[0],to_date:c[1]});if(Array.isArray(r))out=out.concat(r);}catch(e){}}return out;}
+/* ============================================================
+   FOREX FACTORY CALENDAR (nfs.faireconomy.media — FF's official mirror)
+   Primary source for the Protocol Calendar. USD only. Real red/orange/yellow
+   folders. The feed only covers last / this / next week (~3 weeks), so months
+   outside that window show nothing. Cached 1h. If the browser blocks the feed
+   (CORS/offline) it falls back to FMP so the calendar is never dead.
+   ============================================================ */
+const FF_URLS=['https://nfs.faireconomy.media/ff_calendar_lastweek.json','https://nfs.faireconomy.media/ff_calendar_thisweek.json','https://nfs.faireconomy.media/ff_calendar_nextweek.json'];
+let FF_CACHE=null,FF_TS=0,FF_ERR=null;
+function ffImpact(v){v=String(v||'').toLowerCase();if(v.indexOf('high')>=0)return 'High';if(v.indexOf('medium')>=0)return 'Medium';if(v.indexOf('low')>=0)return 'Low';return null;}
+function ffToUtc(iso){const d=new Date(iso);if(isNaN(d.getTime()))return null;const p=n=>String(n).padStart(2,'0');return d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate())+' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':00';}
+async function ffFetchAll(force){
+  if(!force&&FF_CACHE&&(Date.now()-FF_TS)<3600000)return FF_CACHE;
+  const out=[];let ok=0;
+  await Promise.all(FF_URLS.map(async u=>{
+    try{
+      const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
+      const arr=await r.json();
+      (Array.isArray(arr)?arr:[]).forEach(e=>{
+        if(String(e.country||'').toUpperCase()!=='USD')return;      // USD only
+        const imp=ffImpact(e.impact);if(!imp)return;                // drop Holiday / none
+        const dt=ffToUtc(e.date);if(!dt)return;
+        out.push({date:dt,event:String(e.title||''),impact:imp,estimate:(e.forecast||''),previous:(e.previous||''),country:'US',src:'ff'});
+      });
+      ok++;
+    }catch(e){FF_ERR=(e&&e.message)||'fetch failed';}
+  }));
+  if(ok===0){FF_ERR=FF_ERR||'ForexFactory feed unreachable';return null;}   // total failure → let caller fall back
+  FF_ERR=null;
+  const seen={},dd=[];out.forEach(e=>{const k=e.date+'|'+e.event;if(!seen[k]){seen[k]=1;dd.push(e);}});
+  FF_CACHE=dd;FF_TS=Date.now();return dd;
+}
+/* Events for a date range: ForexFactory first, FMP only if the feed can't be reached at all. */
+async function calEventsFor(fromDs,toDs){
+  const ff=await ffFetchAll(false);
+  if(ff)return ff.filter(e=>{const d=etDateStr(utcToEt(e.date));return d>=fromDs&&d<=toDs;});
+  try{return await fetchCalChunked(fromDs,toDs);}catch(e){return [];}
+}
 async function loadCalendar(){
   const now=new Date(),ms=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),1)),me=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()+1,0)),re=new Date(Math.max(me.getTime(),now.getTime()+8*864e5));
-  try{const raw=await fetchCalChunked(ymd(ms),ymd(re));const seen=new Set();CAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);CAL.push(e);}}});}catch(e){}
+  try{const raw=await calEventsFor(ymd(ms),ymd(re));const seen=new Set();CAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);CAL.push(e);}}});}catch(e){}
   safe(renderWindows);safe(renderOverview);safe(renderKeyThemes);safe(renderCoach);safe(renderCal72);
 }
 setInterval(()=>safe(renderWindows),30000);
@@ -1620,7 +1657,7 @@ async function loadMonthView(){
   const first=new Date(Date.UTC(MV.y,MV.m-1,1)),last=new Date(Date.UTC(MV.y,MV.m,0));
   document.getElementById('calBody').innerHTML='<div class="subtle" style="padding:10px">Loading…</div>';
   const look=new Date(last.getTime()+864e5);   // +1 day so month-end can see if the 1st is CPI/PPI/NFP
-  try{const raw=await fetchCalChunked(ymd(first),ymd(look));const seen=new Set();MONTHCAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);MONTHCAL.push(e);}}});renderMonthPlan();}catch(e){document.getElementById('calBody').innerHTML='<div class="down" style="padding:10px">Calendar unavailable.</div>';}
+  try{const raw=await calEventsFor(ymd(first),ymd(look));const seen=new Set();MONTHCAL=[];raw.forEach(e=>{if(e&&(e.impact==='High'||e.impact==='Medium')){const k=e.date+'|'+e.event;if(!seen.has(k)){seen.add(k);MONTHCAL.push(e);}}});renderMonthPlan();}catch(e){document.getElementById('calBody').innerHTML='<div class="down" style="padding:10px">Calendar unavailable.</div>';}
 }
 function renderMonthPlan(){
   const y=MV.y,m=MV.m;document.getElementById('calTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1)));
