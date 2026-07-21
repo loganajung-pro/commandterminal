@@ -651,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · ff-proxy';
+const BUILD='2026-07-19 · my-brief-lean';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1998,15 +1998,35 @@ function briefHtml(b,hideShots){
   ${(b.shots&&b.shots.length)?(hideShots?`<div class="briefsec"><h4>Annotated Charts</h4><div class="subtle">📎 ${b.shots.length} chart${b.shots.length>1?'s':''} attached — Open full ↗ to view.</div></div>`:`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`):''}
   <div class="briefsec"><h4>High-Impact Events</h4>${(b.events&&b.events.length)?b.events.map(e=>`<div class="evrow"><span class="tm">${e.t}</span><span>${e.name}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`).join(''):'<div class="subtle">Clean tape — no high-impact prints.</div>'}</div>`;
 }
+/* Your saved brief — exactly what you asked for, in order:
+   POI + Liquidity Target · Execution Framework · Charts · Key Themes · Watch Today. */
+function myBriefHtml(b){
+  let h='';
+  if(b.poi||b.liq){
+    h+='<div class="briefsec"><h4>Point of Interest &amp; Liquidity Target</h4>';
+    if(b.poi)h+=`<div class="kv"><span class="k">POI</span><span class="v">${escH(b.poi)}</span></div>`;
+    if(b.liq)h+=`<div class="kv"><span class="k">Liquidity Target</span><span class="v">${escH(b.liq)}</span></div>`;
+    h+='</div>';
+  }
+  if(b.framework&&b.framework.length)
+    h+=`<div class="briefsec"><h4>Execution Framework</h4><div class="narr">${b.framework.map(p=>'<p>'+escH(p)+'</p>').join('')}</div></div>`;
+  if(b.shots&&b.shots.length)
+    h+=`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`;
+  if(b.themes&&b.themes.length)
+    h+=`<div class="briefsec"><h4>Key Themes</h4><ul class="tight">${b.themes.map(t=>'<li>'+escH(t)+'</li>').join('')}</ul></div>`;
+  if(b.watch&&b.watch.length)
+    h+=`<div class="briefsec"><h4>Watch Today</h4><ul class="tight">${b.watch.map(t=>'<li>'+escH(t)+'</li>').join('')}</ul></div>`;
+  return h||'<div class="subtle">Nothing composed yet — hit ＋ Compose Framework.</div>';
+}
 /* My-brief inline expand (below the calendar) + full-review modal */
 function expandMyBrief(ds){
   const el=document.getElementById('myBriefView');if(!el)return;
   const b=myBriefs()[ds];if(!b){el.innerHTML='';return;}
-  el.innerHTML=`<hr class="d"><div class="panel"><div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec grn" style="margin:0">My Brief</h2><span class="subtle">${fmtDayLong(ds)}</span></div><div style="display:flex;gap:6px"><button class="btn" id="myBriefFull" style="padding:5px 10px">Open full ↗</button><button class="btn" id="myBriefClose" style="padding:5px 10px">✕</button></div></div>${briefHtml(b,true)}</div>`;
+  el.innerHTML=`<hr class="d"><div class="panel"><div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec grn" style="margin:0">My Brief</h2><span class="subtle">${fmtDayLong(ds)}</span></div><div style="display:flex;gap:6px"><button class="btn" id="myBriefFull" style="padding:5px 10px">Open full ↗</button><button class="btn" id="myBriefClose" style="padding:5px 10px">✕</button></div></div>${myBriefHtml(b)}</div>`;
   const f=document.getElementById('myBriefFull');if(f)f.addEventListener('click',()=>openMyBriefModal(ds));
   const c=document.getElementById('myBriefClose');if(c)c.addEventListener('click',()=>{el.innerHTML='';});
 }
-function openMyBriefModal(ds){const b=myBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='My Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen||'')+' · your brief';document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'My Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
+function openMyBriefModal(ds){const b=myBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='My Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen||'')+' · your brief';document.getElementById('briefModalBody').innerHTML=myBriefHtml(b);curPrint={title:'My Brief · '+fmtDayLong(ds),body:myBriefHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen?('Generated '+b.gen):'Saved brief');document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'Daily Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function closeBrief(){document.getElementById('briefModal').classList.remove('open');}
 /* ===== Protocol Calendar — day detail popout (time cycles + protocol read + events) ===== */
