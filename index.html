@@ -651,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · read-headroom';
+const BUILD='2026-07-19 · daily-context';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -3594,23 +3594,25 @@ CRITICAL OUTPUT RULES
 - DETAILED AND PRECISE, NOT LENGTHY. Write like a pro's execution notes — clipped, structural, every word carries weight. Name the exact structures. NO filler, NO hedging, NO prose paragraphs. The four carrying fields (draw, poi, sequence, invalidation) get the technical substance but stay 1–2 tight sentences each. The rest are a phrase. If it doesn't sharpen the trade, cut it.
 - NAME THE TIMEFRAME on every price reference. "M1 swept the London high", "H4 tapped the daily SIBI" — never a bare "price swept the high". Tags: Daily / H4 / H1 / M15 / M5 / M1.
 - EXECUTION LIVES IN 07:00–11:30 ET ONLY. Higher cycles set bias, nothing more. Scope the POI, the sequence and the trigger to the focused 90-minute cycle and its 30-minute AMD (Accumulation → Manipulation → Distribution) given in CONTEXT. Position off the 30-min Manipulation, execute into the 30-min Distribution. Nothing forming in the cycle = WAIT, not trade.
+- SCALP-REALISTIC DRAWS AND POIs — REACHABLE THIS CYCLE ONLY. This is a scalp / day-trade inside one 90-minute cycle. The TRADED DRAW is the NEAREST intraday liquidity price can actually reach this session — session high/low (Asia/London/NY), the prior 30-min or 90-min cycle extreme, intraday equal highs/lows, or an internal FVG / liquidity pocket. Do NOT set the target at weekly/monthly pools, or at PDH/PDL if they sit a full session away — those are bias/direction context only, never the target. The POI must be an execution-timeframe array (M1–M15, H1 at most) that price is at or near NOW and can tap this cycle — never a distant Daily/H4 imbalance price won't reach. If your draw or POI can't be hit inside the focused cycle, it is the wrong draw/POI — pick the nearer one.
+- DAILY IS CONTEXT + KEY LEVELS, NOT NOISE. Always read the Daily for bias AND its reference points — the daily high/low and daily PD arrays (daily FVG / OB / breaker). When price is AT or NEAR a daily high/low or daily PD array, that level is IN PLAY: it becomes the scalp draw if it's reachable this cycle, or the origin of a reaction to fade / continue from — treat it as high-value and name it. When price is FAR from any daily level, the Daily is bias/direction only and the scalp works the nearest intraday liquidity. Never target a daily level a full session away; never ignore one that is right here.
+- CHART SUFFICIENCY CALLOUT. Entries are timed on M1–M15. If the screenshots are all higher-timeframe (Daily/H4/H1) with no M1–M15 visible, you CANNOT scope a precise entry — say so in 'context', name the timeframe you need, and keep the read to bias + which daily levels are in play. Never fabricate an M1 sequence you cannot see on the charts.
 - DELIVERY language, never levels. NO numbers/ticks — name structure: PDH/PDL, equal highs/lows, session H/L, premium/discount, FVG, OB, breaker, sweep, SMT, CSD.
 - Never invent a setup. Stand-aside is a valid, complete read.
 
-Return ONLY strict JSON — no prose, no code fences. Each field 1–2 tight sentences MAX (standaside/rebalance = one phrase). Timeframe-tag every price reference:
-{"draw":"The HTF draw + why. Name the target liquidity pool (PDH/PDL, weekly high/low, equal highs/lows, session extreme), what's engineered to fuel it, and the daily AMD phase behind it. Dense, 1–2 sentences.","phase":"One line: daily AMD phase · which 90-min cycle + 30-min AMD phase now.","liquidity":"One line: what's swept, what rests as the draw, and whether the last move was engineered manipulation. Timeframe-tagged.","poi":"The array to trade from in the focused cycle — name it (OB/FVG/breaker/mitigation/CE/SIBI/BISI) + timeframe + premium/discount, and confirm it clears the 5 conditions (flag any it fails). 1–2 sentences.","sequence":"The protocol stack to fire in the current/next 90-min cycle's Manip→Distribution: sweep → SMT (name the NQ/ES/YM divergence) → CSD → displacement + fresh FVG → continuation. Timeframe-tag each. 1–2 sentences, no filler.","rebalance":"One phrase: DELIVERY or REBALANCING + the PD arrays price respects.","invalidation":"The exact structure that, if accepted through, kills it (name it + timeframe) — placeable as a stop — plus the time-stop (cycle close / 11:30). 1 sentence.","standaside":"One phrase: WAIT + why, if no setup or no window in the focused cycle."}`;
+Return ONLY strict JSON — no prose, no code fences. Each field 1–2 tight sentences MAX (standaside = one phrase). Timeframe-tag every price reference:
+{"context":"Callout — ONLY when needed, else empty string. (a) If the charts are too high-timeframe to time an entry, say which timeframe is missing (e.g. \"need M5/M15 to scope the entry\"). (b) If price is at/near a daily high/low or daily PD array, name it and whether it is the draw or a reaction point. Leave empty if charts are sufficient and no daily level is in play.","poi":"The execution POI to trade from THIS cycle — an M1–M15 (H1 max) array price is at/near now: name it (OB/FVG/breaker/mitigation/CE/SIBI/BISI) + timeframe + premium/discount, and confirm it clears the 5 conditions (flag any it fails). Must be reachable this cycle. 1–2 sentences.","draw":"The SCALP target — the NEAREST intraday liquidity reachable inside the focused 90-min cycle (session H/L, prior 30/90-min extreme, intraday equal highs/lows, internal FVG). Name it + timeframe. State HTF direction in one clause only; the traded draw is intraday and hittable this session. 1–2 sentences.","liquidity":"One line: what's swept, what rests as the near draw, DELIVERY or REBALANCING, and which PD arrays price respects. Timeframe-tagged.","sequence":"What must happen — the protocol stack to fire in the current/next 90-min cycle's Manip→Distribution: sweep → SMT (name the NQ/ES/YM divergence) → CSD → displacement + fresh FVG → continuation to the intraday draw. Timeframe-tag each. 1–2 sentences, no filler.","invalidation":"The exact structure that, if accepted through, kills it (name it + timeframe) — placeable as a stop — plus the time-stop (cycle close / 11:30). 1 sentence.","standaside":"One phrase: WAIT + why, if no setup or the draw/POI isn't reachable in the focused cycle."}`;
 /* Renders the coach's framework read. Deliberately no numbers — this is a
    delivery narrative, not a levels table. */
 function coachReadHtml(d){
   if(!d)return '';
   const sec=(t,v)=>v&&String(v).trim()?`<div style="margin-top:11px"><div style="font:700 9.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--org);margin-bottom:5px">${t}</div><p style="margin:0">${escH(v)}</p></div>`:'';
   return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span class="tag grn" style="font-size:9px">COACH · FRAMEWORK READ</span>${d.ts?`<span class="subtle" style="font-size:9.5px">${escH(d.ts)}</span>`:''}</div>`
-    +sec('Draw on Liquidity',d.draw)
-    +sec('Time · Cycle · AMD',d.phase)
-    +sec('Liquidity',d.liquidity)
+    +(d.context&&String(d.context).trim()?`<div style="margin:6px 0 2px;padding:8px 10px;border:1px solid var(--amber);border-radius:6px;background:rgba(240,180,50,.08)"><span class="tag med" style="font-size:9px">READ CONTEXT</span> <span>${escH(d.context)}</span></div>`:'')
     +sec('Point of Interest',d.poi)
-    +sec('Protocol Stack — What Must Fire',d.sequence)
-    +sec('Delivery or Rebalancing',d.rebalance)
+    +sec('Liquidity Draw',d.draw)
+    +sec('Liquidity',d.liquidity)
+    +sec('What Must Happen',d.sequence)
     +sec('Invalidation',d.invalidation)
     +(d.standaside?`<div style="margin-top:11px;padding:8px 10px;border:1px solid var(--line2);border-radius:6px;background:var(--panel2)"><span class="tag med" style="font-size:9px">STAND ASIDE IF</span> <span class="subtle">${escH(d.standaside)}</span></div>`:'');
 }
@@ -3641,7 +3643,7 @@ async function cbCoachRead(){
     const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
     const cut=(j.stop_reason==='max_tokens');
     let data=parseJsonLoose(txt);
-    if(!data)data=salvageFields(txt,['draw','phase','liquidity','poi','sequence','rebalance','invalidation','standaside']);
+    if(!data)data=salvageFields(txt,['context','poi','draw','liquidity','sequence','invalidation','standaside']);
     if(!data){
       const peek=String(txt).replace(/\s+/g,' ').slice(0,220);
       throw new Error((cut?'the reply was cut off before it finished. ':'')+'Could not parse the read. The coach replied with: "'+escH(peek)+'…"');
