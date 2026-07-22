@@ -651,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · live-notes-order';
+const BUILD='2026-07-19 · debrief-fix';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2675,10 +2675,12 @@ async function pmrDebrief(){
     'Technical Review notes: '+(fields.technical||'(blank)')+'\n'+
     'Market Review: '+(fields.market||'(blank)');
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:1400,messages:[{role:'user',content:[{type:'text',text:COACH_DEBRIEF_PROMPT+'\n\n'+journal}]}]})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:8000,messages:[{role:'user',content:[{type:'text',text:COACH_DEBRIEF_PROMPT+'\n\n'+journal}]}]})});
     if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
-    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
-    const data=parseJsonLoose(txt);if(!data)throw new Error('Could not parse the debrief.');
+    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>(c&&(c.text||c.thinking))||'').join('\n'):'';
+    let data=parseJsonLoose(txt);
+    if(!data)data=salvageFields(txt,['diagnosis','slipped','recode','action','anchor']);
+    if(!data)throw new Error((j.stop_reason==='max_tokens'?'the reply was cut off (model reasoned too long — try again). ':'')+'Could not parse the debrief.');
     pmrDebriefData=data;const prev=cbEl('pmr-debrief');if(prev)prev.innerHTML=pmrDebriefHtml(data);
     say('up','✓ Debrief ready — it saves with your journal.');
   }catch(e){say('down','Debrief failed: '+escH((e&&e.message)||'error'));}
@@ -2904,10 +2906,12 @@ async function weekDebrief(){
   const key=anthKey();if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
   say('mut','Coach is reviewing your week…');
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:2000,messages:[{role:'user',content:[{type:'text',text:COACH_WEEK_PROMPT+'\n\n'+weekDigestText(w)}]}]})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:8000,messages:[{role:'user',content:[{type:'text',text:COACH_WEEK_PROMPT+'\n\n'+weekDigestText(w)}]}]})});
     if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
-    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
-    const data=parseJsonLoose(txt);if(!data)throw new Error('Could not parse the review.');
+    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>(c&&(c.text||c.thinking))||'').join('\n'):'';
+    let data=parseJsonLoose(txt);
+    if(!data)data=salvageFields(txt,['theme','wins','leaks','recode','action','anchor']);
+    if(!data)throw new Error((j.stop_reason==='max_tokens'?'the reply was cut off (try again). ':'')+'Could not parse the review.');
     const all=loadWeekly();all[selWeek]=Object.assign({},all[selWeek]||{},{week:selWeek,debrief:data});
     if(!saveWeeklyAll(all)){say('down','Could not save the review — storage full.');return;}
     const box=document.getElementById('wk-debrief');if(box)box.innerHTML=weekDebriefHtml(data);
@@ -3531,10 +3535,12 @@ async function coachTradeReview(id){
   visionParts(tr.shots,3).parts.forEach(pt=>content.push(pt));
   content.push({type:'text',text:COACH_TRADE_PROMPT+'\n\n'+rec+'\n\n'+barsDigest(bars,tr)});
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:1200,messages:[{role:'user',content}]})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:8000,messages:[{role:'user',content}]})});
     if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
-    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
-    const data=parseJsonLoose(txt);if(!data)throw new Error('Could not parse the review.');
+    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>(c&&(c.text||c.thinking))||'').join('\n'):'';
+    let data=parseJsonLoose(txt);
+    if(!data)data=salvageFields(txt,['entry','stop','exit','grade','verdict']);
+    if(!data)throw new Error((j.stop_reason==='max_tokens'?'the reply was cut off (try again). ':'')+'Could not parse the review.');
     const all=loadTrades();const i=all.findIndex(x=>x.id===id);if(i>=0){all[i].review=data;saveTrades(all);}
     const box=document.getElementById('tr-coach');if(box)box.innerHTML=tradeReviewHtml(data);
     say('up','✓ Review saved with the trade.');
