@@ -651,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · live-notes';
+const BUILD='2026-07-19 · live-notes-order';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2946,7 +2946,6 @@ function dayDossierHtml(D){
     h+=`<div class="briefsec"><h4>Daily Brief</h4><div class="subtle">${D.mine?'Your composed brief':'Generated brief'} saved for this day.${bits.length?' — '+bits.join(' · '):''}</div></div>`;
   }
   if(D.mine&&D.mine.coachData)h+=`<div class="briefsec"><h4>Coaches Technical Read</h4>${coachReadHtml(D.mine.coachData)}</div>`;
-  if(D.mine&&D.mine.liveNotes&&D.mine.liveNotes.length)h+=liveNotesHtml(D.mine,false);
   if(D.hasPlan){const p=D.pm.poi||{};
     h+=`<div class="briefsec"><h4>Pre Market Framework${(D.pm.dir&&D.pm.dir!=='—')?` <span class="tag ${D.pm.dir==='Long'?'bull':'bear'}">${escH(D.pm.dir)}</span>`:''}</h4>`;
     if(D.pm.scenario&&D.pm.scenario.length)h+=`<div class="narr">${D.pm.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`;
@@ -2956,6 +2955,7 @@ function dayDossierHtml(D){
     if(_fs.length)h+=_fs.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('');
     h+='</div>';
   }else h+=`<div class="briefsec"><h4>Pre Market Framework</h4><div class="subtle">No framework written for this day.</div></div>`;
+  if(D.mine&&D.mine.liveNotes&&D.mine.liveNotes.length)h+=liveNotesHtml(D.mine,false);   // below charts/framework, above trades
   if(D.trades.length){
     h+=`<div class="briefsec"><h4>Trades <span class="subtle">— ${D.trades.length} · ${D.r>=0?'+':''}${D.r.toFixed(1)}R · click any trade to open its journal entry</span></h4>`+
       D.trades.map(t=>{const rt=t.res==='Open'?'tag blue':t.res==='Win'?'tag bull':t.res==='Loss'?'tag bear':'tag neut';
