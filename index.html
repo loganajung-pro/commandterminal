@@ -651,7 +651,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · read-headroom8k';
+const BUILD='2026-07-19 · live-notes';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2061,15 +2061,41 @@ function myBriefFullHtml(b){
   }
   /* everything else the compose form captures: overview, conscious framework, themes, watch, levels, charts, events */
   h+=briefHtml(b);
+  if(b.liveNotes&&b.liveNotes.length)h+=liveNotesHtml(b,false);
   return h;
 }
 /* My-brief inline expand (below the calendar) + full-review modal */
+/* Live Notes — a timestamped running log you add to during the session, saved to the brief. */
+function liveNotesHtml(b,editable){
+  const notes=b.liveNotes||[];
+  let h=`<hr class="d"><div class="briefsec"><h4>Live Notes${editable?' <span class="subtle">— jot as the session runs</span>':''}</h4>`;
+  h+=`<div>${notes.length?notes.map((n,i)=>`<div class="tl"><div style="flex:1"><span class="subtle" style="font-family:var(--mono)">${escH(n.t||'')}</span> ${escH(n.x||'')}</div>${editable?`<span class="x lnrm" data-i="${i}" style="cursor:pointer">✕</span>`:''}</div>`).join(''):'<div class="subtle">No notes yet.</div>'}</div>`;
+  if(editable)h+=`<div style="display:flex;gap:6px;margin-top:8px"><input id="ln-input" placeholder="Add a live note…" style="flex:1;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:8px;color:var(--ink);font-family:var(--mono);font-size:12px"><button class="btn grn" id="ln-add" type="button" style="padding:8px 14px">+ Add</button></div>`;
+  return h+'</div>';
+}
+function addLiveNote(ds){
+  const inp=document.getElementById('ln-input');if(!inp)return;const x=inp.value.trim();if(!x)return;
+  const all=myBriefs();const b=all[ds];if(!b)return;
+  b.liveNotes=b.liveNotes||[];
+  const t=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET';
+  b.liveNotes.push({t,x});all[ds]=b;try{lsSet('ct_mybriefs',JSON.stringify(all));}catch(e){}
+  expandMyBrief(ds);
+}
+function bindLiveNotes(ds){
+  const a=document.getElementById('ln-add');if(a)a.addEventListener('click',()=>addLiveNote(ds));
+  const inp=document.getElementById('ln-input');if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addLiveNote(ds);}});
+  document.querySelectorAll('.lnrm').forEach(x=>x.addEventListener('click',()=>{
+    const all=myBriefs(),b=all[ds];if(!b||!b.liveNotes)return;b.liveNotes.splice(+x.dataset.i,1);all[ds]=b;try{lsSet('ct_mybriefs',JSON.stringify(all));}catch(e){}expandMyBrief(ds);
+  }));
+}
 function expandMyBrief(ds){
   const el=document.getElementById('myBriefView');if(!el)return;
   const b=myBriefs()[ds];if(!b){el.innerHTML='';return;}
-  el.innerHTML=`<hr class="d"><div class="panel"><div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec grn" style="margin:0">My Brief</h2><span class="subtle">${fmtDayLong(ds)}</span></div><div style="display:flex;gap:6px"><button class="btn" id="myBriefFull" style="padding:5px 10px">Open full ↗</button><button class="btn" id="myBriefClose" style="padding:5px 10px">✕</button></div></div>${myBriefHtml(b)}</div>`;
+  el.innerHTML=`<hr class="d"><div class="panel"><div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec grn" style="margin:0">My Brief</h2><span class="subtle">${fmtDayLong(ds)}</span></div><div style="display:flex;gap:6px"><button class="btn grn" id="myBriefEdit" style="padding:5px 10px">✎ Edit</button><button class="btn" id="myBriefFull" style="padding:5px 10px">Open full ↗</button><button class="btn" id="myBriefClose" style="padding:5px 10px">✕</button></div></div>${myBriefHtml(b)}${liveNotesHtml(b,true)}</div>`;
+  const ed=document.getElementById('myBriefEdit');if(ed)ed.addEventListener('click',()=>openCompose(ds));
   const f=document.getElementById('myBriefFull');if(f)f.addEventListener('click',()=>openMyBriefModal(ds));
   const c=document.getElementById('myBriefClose');if(c)c.addEventListener('click',()=>{el.innerHTML='';});
+  bindLiveNotes(ds);
 }
 function openMyBriefModal(ds){const b=myBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='My Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen||'')+' · your brief';document.getElementById('briefModalBody').innerHTML=myBriefFullHtml(b);curPrint={title:'My Brief · '+fmtDayLong(ds),body:myBriefFullHtml(b)};document.getElementById('briefModal').classList.add('open');}
 function openBrief(ds){const b=getBriefs()[ds];if(!b)return;document.getElementById('briefModalTitle').textContent='Daily Brief · '+fmtDayLong(ds);document.getElementById('briefModalGen').textContent=(b.gen?('Generated '+b.gen):'Saved brief');document.getElementById('briefModalBody').innerHTML=briefHtml(b);curPrint={title:'Daily Brief · '+fmtDayLong(ds),body:briefHtml(b)};document.getElementById('briefModal').classList.add('open');}
@@ -2920,6 +2946,7 @@ function dayDossierHtml(D){
     h+=`<div class="briefsec"><h4>Daily Brief</h4><div class="subtle">${D.mine?'Your composed brief':'Generated brief'} saved for this day.${bits.length?' — '+bits.join(' · '):''}</div></div>`;
   }
   if(D.mine&&D.mine.coachData)h+=`<div class="briefsec"><h4>Coaches Technical Read</h4>${coachReadHtml(D.mine.coachData)}</div>`;
+  if(D.mine&&D.mine.liveNotes&&D.mine.liveNotes.length)h+=liveNotesHtml(D.mine,false);
   if(D.hasPlan){const p=D.pm.poi||{};
     h+=`<div class="briefsec"><h4>Pre Market Framework${(D.pm.dir&&D.pm.dir!=='—')?` <span class="tag ${D.pm.dir==='Long'?'bull':'bear'}">${escH(D.pm.dir)}</span>`:''}</h4>`;
     if(D.pm.scenario&&D.pm.scenario.length)h+=`<div class="narr">${D.pm.scenario.map(x=>'<p>'+escH(x)+'</p>').join('')}</div>`;
