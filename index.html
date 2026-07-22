@@ -646,12 +646,14 @@ ul.tight li::marker{color:var(--org)}
   </div>
   <div style="margin-top:6px;display:flex;align-items:center;gap:10px"><button class="btn" id="pmr-debrief-btn" type="button">🧠 Coaches Debrief</button><span class="subtle" id="pmr-debrief-hint">Coach reads your six answers and reflects back where psychology or protocol slipped — tied to your L1–L4 layers and shadow patterns. Needs an Anthropic key (Settings ⚙).</span></div>
   <div id="pmr-debrief" style="margin-top:10px"></div>
+  <div style="margin-top:10px;display:flex;align-items:center;gap:10px"><button class="btn grn" id="pmr-techdebrief-btn" type="button">Coaches Technical Debrief</button><span class="subtle" id="pmr-techdebrief-hint">Upload the day's charts in Technical Review above — coach reads them against your pre-market framework and grades what actually delivered vs the plan.</span></div>
+  <div id="pmr-techdebrief" style="margin-top:10px"></div>
   <button class="btn grn" id="pmr-save" style="width:100%;margin-top:8px">Save Journal</button>
   <div class="subtle" id="pmr-status" style="margin-top:6px"></div>
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · debrief-fix';
+const BUILD='2026-07-19 · tech-debrief2';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2601,7 +2603,7 @@ function pmRenderRoutine(sel,cid){
 }
 function pmRoutineVal(cid){return Array.prototype.slice.call(document.querySelectorAll('#'+(cid||'pm-routine')+' .pmrt')).filter(x=>x.checked).map(x=>x.value);}
 function readinessOf(pm){if(!pm||!pm.ready)return null;const v=['sleep','energy','focus'].map(k=>+pm.ready[k]||0).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
-let PV=curMonth(), selPmrDay=etParts().date, selWeek=null, selWeekDay=null, pmrShots=[], pmrDebriefData=null;
+let PV=curMonth(), selPmrDay=etParts().date, selWeek=null, selWeekDay=null, pmrShots=[], pmrDebriefData=null, pmrTechDebriefData=null;
 const COACH_DEBRIEF_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro layers L1–L4 + Execution Protocol Framework).
 
 The 4 Pillars To Success — MASTER FILTER for every comment you make. In the briefing / pre-market, the 4 Pillars filter the whole conversation. In post-market reviews, L1–L4 is the primary lens but the 4 Pillars still sit above it:
@@ -2639,6 +2641,60 @@ function pmrDebriefHtml(d){
   if(!d)return '';
   const row=(t,v)=>v&&String(v).trim()?`<div class="briefsec"><h4>${t}</h4><div class="narr"><p>${escH(v)}</p></div></div>`:'';
   return `<div class="panel" style="border-color:var(--grn-dim);background:rgba(53,208,127,.05)"><h2 class="sec grn">Coaches Debrief</h2>${row('Diagnosis',d.diagnosis)}${row('What Slipped',d.slipped)}${row('The Recode',d.recode)}${row('Embodied Action',d.action)}${row('Anchor',d.anchor)}</div>`;
+}
+/* ============================================================
+   COACH'S TECHNICAL DEBRIEF — the day's tape vs the pre-market framework.
+   Reads uploaded post-market charts, compares actual delivery to the plan.
+   ============================================================ */
+/* Lazy — PROTOCOL_KB is defined later in the file, so build the prompt at call time (avoids a top-level temporal-dead-zone error). */
+function techDebriefPrompt(){return `You are this trader's 1-on-1 mentor — a savant who scaled past $100M — and you share their Execution Protocol Framework, given below. The trader has uploaded the day's POST-MARKET charts. Debrief the day's TECHNICALS against their PRE-MARKET FRAMEWORK (also given below): did the day deliver the way it was framed?
+
+`+PROTOCOL_KB+`
+
+JUDGE, THROUGH THE FRAMEWORK:
+- What actually delivered — the real draw, the manipulation, the distribution — timeframe-tagged.
+- Versus the plan: did the framed draw get hit? did the POI work as a repricing origin? did the protocol stack (sweep → SMT → CSD → displacement → continuation) play out or fail? What matched, what missed.
+- Was the pre-market read accurate, early/late, or wrong on direction?
+
+RULES: Terse and technical — pro's notes, no filler. NAME THE TIMEFRAME on every price reference (Daily/H4/H1/M15/M5/M1). NO price numbers — name structure (PDH/PDL, equal highs/lows, session H/L, premium/discount, FVG, OB, breaker, sweep, SMT, CSD). Be honest — if the read was wrong, say so and why.
+
+Return ONLY strict JSON — no prose, no code fences. Each field 1–2 tight sentences (grade = letter + one clause):
+{"delivered":"What the day actually delivered — real draw hit, the manipulation, the distribution. Timeframe-tagged.","vsFramework":"Vs the pre-market framework — draw / POI / protocol sequence: what matched, what missed. Timeframe-tagged.","grade":"A–F on the pre-market read accuracy + one clause why.","lesson":"The one technical adjustment to read/mark differently next session."}`;}
+function pmrTechDebriefHtml(d){
+  if(!d)return '';
+  const g=String(d.grade||'').toUpperCase().charAt(0);
+  const gt=g==='A'||g==='B'?'bull':g==='C'?'med':g?'bear':'neut';
+  const row=(t,v)=>v&&String(v).trim()?`<div class="kv"><span class="k">${t}</span><span class="v">${escH(v)}</span></div>`:'';
+  return `<div class="panel" style="border-color:var(--grn-dim);background:rgba(53,208,127,.05)"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec grn" style="margin:0">Coaches Technical Debrief</h2>${g?`<span class="tag ${gt}">READ ${escH(g)}</span>`:''}</div>${row('What Delivered',d.delivered)}${row('Vs Framework',d.vsFramework)}${d.lesson?`<div class="narr" style="margin-top:8px"><p><b>${escH(d.lesson)}</b></p></div>`:''}</div>`;
+}
+async function pmrTechDebrief(){
+  const st=cbEl('pmr-status');const say=(c,m)=>{if(st)st.innerHTML='<span class="'+c+'">'+m+'</span>';};
+  if(!pmrShots.length){say('down','Upload the day\'s charts in Technical Review above first — this reads the tape.');return;}
+  const key=anthKey();if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
+  const vp=visionParts(pmrShots,4);
+  if(!vp.parts.length){say('down','No usable charts. '+(vp.skipped.join(' · ')||'Re-add them.')+' — PNG or JPG only.');return;}
+  say('mut','Coach is debriefing the day\'s technicals vs your framework…');
+  const ds=selPmrDay;
+  const mine=(typeof myBriefs==='function')?(myBriefs()[ds]||{}):{};
+  const pm=(typeof loadPm==='function')?(loadPm()[ds]||{}):{};
+  let plan='PRE-MARKET FRAMEWORK (what was planned for '+ds+'):\n';
+  plan+='Direction/draw: '+(mine.draw||pm.dir||'—')+'\n';
+  plan+='POI: '+(mine.poi||(pm.poi&&pm.poi.key)||'—')+'\n';
+  plan+='Liquidity target: '+(mine.liq||pm.liq||'—')+'\n';
+  plan+='Execution framework: '+(((mine.framework||pm.scenario||[]).join(' '))||'—')+'\n';
+  if(mine.coachData){const c=mine.coachData;plan+='Pre-market technical read — POI: '+(c.poi||'—')+' · Draw: '+(c.draw||'—')+' · What must happen: '+(c.sequence||'—')+' · Invalidation: '+(c.invalidation||'—')+'\n';}
+  const content=vp.parts.slice();
+  content.push({type:'text',text:techDebriefPrompt()+'\n\n'+plan});
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:8000,messages:[{role:'user',content}]})});
+    if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
+    const j=await r.json();const txt=(j.content&&j.content.length)?j.content.map(c=>(c&&(c.text||c.thinking))||'').join('\n'):'';
+    let data=parseJsonLoose(txt);
+    if(!data)data=salvageFields(txt,['delivered','vsFramework','grade','lesson']);
+    if(!data)throw new Error((j.stop_reason==='max_tokens'?'the reply was cut off (try again). ':'')+'Could not parse the technical debrief.');
+    pmrTechDebriefData=data;const prev=cbEl('pmr-techdebrief');if(prev)prev.innerHTML=pmrTechDebriefHtml(data);
+    say('up','✓ Technical debrief ready — it saves with your journal.');
+  }catch(e){say('down','Technical debrief failed: '+escH((e&&e.message)||'error'));}
 }
 async function pmrDebrief(){
   const st=cbEl('pmr-status');const say=(cls,m)=>{if(st)st.innerHTML='<span class="'+cls+'">'+m+'</span>';};
@@ -3130,7 +3186,8 @@ function pmrDetailHtml(x){
   const sec=(title,val)=>val&&String(val).trim()?`<div class="briefsec"><h4>${title}</h4><div class="narr">${String(val).split(/\n{2,}/).map(p=>'<p>'+escH(p)+'</p>').join('')}</div></div>`:'';
   const shots=(x.shots&&x.shots.length)?`<div class="briefsec"><h4>Technical Review — charts</h4>${x.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:'';
   const debrief=x.debrief?pmrDebriefHtml(x.debrief)+'<hr class="d">':'';
-  return debrief+sec('Surface Level Circumstance',x.surface)+sec('Conscious Inner Circumstance',x.inner)+sec('Risk Management',x.risk)+sec('Framework / Protocol Execution',x.framework)+shots+sec('Technical Review — notes',x.technical)+sec('Market Review',x.market);
+  const techDebrief=x.techDebrief?pmrTechDebriefHtml(x.techDebrief)+'<hr class="d">':'';
+  return debrief+techDebrief+sec('Surface Level Circumstance',x.surface)+sec('Conscious Inner Circumstance',x.inner)+sec('Risk Management',x.risk)+sec('Framework / Protocol Execution',x.framework)+shots+sec('Technical Review — notes',x.technical)+sec('Market Review',x.market);
 }
 function syncPvPickers(){
   const ms=document.getElementById('pvMonth'),ys=document.getElementById('pvYear');
@@ -3165,12 +3222,13 @@ function openPmrModal(){
   pmrRenderBreaks(ex.breaks||[]);pmrMissed=(ex.missed||[]).slice();pmrRenderMissed();msSeq=[];msSeqRender();msTags={};msTagsRender();
   pmrShots=(ex.shots||[]).slice();pmrRenderShots();
   pmrDebriefData=ex.debrief||null;const _pv=cbEl('pmr-debrief');if(_pv)_pv.innerHTML=pmrDebriefData?pmrDebriefHtml(pmrDebriefData):'';
+  pmrTechDebriefData=ex.techDebrief||null;const _tv=cbEl('pmr-techdebrief');if(_tv)_tv.innerHTML=pmrTechDebriefData?pmrTechDebriefHtml(pmrTechDebriefData):'';
   cbEl('pmr-status').textContent='';cbEl('pmrModal').classList.add('open');
 }
 function closePmrModal(){cbEl('pmrModal').classList.remove('open');}
 function savePmr(){
   if(!selPmrDay)return;const g=id=>cbEl(id)?cbEl(id).value.trim():'';
-  const obj={date:selPmrDay,surface:g('pmr-surface'),inner:g('pmr-inner'),risk:g('pmr-risk'),framework:g('pmr-framework'),technical:g('pmr-technical'),market:g('pmr-market'),adhere:g('pmr-adhere'),breaks:pmrBreaksVal(),missed:pmrMissed.slice(),shots:pmrShots.slice(),debrief:pmrDebriefData||null};
+  const obj={date:selPmrDay,surface:g('pmr-surface'),inner:g('pmr-inner'),risk:g('pmr-risk'),framework:g('pmr-framework'),technical:g('pmr-technical'),market:g('pmr-market'),adhere:g('pmr-adhere'),breaks:pmrBreaksVal(),missed:pmrMissed.slice(),shots:pmrShots.slice(),debrief:pmrDebriefData||null,techDebrief:pmrTechDebriefData||null};
   const all=loadPmr();if(pmrHasContent(obj))all[selPmrDay]=obj;else delete all[selPmrDay];
   if(!savePmrAll(all))return;
   closePmrModal();renderPmr();
@@ -3183,6 +3241,7 @@ if(cbEl('pmrOpen')){
   cbEl('pmr-drop').addEventListener('click',()=>cbEl('pmr-file').click());
   cbEl('pmr-file').addEventListener('change',ev=>{[...ev.target.files].forEach(pmrAddFile);ev.target.value='';});
   if(cbEl('pmr-debrief-btn'))cbEl('pmr-debrief-btn').addEventListener('click',pmrDebrief);
+  if(cbEl('pmr-techdebrief-btn'))cbEl('pmr-techdebrief-btn').addEventListener('click',pmrTechDebrief);
   if(cbEl('ms-add'))cbEl('ms-add').addEventListener('click',()=>{
     const gv=id=>{const e=cbEl(id);return e?e.value.trim():'';};
     let setup=gv('ms-setup');
