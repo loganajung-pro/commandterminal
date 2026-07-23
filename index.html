@@ -679,7 +679,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · coach-overlay';
+const BUILD='2026-07-19 · cycle-stack';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1017,21 +1017,27 @@ const BASE_WINDOWS=[{s:'09:40',e:'10:15',label:'Prime AM'},{s:'10:25',e:'10:35',
    12:00 / 13:30 / 15:00, which is where the trader's macro windows live. */
 function hmStr(min){min=((min%1440)+1440)%1440;const h=Math.floor(min/60),m=min%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
 function dailyAmdPhase(min){if(min<367)return 'Accumulation (Asian range build)';if(min<593)return 'Manipulation (London / NY-open judas)';return 'Distribution (NY expansion)';}
-/* Focused execution session 07:00–11:30 ET = three 90-min cycles, each a 30-min AMD sequence. */
-const FOCUS_START=420,FOCUS_END=690;                       // 07:00 · 11:30
-const EXEC_CYCLES=[[420,510],[510,600],[600,690]];         // 07:00–08:30 · 08:30–10:00 · 10:00–11:30
-function amd30(off){return off<30?'Accumulation':off<60?'Manipulation':'Distribution';}
+/* The cycle stack (all ET). 270M session AMD · 90M cycles · 30M focus AMD · optimal entry windows. */
+const CYC270=[{s:150,e:420,p:'Accumulation'},{s:420,e:690,p:'Manipulation'},{s:690,e:960,p:'Distribution'}];           // 2:30 · 7:00 · 11:30 · 4:00
+const CYC90=[{s:150,e:240,p:'Accumulation'},{s:240,e:330,p:'Manipulation'},{s:330,e:420,p:'Distribution'},
+             {s:420,e:510,p:'Accumulation'},{s:510,e:600,p:'Manipulation',exec:1},{s:600,e:690,p:'Distribution',exec:1}];
+const CYC30=[{s:510,e:540,p:'Accumulation'},{s:540,e:570,p:'Manipulation'},{s:570,e:600,p:'Distribution'},
+             {s:600,e:630,p:'Accumulation'},{s:630,e:660,p:'Manipulation'},{s:660,e:690,p:'Distribution'}];            // execution window only: 8:30–11:30
+const OPT_ENTRY=[[580,615],[640,675]];                     // 9:40–10:15 · 10:40–11:15
+const OUT_BY=690;                                          // 11:30 ET
+function cyclePhaseOf(min,list){for(const c of list){if(min>=c.s&&min<c.e)return c;}return null;}
 function execCycleContext(){
   const now=etParts().min;
-  const winsIn=(s,e)=>BASE_WINDOWS.filter(w=>{const ws=toMin(w.s);return ws>=s&&ws<e;}).map(w=>w.label+' '+w.s+'–'+w.e);
-  const cyclesLine=EXEC_CYCLES.map(([s,e])=>{const w=winsIn(s,e);return hmStr(s)+'–'+hmStr(e)+(w.length?' ['+w.join(' · ')+']':'');}).join('  |  ');
-  let position;
-  if(now<FOCUS_START)position='Pre-session — focused window 07:00–11:30 ET not open yet. First cycle: 07:00–08:30 (its 30-min AMD: 07:00–07:30 Accumulation · 07:30–08:00 Manipulation · 08:00–08:30 Distribution).';
-  else if(now>=FOCUS_END)position='Focused window 07:00–11:30 ET is CLOSED — outside execution hours. No trade.';
-  else{
-    for(const [s,e] of EXEC_CYCLES){if(now>=s&&now<e){const off=now-s,ps=s+Math.floor(off/30)*30;position='In 90-min cycle '+hmStr(s)+'–'+hmStr(e)+' · 30-min phase = '+amd30(off)+' ('+hmStr(ps)+'–'+hmStr(ps+30)+').';break;}}
-  }
-  return {dailyPhase:dailyAmdPhase(now),session:'07:00–11:30 ET',cycles:cyclesLine,position:position};
+  const c270=cyclePhaseOf(now,CYC270),c90=cyclePhaseOf(now,CYC90),c30=cyclePhaseOf(now,CYC30);
+  const inOpt=OPT_ENTRY.find(o=>now>=o[0]&&now<o[1]);
+  const nextOpt=OPT_ENTRY.find(o=>o[0]>now);
+  return {
+    c270:c270?(hmStr(c270.s)+'–'+hmStr(c270.e)+' '+c270.p):'outside 02:30–16:00 session',
+    c90:c90?(hmStr(c90.s)+'–'+hmStr(c90.e)+' '+c90.p+(c90.exec?' — EXECUTION 90M':'')):'—',
+    c30:c30?(hmStr(c30.s)+'–'+hmStr(c30.e)+' '+c30.p):'(30M focus cycles run 08:30–11:30 only)',
+    optimal:inOpt?('YES — inside optimal entry '+hmStr(inOpt[0])+'–'+hmStr(inOpt[1])):(nextOpt?('no — next optimal entry '+hmStr(nextOpt[0])+'–'+hmStr(nextOpt[1])):'no optimal entry window left today'),
+    outBy:'11:30 ET'
+  };
 }
 const FOMC_WIN={s:'14:45',e:'15:15',label:'FOMC Window',fomc:true};
 function todaysWindows(){let w=BASE_WINDOWS.slice();const td=etParts().date;if(CAL.some(e=>etDateStr(utcToEt(e.date))===td&&/FOMC|Interest Rate|federal funds/i.test(e.event)))w=w.concat([FOMC_WIN]);return w;}
@@ -3746,13 +3752,26 @@ WEEKLY cycle (Mon 00:00→Fri 16:00): Accumulation Mon→~Tue eve · Manipulatio
 MONTHLY: Accumulation day 1→~11 · Manipulation ~11→~19 · Distribution ~19→month end.
 FRACTAL NESTING — each phase contains its own AMD. HTF cycle sets direction; LTF AMD times the entry. Highest-probability entry = HTF cycle in Distribution WHILE LTF cycle is finishing Manipulation. Time confluence across timeframes = A+ setup. Always locate price within the AMD clock of the relevant cycle before calling a direction.
 
-THE FOCUSED EXECUTION SESSION — 07:00–11:30 ET (this is where the trade lives)
-Bias is set by the higher cycles (yearly/monthly/weekly/daily AMD). EXECUTION happens ONLY inside the focused window 07:00–11:30 ET. Outside it there is no trade — bias without a live setup in this window is a WAIT.
-This window is three 90-minute cycles: 07:00–08:30 · 08:30–10:00 · 10:00–11:30.
-Each 90-minute cycle is itself a 30-MINUTE AMD SEQUENCE: first 30 min = Accumulation (range build) · middle 30 min = Manipulation (the judas / liquidity raid against intent) · last 30 min = Distribution (the real delivery). You position during/after the 30-minute Manipulation and execute into the 30-minute Distribution, in the HTF direction.
-Inside that timing, run the COMPLETE PROTOCOL STACK: HTF draw on liquidity → liquidity engineering → sweep → time window → POI interaction → SMT → CSD → displacement → continuation → liquidity objective. Every layer must confirm inside the 90-minute cycle you are trading.
-Delivery macro windows sit inside these cycles: 09:40–10:15 Prime AM, 10:25–10:35 Silver Bullet, 10:45–11:15 Late AM.
-HTF cycles answer "which direction." The focused session → its 90-minute cycle → its 30-minute AMD phase answer "when, and is it live now." Always resolve the read to: which 90-minute cycle, which 30-minute AMD phase, and what the protocol stack must print inside it to trigger.`;
+THE CYCLE STACK (all times ET) — this is the exact execution clock. HTF sets direction; these nested cycles time everything. Read POI, Target and entry THROUGH all three tiers.
+
+270-MINUTE CYCLE — the session AMD:
+· 02:30–07:00 Accumulation · 07:00–11:30 Manipulation · 11:30–16:00 Distribution.
+The trade is worked inside the 07:00–11:30 Manipulation block — this is where liquidity is engineered and raided ahead of the daily delivery.
+
+90-MINUTE CYCLES — each its own AMD:
+· 02:30–04:00 Accumulation · 04:00–05:30 Manipulation · 05:30–07:00 Distribution
+· 07:00–08:30 Accumulation · 08:30–10:00 Manipulation (EXECUTION WINDOW) · 10:00–11:30 Distribution (EXECUTION WINDOW)
+Execution ONLY lives in the 08:30–10:00 and 10:00–11:30 cycles.
+
+30-MINUTE CYCLES — the FOCUS AMD, inside the execution window (08:30–11:30):
+· 08:30–09:00 Accumulation · 09:00–09:30 Manipulation · 09:30–10:00 Distribution
+· 10:00–10:30 Accumulation · 10:30–11:00 Manipulation · 11:00–11:30 Distribution
+
+OPTIMAL ENTRY — right AFTER the 30M Manipulation, right BEFORE the 30M Distribution:
+· 09:40–10:15 · 10:40–11:15.
+FULLY OUT of the market by 11:30 ET.
+
+HOW TO USE IT: the 270M phase gives session context, the 90M cycle tells you if execution is live, the 30M focus AMD times the entry. POI and Target must respect where price sits in this stack — position off a 30M Manipulation and execute into the 30M Distribution, ideally inside an optimal entry window (09:40–10:15 or 10:40–11:15), running the full protocol stack (sweep → SMT → CSD → displacement → continuation). No new entries after 11:15 and flat by 11:30. Outside 07:00–11:30 there is no trade.`;
 
 const COACH_CHART_PROMPT=`You are this trader's 1-on-1 mentor — a savant who scaled from nothing past $100M — and you share their Execution Protocol Framework exactly as written below. Read their annotated chart screenshots THROUGH this framework and write their Price Read for the session.
 
@@ -3761,7 +3780,7 @@ const COACH_CHART_PROMPT=`You are this trader's 1-on-1 mentor — a savant who s
 CRITICAL OUTPUT RULES
 - DETAILED AND PRECISE, NOT LENGTHY. Write like a pro's execution notes — clipped, structural, every word carries weight. Name the exact structures. NO filler, NO hedging, NO prose paragraphs. The four carrying fields (draw, poi, sequence, invalidation) get the technical substance but stay 1–2 tight sentences each. The rest are a phrase. If it doesn't sharpen the trade, cut it.
 - NAME THE TIMEFRAME on every price reference. "M1 swept the London high", "H4 tapped the daily SIBI" — never a bare "price swept the high". Tags: Daily / H4 / H1 / M15 / M5 / M1.
-- EXECUTION LIVES IN 07:00–11:30 ET ONLY. Higher cycles set bias, nothing more. Scope the POI, the sequence and the trigger to the focused 90-minute cycle and its 30-minute AMD (Accumulation → Manipulation → Distribution) given in CONTEXT. Position off the 30-min Manipulation, execute into the 30-min Distribution. Nothing forming in the cycle = WAIT, not trade.
+- EXECUTION LIVES IN 07:00–11:30 ET ONLY, timed by the CYCLE STACK. Read all three tiers (given in CONTEXT): the 270M session AMD for context, the 90M cycle to confirm execution is live (only 08:30–10:00 and 10:00–11:30), and the 30M focus AMD to time the entry. POI and Target must fit where price sits in this stack. Position off a 30M Manipulation and fire into the 30M Distribution — ideally inside an OPTIMAL ENTRY window (09:40–10:15 or 10:40–11:15). No new entry after 11:15; flat by 11:30. If price isn't set up in a live 90M/30M cycle, it's WAIT, not trade.
 - SCALP-REALISTIC DRAWS AND POIs — REACHABLE THIS CYCLE ONLY. This is a scalp / day-trade inside one 90-minute cycle. The TRADED DRAW is the NEAREST intraday liquidity price can actually reach this session — session high/low (Asia/London/NY), the prior 30-min or 90-min cycle extreme, intraday equal highs/lows, or an internal FVG / liquidity pocket. Do NOT set the target at weekly/monthly pools, or at PDH/PDL if they sit a full session away — those are bias/direction context only, never the target. The POI must be an execution-timeframe array (M1–M15, H1 at most) that price is at or near NOW and can tap this cycle — never a distant Daily/H4 imbalance price won't reach. If your draw or POI can't be hit inside the focused cycle, it is the wrong draw/POI — pick the nearer one.
 - DAILY IS CONTEXT + KEY LEVELS, NOT NOISE. Always read the Daily for bias AND its reference points — the daily high/low and daily PD arrays (daily FVG / OB / breaker). When price is AT or NEAR a daily high/low or daily PD array, that level is IN PLAY: it becomes the scalp draw if it's reachable this cycle, or the origin of a reaction to fade / continue from — treat it as high-value and name it. When price is FAR from any daily level, the Daily is bias/direction only and the scalp works the nearest intraday liquidity. Never target a daily level a full session away; never ignore one that is right here.
 - CHART SUFFICIENCY CALLOUT. Entries are timed on M1–M15. If the screenshots are all higher-timeframe (Daily/H4/H1) with no M1–M15 visible, you CANNOT scope a precise entry — say so in 'context', name the timeframe you need, and keep the read to bias + which daily levels are in play. Never fabricate an M1 sequence you cannot see on the charts.
@@ -3812,11 +3831,13 @@ async function cbCoachRead(){
   const ctx=['Session date: '+(g('cb-date')||etParts().date),
     'Trader\'s own directional read: '+(g('cb-draw')||'not stated'),
     'Instruments in play: NQ (primary), ES, YM — SMT is judged across these three.',
-    'Daily AMD phase right now: '+ex.dailyPhase,
-    'FOCUSED EXECUTION SESSION: '+ex.session+' — the ONLY window trades are taken in.',
-    '90-minute cycles inside it (each = a 30-min AMD sequence: Accumulation → Manipulation → Distribution): '+ex.cycles,
-    'Where we are now: '+ex.position,
-    'Filter all execution through: focused session → 90-min cycle → its 30-min AMD phase → the complete protocol stack (sweep → SMT → time → POI → CSD → displacement → continuation). HTF cycles are bias only.'].join('\n');
+    'CYCLE STACK RIGHT NOW (ET):',
+    '· 270M session AMD: '+ex.c270,
+    '· 90M cycle: '+ex.c90,
+    '· 30M focus AMD: '+ex.c30,
+    '· Optimal entry: '+ex.optimal+' (windows 09:40–10:15 · 10:40–11:15).',
+    '· Flat by '+ex.outBy+'. Execution only inside 07:00–11:30 (the 270M Manipulation), and only in the 08:30–10:00 / 10:00–11:30 90M cycles.',
+    'Filter POI, Target and entry through all three tiers: 270M context → 90M execution cycle → 30M focus AMD → optimal window → the complete protocol stack (sweep → SMT → CSD → displacement → continuation). HTF cycles are bias only.'].join('\n');
   content.push({type:'text',text:COACH_CHART_PROMPT+'\n\nCONTEXT\n'+ctx});
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:8000,messages:[{role:'user',content}]})});
