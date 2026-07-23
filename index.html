@@ -5,18 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Supreme // Command Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{ color-scheme: dark;
   --bg:#06080b; --panel:#0b0e13; --panel2:#0e1219; --line:#1b2129; --line2:#252d38;
-  --ink:#d7dee6; --mut:#6b7683; --faint:#454e59;
+  --ink:#f4f7fa; --mut:#6b7683; --faint:#454e59;
   --grn:#35d07f; --grn-dim:#1c6b45; --org:#d8763a; --red:#e5544b; --blue:#4a9eff; --amber:#d8a23a;
   --up:#35d07f; --down:#e5544b;
-  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  /* Rajdhani (Medium) primary, monospace fallback — applied across the app */
+  --mono:'Rajdhani',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --num:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --title:'Chakra Petch','Rajdhani',ui-monospace,monospace;   /* orange section titles — pairs with Rajdhani */
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-weight:500;font-size:13.5px;line-height:1.5;letter-spacing:.01em;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono)}
 .app{display:grid;grid-template-columns:60px 1fr;grid-template-rows:52px 1fr;height:100vh;grid-template-areas:"side head" "side main"}
 /* sidebar */
@@ -49,7 +52,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13p
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
 .panel.ti{padding:0;overflow:hidden}
 .ph{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--line)}
-.ph h2,.sec{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--org);margin:0}
+.ph h2,.sec{font-family:var(--title);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--org);margin:0}
 .ph .meta{font-size:10.5px;color:var(--faint);letter-spacing:.08em}
 .pb{padding:14px}
 .sec.grn{color:var(--grn)}
@@ -209,7 +212,9 @@ ul.tight li::marker{color:var(--org)}
 .modal .x{float:right;cursor:pointer;color:var(--mut);font-size:20px;line-height:1}.modal .x:hover{color:var(--ink)}
 .modal h3{margin:0;font-size:18px;font-weight:600}
 .briefsec{margin-top:16px}
-.briefsec h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--org);margin:0 0 6px}
+.briefsec h4{font-family:var(--title);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--org);margin:0 0 6px}
+/* numeric / tabular figures keep a true monospace so columns align */
+.clk b,.lvl th,.lvl td,.barrow .bv,.sumcard .n,.stat .s .v,.dn,.tv,.badge{font-family:var(--num)}
 .cbin{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:5px;padding:5px 6px;color:var(--ink);font-family:var(--mono);font-size:11px;text-align:right}
 .cbin:focus{outline:1px solid var(--grn-dim)}
 .hasbrief{cursor:pointer}
@@ -660,7 +665,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · brief-bubbles';
+const BUILD='2026-07-19 · title-font';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1921,7 +1926,7 @@ function scoreBarHtml(total){
   const pct=clamp(total,0,100);
   const band=pct>=80?'Elite':pct>=65?'Strong':pct>=50?'Developing':pct>=35?'Fragile':'Rebuilding';
   const col=pct>=65?'var(--grn)':pct>=50?'var(--amber)':'var(--red)';
-  return `<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><div style="font-size:30px;font-weight:700;color:${col};font-family:var(--mono)">${pct.toFixed(1)}</div><div><div style="font-weight:600">${band}</div><div class="subtle">Protocol Score · 0–100</div></div></div>
+  return `<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><div style="font-size:30px;font-weight:700;color:${col};font-family:var(--num)">${pct.toFixed(1)}</div><div><div style="font-weight:600">${band}</div><div class="subtle">Protocol Score · 0–100</div></div></div>
   <div style="margin-top:8px;height:9px;border-radius:5px;background:linear-gradient(90deg,var(--red),var(--amber),var(--grn));position:relative">
     <div style="position:absolute;left:${pct}%;top:-3px;width:3px;height:15px;background:var(--ink);border-radius:2px;transform:translateX(-1px)"></div></div>
   <div class="legend" style="margin-top:4px"><span class="lg subtle">0</span><span style="flex:1"></span><span class="lg subtle">50</span><span style="flex:1"></span><span class="lg subtle">100</span></div>`;
