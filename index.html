@@ -679,7 +679,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · quote';
+const BUILD='2026-07-19 · coach-overlay';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -3471,6 +3471,31 @@ function loadLWC(){
   return LWC_P;
 }
 function etSecs(t){const v=Date.parse(String(t).replace(' ','T')+'Z');return isFinite(v)?Math.floor(v/1000):null;}
+/* Coach's marked chart — plots the levels the coach referenced (POI / target / invalidation / sweep)
+   as labeled lines on a live NQ candle chart. Levels come from coachData.levels (hidden from the text read). */
+let COACH_CHART_LV={},coachChartUid=0;
+async function renderCoachChart(levels,elId){
+  const el=document.getElementById(elId);if(!el)return;
+  const st=document.getElementById(elId+'-status');
+  const say=(c,m)=>{if(st)st.innerHTML='<span class="'+c+'">'+m+'</span>';};
+  const lv=levels||{};
+  if(pnum(lv.poi)==null&&pnum(lv.target)==null&&pnum(lv.invalidation)==null&&pnum(lv.sweep)==null){say('subtle','No plottable levels in this read.');return;}
+  say('mut','Loading NQ chart…');
+  let LC,bars;
+  try{LC=await loadLWC();}catch(e){say('down','Chart unavailable — '+escH(e.message)+'.');return;}
+  try{bars=await loadIntraday('NQ',etParts().date,'1min');}catch(e){bars=[];}
+  if(!bars.length){say('down','No NQ intraday bars for today — your FMP plan may not cover intraday for NQUSD.');return;}
+  el.innerHTML='';
+  const chart=LC.createChart(el,{width:el.clientWidth||620,height:320,layout:{background:{color:'transparent'},textColor:'#9aa4b2',fontSize:10},grid:{vertLines:{color:'rgba(255,255,255,.05)'},horzLines:{color:'rgba(255,255,255,.05)'}},rightPriceScale:{borderColor:'rgba(255,255,255,.12)'},timeScale:{borderColor:'rgba(255,255,255,.12)',timeVisible:true,secondsVisible:false},crosshair:{mode:0}});
+  const series=chart.addCandlestickSeries({upColor:'#35d07f',downColor:'#ef5350',borderVisible:false,wickUpColor:'#35d07f',wickDownColor:'#ef5350'});
+  series.setData(bars.map(b=>({time:etSecs(b.t),open:b.o,high:b.h,low:b.l,close:b.c})).filter(b=>b.time));
+  const line=(p,color,title)=>{const v=pnum(p);if(v!=null)series.createPriceLine({price:v,color,lineWidth:1,lineStyle:2,axisLabelVisible:true,title});};
+  line(lv.poi,'#d8763a','POI');line(lv.target,'#35d07f','Target');line(lv.invalidation,'#ef5350','Invalidation');line(lv.sweep,'#4a9eff','Sweep');
+  chart.timeScale().fitContent();
+  const shown=['poi','target','invalidation','sweep'].filter(k=>pnum(lv[k])!=null).length;
+  say('up','✓ '+bars.length+' bars · '+shown+' level'+(shown!==1?'s':'')+' plotted');
+  try{new ResizeObserver(()=>chart.applyOptions({width:el.clientWidth||620})).observe(el);}catch(e){}
+}
 async function renderReplay(tr,elId){
   const el=document.getElementById(elId);if(!el)return;
   const st=document.getElementById(elId+'-status');
@@ -3744,9 +3769,21 @@ CRITICAL OUTPUT RULES
 - Never invent a setup. Stand-aside is a valid, complete read.
 
 Return ONLY strict JSON — no prose, no code fences. Each field 1–2 tight sentences MAX (standaside = one phrase). Timeframe-tag every price reference:
-{"context":"Callout — ONLY when needed, else empty string. (a) If the charts are too high-timeframe to time an entry, say which timeframe is missing (e.g. \"need M5/M15 to scope the entry\"). (b) If price is at/near a daily high/low or daily PD array, name it and whether it is the draw or a reaction point. Leave empty if charts are sufficient and no daily level is in play.","poi":"The execution POI to trade from THIS cycle — an M1–M15 (H1 max) array price is at/near now: name it (OB/FVG/breaker/mitigation/CE/SIBI/BISI) + timeframe + premium/discount, and confirm it clears the 5 conditions (flag any it fails). Must be reachable this cycle. 1–2 sentences.","draw":"The SCALP target — the NEAREST intraday liquidity reachable inside the focused 90-min cycle (session H/L, prior 30/90-min extreme, intraday equal highs/lows, internal FVG). Name it + timeframe. State HTF direction in one clause only; the traded draw is intraday and hittable this session. 1–2 sentences.","liquidity":"One line: what's swept, what rests as the near draw, DELIVERY or REBALANCING, and which PD arrays price respects. Timeframe-tagged.","sequence":"What must happen — the protocol stack to fire in the current/next 90-min cycle's Manip→Distribution: sweep → SMT (name the NQ/ES/YM divergence) → CSD → displacement + fresh FVG → continuation to the intraday draw. Timeframe-tag each. 1–2 sentences, no filler.","invalidation":"The exact structure that, if accepted through, kills it (name it + timeframe) — placeable as a stop — plus the time-stop (cycle close / 11:30). 1 sentence.","standaside":"One phrase: WAIT + why, if no setup or the draw/POI isn't reachable in the focused cycle."}`;
+{"context":"Callout — ONLY when needed, else empty string. (a) If the charts are too high-timeframe to time an entry, say which timeframe is missing (e.g. \"need M5/M15 to scope the entry\"). (b) If price is at/near a daily high/low or daily PD array, name it and whether it is the draw or a reaction point. Leave empty if charts are sufficient and no daily level is in play.","poi":"The execution POI to trade from THIS cycle — an M1–M15 (H1 max) array price is at/near now: name it (OB/FVG/breaker/mitigation/CE/SIBI/BISI) + timeframe + premium/discount, and confirm it clears the 5 conditions (flag any it fails). Must be reachable this cycle. 1–2 sentences.","draw":"The SCALP target — the NEAREST intraday liquidity reachable inside the focused 90-min cycle (session H/L, prior 30/90-min extreme, intraday equal highs/lows, internal FVG). Name it + timeframe. State HTF direction in one clause only; the traded draw is intraday and hittable this session. 1–2 sentences.","liquidity":"One line: what's swept, what rests as the near draw, DELIVERY or REBALANCING, and which PD arrays price respects. Timeframe-tagged.","sequence":"What must happen — the protocol stack to fire in the current/next 90-min cycle's Manip→Distribution: sweep → SMT (name the NQ/ES/YM divergence) → CSD → displacement + fresh FVG → continuation to the intraday draw. Timeframe-tag each. 1–2 sentences, no filler.","invalidation":"The exact structure that, if accepted through, kills it (name it + timeframe) — placeable as a stop — plus the time-stop (cycle close / 11:30). 1 sentence.","standaside":"One phrase: WAIT + why, if no setup or the draw/POI isn't reachable in the focused cycle.","levels":{"poiY":"","targetY":"","invalidationY":"","sweepY":""}}
+
+LEVELS — in addition to the word-read, fill the "levels" object with the normalized VERTICAL POSITION of each reference AS IT APPEARS ON THE FIRST / PRIMARY chart screenshot: 0.0 = the very TOP edge of the chart image, 1.0 = the very BOTTOM edge. poiY = vertical position of the POI · targetY = the intraday draw/target · invalidationY = the invalidation level · sweepY = the liquidity to be swept. These place horizontal marker lines drawn directly on the trader's own chart. Estimate the position as accurately as you can by eye from the image (a level halfway up the chart = 0.5). Leave a value as "" if that reference is not visible on the primary chart.`;
 /* Renders the coach's framework read. Deliberately no numbers — this is a
    delivery narrative, not a levels table. */
+/* Coach's references drawn straight onto YOUR chart — horizontal marker lines at the
+   vertical position the coach estimated for each reference on the primary screenshot. */
+function coachOverlayHtml(d){
+  if(!d||!d.img)return '';
+  const lv=d.levels||{};
+  const mk=(y,color,label)=>{const n=parseFloat(y);if(!(n>=0&&n<=1))return '';const pct=(n*100).toFixed(1);return `<div style="position:absolute;left:0;right:0;top:${pct}%;border-top:2px dashed ${color};pointer-events:none"><span style="position:absolute;right:3px;top:-13px;font:700 9px/1 var(--num);letter-spacing:.06em;color:#fff;background:${color};padding:2px 5px;border-radius:3px">${label}</span></div>`;};
+  const lines=mk(lv.poiY,'#d8763a','POI')+mk(lv.targetY,'#35d07f','TARGET')+mk(lv.invalidationY,'#ef5350','INVALIDATION')+mk(lv.sweepY,'#4a9eff','SWEEP');
+  if(!lines)return '';
+  return `<div style="margin-top:11px"><div style="font:700 9.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--org);margin-bottom:5px">Coach's Marked Chart</div><div style="position:relative;border:1px solid var(--line2);border-radius:6px;overflow:hidden"><img src="${d.img}" style="width:100%;display:block">${lines}</div><div class="subtle" style="margin-top:4px">Coach's references overlaid on your chart — line positions are estimated from the image.</div></div>`;
+}
 function coachReadHtml(d){
   if(!d)return '';
   const sec=(t,v)=>v&&String(v).trim()?`<div style="margin-top:11px"><div style="font:700 9.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--org);margin-bottom:5px">${t}</div><p style="margin:0">${escH(v)}</p></div>`:'';
@@ -3757,6 +3794,7 @@ function coachReadHtml(d){
     +sec('Liquidity',d.liquidity)
     +sec('What Must Happen',d.sequence)
     +sec('Invalidation',d.invalidation)
+    +coachOverlayHtml(d)
     +(d.standaside?`<div style="margin-top:11px;padding:8px 10px;border:1px solid var(--line2);border-radius:6px;background:var(--panel2)"><span class="tag med" style="font-size:9px">STAND ASIDE IF</span> <span class="subtle">${escH(d.standaside)}</span></div>`:'');
 }
 async function cbCoachRead(){
@@ -3795,6 +3833,7 @@ async function cbCoachRead(){
     }
     if(cut)data.standaside=(data.standaside||'')+' [note: the reply hit the length limit — some sections may be short.]';
     data.ts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET';
+    data.img=(cbShots&&cbShots.length)?cbShots[0]:null;   // primary chart the coach marked, for the overlay
     cbCoachData=data;
     const prev=document.getElementById('cb-coach');if(prev)prev.innerHTML=coachReadHtml(data);
     say('up','✓ Framework read ready — it saves with your brief and becomes your Price Read.'+(vp.skipped.length?' <span class="down">Skipped '+vp.skipped.length+': '+escH(vp.skipped.join(' · '))+'</span>':''));
