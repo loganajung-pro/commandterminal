@@ -277,14 +277,14 @@ ul.tight li::marker{color:var(--org)}
           <div class="bubble" data-bub="themes"><div class="bhead"><h2 class="sec">Key Themes</h2><span class="chev">▸</span></div><div class="bbody"><ul class="tight" id="keyThemes"><li>…</li></ul></div></div>
           <div class="bubble" data-bub="watch"><div class="bhead"><h2 class="sec">Watch Today</h2><span class="chev">▸</span></div><div class="bbody"><ul class="tight" id="watchToday"><li>…</li></ul></div></div>
           <hr class="d">
-          <div class="panel"><h2 class="sec">Guardrails — No Trade</h2>
+          <div class="bubble" data-bub="guardrails"><div class="bhead"><h2 class="sec">Guardrails — No Trade</h2><span class="chev">▸</span></div><div class="bbody">
             <ul class="tight" style="color:var(--red)">
               <li>No CSD after POI → NO TRADE</li>
               <li>POI/SMT outside time filter → NO TRADE</li>
               <li>HTF draw unclear · chop → NO TRADE</li>
               <li>SMTs both sides of range → NO TRADE</li>
             </ul>
-            <hr class="d"><div class="subtle">SMT → POI → Time → Displacement → CSD → M1</div></div>
+            <hr class="d"><div class="subtle">SMT → POI → Time → Displacement → CSD → M1</div></div></div>
         </div>
         <div>
           <div class="panel">
@@ -667,7 +667,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · oxanium-caps';
+const BUILD='2026-07-19 · pscore-fix';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -823,7 +823,7 @@ function snapshotFor(tool,a){
   if(tool==="econIndicator")return [];
   return [];
 }
-function showSnap(){const el=document.getElementById("diag");if(!el||el.dataset.s)return;el.dataset.s="1";el.style.display="block";el.innerHTML='<div class="panel" style="border-color:#6b4a12;background:#191204;padding:9px 12px"><b style="color:var(--amber)">SNAPSHOT MODE</b> <span class="subtle">— showing embedded data as of '+SNAP.asOf+'. Add your FMP API key in <b>Settings (⚙, bottom-left)</b> to pull live data directly.</span></div>';}
+function showSnap(){const el=document.getElementById("diag");if(el){el.style.display="none";el.innerHTML="";}}   /* snapshot-mode box removed */
 function pickArr(o){if(Array.isArray(o))return o;if(o&&typeof o==="object")for(const k of["result","data","results"])if(Array.isArray(o[k]))return o[k];return null;}
 function unwrap(r){if(!r)return null;let t=null;if(r.content&&r.content.length){const s=r.content.map(c=>(c&&typeof c.text==="string")?c.text:"").join("");if(s){try{t=JSON.parse(s);}catch(e){t=s;}}}let a=pickArr(t);if(a)return a;a=pickArr(r.structuredContent);if(a)return a;return t!=null?t:r.structuredContent;}
 function hideSnap(){const el=document.getElementById('diag');if(el){el.style.display='none';el.dataset.s='';}}
@@ -1892,8 +1892,9 @@ function protocolScore(){
   const dayCount=Object.keys(dayR).length||1;
   const brkPart=clamp(100-(brk/dayCount)*50,0,100);          // ~2 breaks per trading day = 0
   const otPart=clamp(100-(S.overtradeDays/dayCount)*100,0,100);
-  const parts=[adhPart,brkPart,otPart].filter(x=>x!=null);
-  const sAdh=parts.length?parts.reduce((a,b)=>a+b,0)/parts.length:null;
+  /* Protocol adherence is only meaningful once you've LOGGED adherence — otherwise
+     "no breaks logged" would falsely read as perfect discipline. No adherence data → axis excluded. */
+  const sAdh=(adhPart==null)?null:([adhPart,brkPart,otPart].reduce((a,b)=>a+b,0)/3);
   const axes=[
     {k:'Win %',        score:sWin, raw:P.wr+'%'},
     {k:'Profit factor',score:sPf,  raw:P.pf==null?(P.wins?'∞':'—'):P.pf.toFixed(2)},
