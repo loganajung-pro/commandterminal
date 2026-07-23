@@ -5,21 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Supreme // Command Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Quantico:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{ color-scheme: dark;
   --bg:#06080b; --panel:#0b0e13; --panel2:#0e1219; --line:#1b2129; --line2:#252d38;
   --ink:#f4f7fa; --mut:#6b7683; --faint:#454e59;
   --grn:#35d07f; --grn-dim:#1c6b45; --org:#d8763a; --red:#e5544b; --blue:#4a9eff; --amber:#d8a23a;
   --up:#35d07f; --down:#e5544b;
-  /* Rajdhani (Medium) primary, monospace fallback — applied across the app */
-  --mono:'Rajdhani',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  /* Oxanium primary (all white text), monospace fallback — applied across the app */
+  --mono:'Oxanium',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --num:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
-  --title:'Chakra Petch','Rajdhani',ui-monospace,monospace;   /* orange section titles — pairs with Rajdhani */
+  --title:'Quantico','Oxanium',ui-monospace,monospace;   /* orange section titles — squarish techie, distinct from Oxanium body */
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-weight:500;font-size:13.5px;line-height:1.5;letter-spacing:.01em;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-weight:500;font-size:13.5px;line-height:1.5;letter-spacing:.01em;text-transform:uppercase;-webkit-font-smoothing:antialiased}
+/* keep what you TYPE in its real case (display-only uppercase would mismatch the stored value) */
+input,textarea,select,option,[contenteditable]{text-transform:none}
 .mono{font-family:var(--mono)}
 .app{display:grid;grid-template-columns:60px 1fr;grid-template-rows:52px 1fr;height:100vh;grid-template-areas:"side head" "side main"}
 /* sidebar */
@@ -665,7 +667,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · title-font';
+const BUILD='2026-07-19 · oxanium-caps';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
