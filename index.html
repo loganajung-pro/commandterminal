@@ -127,6 +127,14 @@ ul.tight li::marker{color:var(--org)}
 .barrow .bt{flex:1;background:var(--panel2);border-radius:3px;height:14px;position:relative;overflow:hidden}
 .barrow .bf{position:absolute;top:0;bottom:0;border-radius:3px}
 .barrow .bv{width:74px;font-family:var(--mono);font-size:10.5px;text-align:right}
+/* collapsible bubbles on the Market Brief */
+.bubble{border:1px solid var(--line2);border-radius:10px;margin-bottom:10px;background:var(--panel);overflow:hidden}
+.bubble>.bhead{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:12px 14px;user-select:none}
+.bubble>.bhead:hover{background:var(--panel2)}
+.bubble>.bhead .chev{color:var(--org);font-size:12px;transition:transform .15s ease}
+.bubble.open>.bhead .chev{transform:rotate(90deg)}
+.bubble>.bbody{display:none;padding:0 14px 13px}
+.bubble.open>.bbody{display:block}
 /* week selection in the Post Market Review calendar */
 .cell.wksel{background:rgba(53,208,127,.10);border-color:var(--grn-dim)}
 .wkrow:hover{border-color:var(--grn-dim)}
@@ -256,12 +264,11 @@ ul.tight li::marker{color:var(--org)}
       <hr class="d">
       <div class="grid" style="grid-template-columns:2fr 1fr">
         <div>
-          <div class="panel"><h2 class="sec">Coaches Conscious Framework</h2><div id="coachDaily" class="narr">Reading…</div></div>
-          <hr class="d">
-          <div class="grid" style="grid-template-columns:1fr 1fr">
-            <div class="panel"><h2 class="sec">Key Themes</h2><ul class="tight" id="keyThemes"><li>…</li></ul></div>
-            <div class="panel"><h2 class="sec">Watch Today</h2><ul class="tight" id="watchToday"><li>…</li></ul></div>
-          </div>
+          <div class="bubble" data-bub="conscious"><div class="bhead"><h2 class="sec">Coaches Conscious Framework</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachConscious" class="narr">Reading…</div></div></div>
+          <div class="bubble" data-bub="tech"><div class="bhead"><h2 class="sec">Technical Read</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachTech" class="narr"></div></div></div>
+          <div class="bubble" data-bub="price"><div class="bhead"><h2 class="sec">Price Read</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachPrice" class="narr"></div></div></div>
+          <div class="bubble" data-bub="themes"><div class="bhead"><h2 class="sec">Key Themes</h2><span class="chev">▸</span></div><div class="bbody"><ul class="tight" id="keyThemes"><li>…</li></ul></div></div>
+          <div class="bubble" data-bub="watch"><div class="bhead"><h2 class="sec">Watch Today</h2><span class="chev">▸</span></div><div class="bbody"><ul class="tight" id="watchToday"><li>…</li></ul></div></div>
           <hr class="d">
           <div class="panel"><h2 class="sec">Guardrails — No Trade</h2>
             <ul class="tight" style="color:var(--red)">
@@ -653,7 +660,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · tech-debrief2';
+const BUILD='2026-07-19 · brief-bubbles';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1274,9 +1281,33 @@ function timeFrameHtml(){
     +`<p class="subtle" style="margin:6px 0 0">Session map: Asia accumulates → London manipulates (raids one side of Asian range = judas) → NY distributes to the opposite draw. Entry cycle <b>C7 09:00–10:30</b> (NY judas · flip 09:53). London raids Asian High → NY short to PDL · raids Asian Low → NY long to PDH.</p>`
     +`<div style="border-top:1px dashed var(--line2);margin:13px 0 10px"></div><div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Price Read</div>`;
 }
+/* the live structural / auto price read (the coach's AI chart read lives in its own bubble) */
+function autoPriceReadHtml(){
+  if(COMPOSED&&composedHasRead(COMPOSED)&&!(COMPOSED&&COMPOSED.coachData))return composedReadHtml(COMPOSED);
+  if(!LASTQ.NQUSD)return '<p class="subtle">Price read waiting on live quotes…</p>';
+  return coachHtmlAuto();
+}
 function renderCoach(){
-  const el=document.getElementById('coachDaily');if(!el)return;
-  el.innerHTML=consciousHtml()+techDivider()+timeFrameHtml()+techReadHtml();
+  const set=(id,html)=>{const e=document.getElementById(id);if(e)e.innerHTML=html;};
+  set('coachConscious',consciousHtml());
+  set('coachTech',(COMPOSED&&COMPOSED.coachData)?coachReadHtml(COMPOSED.coachData):'<div class="subtle">No technical read yet — attach your charts and run <b>Coach\'s Technical Read</b> in Compose Framework.</div>');
+  set('coachPrice',timeFrameHtml()+autoPriceReadHtml());
+  /* legacy single container, if present */
+  const legacy=document.getElementById('coachDaily');if(legacy)legacy.innerHTML=consciousHtml()+techDivider()+timeFrameHtml()+techReadHtml();
+}
+/* ===== Market Brief collapsible bubbles — independent toggle, state remembered ===== */
+function loadBubbles(){try{return JSON.parse(lsGet('ct_brief_bubbles')||'{}');}catch(e){return {};}}
+function saveBubbles(o){try{lsSet('ct_brief_bubbles',JSON.stringify(o));}catch(e){}}
+function initBubbles(){
+  const state=loadBubbles();
+  document.querySelectorAll('.bubble[data-bub]').forEach(b=>{
+    const id=b.dataset.bub;
+    if(state[id])b.classList.add('open');else b.classList.remove('open');
+    const head=b.querySelector('.bhead');
+    if(head&&!head.dataset.bound){head.dataset.bound='1';head.addEventListener('click',()=>{
+      b.classList.toggle('open');const s=loadBubbles();s[id]=b.classList.contains('open');saveBubbles(s);
+    });}
+  });
 }
 function renderKeyThemes(){
   const ktEl=document.getElementById('keyThemes'),wtEl=document.getElementById('watchToday');
@@ -3872,6 +3903,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   if(COMPOSED)safe(renderComposedCharts);
   applyInterval();
   startDailySchedules();
+  safe(initBubbles);
 })();
 </script>
 </body>
