@@ -226,12 +226,34 @@ ul.tight li::marker{color:var(--org)}
 .pulsing{animation:pulse 1.5s ease-in-out infinite}
 .badge.live{color:var(--grn);border-color:var(--grn-dim);background:rgba(53,208,127,.08)}
 .badge.snap{color:var(--amber);border-color:#6b4a12;background:rgba(216,162,58,.08)}
+
+/* Daily Sequence Runner */
+#view-runner .rgrid{display:grid;gap:14px;grid-template-columns:1.5fr 1fr}
+@media(max-width:900px){#view-runner .rgrid{grid-template-columns:1fr}}
+.rstats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rstat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.rstat .rk{font-size:10px;color:var(--mut);letter-spacing:.04em}
+.rstat .rv{font-family:var(--num);font-size:22px;font-weight:600;color:var(--ink);margin-top:2px}
+.rbadges{display:flex;flex-wrap:wrap;gap:6px}
+.badge2{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--panel2);border:1px solid var(--line);filter:grayscale(1);opacity:.4}
+.badge2.on{filter:none;opacity:1;border-color:var(--grn-dim);background:rgba(53,208,127,.10)}
+.rcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.rcal .hd{font-size:9.5px;color:var(--faint);text-align:center;padding:2px 0}
+.rcell{aspect-ratio:1;border:1px solid var(--line);border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--mut);cursor:pointer;gap:2px}
+.rcell:hover{border-color:var(--line2)}
+.rcell.today{box-shadow:0 0 0 1.5px var(--blue) inset;color:var(--ink)}
+.rcell.sel{border-color:var(--grn)}
+.rcell.empty{opacity:.15;cursor:default;border-color:transparent}
+.rdot{width:6px;height:6px;border-radius:50%}
+.rdot.g{background:var(--grn);box-shadow:0 0 5px var(--grn)}
+.rdot.r{background:var(--red)}
 </style>
 </head>
 <body>
 <div class="app">
   <!-- SIDEBAR -->
   <nav class="side" id="side">
+    <div class="navi" data-v="runner"><span class="tip">Daily Sequence Runner</span><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/></svg></div>
     <div class="navi active" data-v="brief"><span class="tip">Market Brief</span><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
     <div class="navi" data-v="macro"><span class="tip">Macro Overview</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
     <div class="navi" data-v="calendar"><span class="tip">Protocol Calendar</span><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg></div>
@@ -263,6 +285,68 @@ ul.tight li::marker{color:var(--org)}
     <div id="diag" class="diagbar" style="display:none"></div>
 
     <!-- ===== MARKET BRIEF ===== -->
+    <section class="view" id="view-runner">
+      <div class="crumb">Identity Pro / <b>Transformation OS</b></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h1 class="h1" style="margin:0">Daily Sequence Runner <span class="subtle" id="runnerDate"></span></h1>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="runnerTodayBtn" style="padding:6px 12px;display:none">Today</button>
+          <button class="btn" id="runnerResetBtn" style="padding:6px 12px">&#8635; Reset</button>
+        </div>
+      </div>
+      <hr class="d">
+      <div class="rgrid">
+        <div>
+          <div class="panel" style="margin-bottom:12px">
+            <div class="narr" style="margin:0 0 10px">Run these seven steps every day, top to bottom, from a coherent state. <b>State before action, always.</b></div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="flex:1;height:8px;background:var(--panel2);border-radius:5px;overflow:hidden"><div id="runnerBar" style="height:100%;width:0;background:var(--grn);transition:.2s"></div></div>
+              <span class="subtle" id="runnerCount">0 / 7</span>
+            </div>
+          </div>
+          <div id="runnerList"></div>
+          <div class="panel" style="margin-top:2px">
+            <h2 class="sec grn">Reflection &middot; after Step 7</h2>
+            <div class="subtle" style="margin:0 0 8px">What did you notice? Which step held, which slipped? One honest line beats none.</div>
+            <textarea id="runnerNote" placeholder="Today I noticed&hellip;" style="width:100%;min-height:90px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:10px;font-family:var(--mono);resize:vertical"></textarea>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+              <button class="btn" id="runnerSaveBtn" disabled>Complete all 7 to save</button>
+              <span class="subtle" id="runnerSaveHint"></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel" style="margin-bottom:12px">
+            <h2 class="sec">Consistency</h2>
+            <div class="rstats">
+              <div class="rstat"><div class="rk">&#128293; Streak</div><div class="rv" id="rStreak">0</div></div>
+              <div class="rstat"><div class="rk">&#127942; Longest</div><div class="rv" id="rLongest">0</div></div>
+              <div class="rstat"><div class="rk">&#10003; This month</div><div class="rv" id="rMonth">0</div></div>
+              <div class="rstat"><div class="rk">&#931; Total</div><div class="rv" id="rTotal">0</div></div>
+            </div>
+            <div id="rBadges" class="rbadges" style="margin-top:10px"></div>
+            <div class="subtle" id="rMotiv" style="margin-top:10px"></div>
+          </div>
+          <div class="panel">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <button class="btn" id="runnerPrev" style="padding:2px 10px">&lsaquo;</button>
+              <h2 class="sec" id="runnerCalLbl" style="margin:0">&mdash;</h2>
+              <button class="btn" id="runnerNext" style="padding:2px 10px">&rsaquo;</button>
+            </div>
+            <div class="rcal" id="runnerCal"></div>
+            <div style="display:flex;gap:14px;margin-top:10px;font-size:10.5px" class="subtle">
+              <span><span class="rdot g" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>Complete</span>
+              <span><span class="rdot r" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>Missed</span>
+              <span>Click a day to view / backfill</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="border-color:var(--grn-dim);background:rgba(53,208,127,.05);margin-top:14px">
+        <h2 class="sec grn">The One Rule</h2>
+        <div class="narr" style="margin:0">State before action. You run the sequence <i>from</i> coherence (Step 1) &mdash; never decide, execute, or send from a dysregulated state. Slip mid-day? Don't spiral: reset with Step 1 and start again.</div>
+      </div>
+    </section>
     <section class="view active" id="view-brief">
       <div class="crumb">Matrix / <b>Market Brief</b></div>
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -981,19 +1065,111 @@ function composedLvl(sh){if(!COMPOSED)return null;return (COMPOSED.levels||[]).f
 /* ============================ NAV + CLOCK ============================ */
 const RENDERED={};
 function ensureView(v){
-  if(RENDERED[v]){if(v==="macro")safe(renderMacro);return;}   // revisiting Macro re-pulls everything live
+  if(RENDERED[v]){if(v==="macro")safe(renderMacro);if(v==="runner")safe(renderRunner);return;}   // revisiting Macro re-pulls everything live
   RENDERED[v]=true;
   if(v==="macro")safe(renderMacro);
   if(v==="calendar"){MV=curMonth();safe(loadMonthView);}
   if(v==="journal"){JV=curMonth();safe(renderJournal);}
   if(v==="pmr"){PV=curMonth();safe(renderPmr);}
+  if(v==="runner")safe(renderRunner);
 }
+/* ===== Daily Sequence Runner ===== */
+const RUNNER_STEPS=[
+ {n:1,name:"Get beyond the analytical mind",layer:"L2",act:"Sit up, eyes closed. Sense the space around your head, hands, the room. Drop from beta into coherent alpha. Don't move on until the body settles.",prac:"Open Focus Practice · Brainwave States"},
+ {n:2,name:"Retire the old self",layer:"L1",act:"Name who you no longer are. Observe the old thoughts and emotions without feeding them; lower the volume until the bond breaks.",prac:"Un-memorizing the Emotion · Breaking the Habit of the Old Self"},
+ {n:3,name:"Install the new self",layer:"L1→L3",act:"Decide who you are today. Mentally rehearse the behaviors and execution until the brain looks like it already happened. Get up different.",prac:"Mental Rehearsal Practice · Who I Am Being"},
+ {n:4,name:"Marry intention to elevated emotion",layer:"L4×L2",act:"Hold the clear vision and generate the matching elevated emotion — free, worthy, grateful — until the body relaxes into it.",prac:"Elevated Emotions — Menu & Fusion · Focus Wheel"},
+ {n:5,name:"Command matter, then surrender the how",layer:"L4",act:"Observe the destiny as already real, bless it, then release the how. Feel the relief of letting go.",prac:"Command & Surrender · Non-Resistance & the Law of Reverse Effort"},
+ {n:6,name:"Gratitude — the state of receivership",layer:"L4",act:"Drop into felt gratitude for the life as already true. Linger. Get up as if it is already done.",prac:"Gratitude — The State of Receivership"},
+ {n:7,name:"Get up different, maintain the state all day",layer:"L3",act:"Carry Settled Authority into the session. Midday: creation or survival? After any charged event, wait out the refractory period. Reinforce tonight.",prac:"Maintaining the State · The Signs That It's Manifesting · Starting Again"},
+];
+const RBADGES=[{d:3,e:"🌱"},{d:7,e:"⚡"},{d:14,e:"🔗"},{d:21,e:"🧠"},{d:30,e:"💎"},{d:66,e:"👑"},{d:100,e:"🏛️"}];
+let RUN_DATE=null, RUN_CAL=null;
+function runToday(){return etParts().date;}
+function rParseYmd(x){var p=x.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));}
+function rYmd(dt){return dt.toISOString().slice(0,10);}
+function rAddDays(x,n){var dt=rParseYmd(x);dt.setUTCDate(dt.getUTCDate()+n);return rYmd(dt);}
+function runKey(d){return 'ct_run_'+d;}
+function runGet(d){
+  try{var o=JSON.parse(lsGet(runKey(d))||'null');if(o&&o.steps)return o;}catch(e){}
+  try{var old=JSON.parse(lsGet('ct_runner_'+d)||'null');if(Array.isArray(old)){var a=old.slice(0,7);while(a.length<7)a.push(false);return{steps:a,note:'',saved:false};}}catch(e){}
+  return {steps:[false,false,false,false,false,false,false],note:'',saved:false};
+}
+function runSet(d,o){lsSet(runKey(d),JSON.stringify(o));}
+function runDone(d){return !!runGet(d).saved;}
+function currentStreak(){var d=runToday(),n=0;if(!runDone(d))d=rAddDays(d,-1);while(runDone(d)){n++;d=rAddDays(d,-1);}return n;}
+function longestStreak(){var ds=Object.keys(MEM).filter(function(k){return k.indexOf('ct_run_')===0;}).map(function(k){return k.slice(7);}).filter(runDone).sort();var best=0,run=0,prev=null;ds.forEach(function(d){if(prev&&rAddDays(prev,1)===d)run++;else run=1;if(run>best)best=run;prev=d;});return best;}
+function totalDone(){return Object.keys(MEM).filter(function(k){return k.indexOf('ct_run_')===0&&runDone(k.slice(7));}).length;}
+function monthDone(y,m){var pre=y+'-'+String(m+1).padStart(2,'0');var c=0;Object.keys(MEM).forEach(function(k){if(k.indexOf('ct_run_')===0){var d=k.slice(7);if(d.slice(0,7)===pre&&runDone(d))c++;}});return c;}
+function renderRunSteps(){
+  var el=document.getElementById('runnerList');if(!el)return;
+  var o=runGet(RUN_DATE),st=o.steps;
+  el.innerHTML=RUNNER_STEPS.map(function(s,i){var on=!!st[i];
+    return '<div class="panel rstep" data-i="'+i+'" style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;cursor:pointer;'+(on?'opacity:.55;':'')+'">'
+      +'<div style="flex:0 0 26px;width:26px;height:26px;border-radius:7px;border:1.5px solid '+(on?'var(--grn)':'var(--line2)')+';display:flex;align-items:center;justify-content:center;color:var(--grn);margin-top:2px;font-weight:700">'+(on?'✓':'')+'</div>'
+      +'<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="sec grn" style="font-size:12px">Step '+s.n+'</span><span class="tag grn">'+s.layer+'</span><b style="font-size:14px;'+(on?'text-decoration:line-through':'')+'">'+s.name+'</b></div>'
+      +'<div class="narr" style="margin:5px 0 0">'+s.act+'</div>'
+      +'<div class="subtle" style="margin-top:5px">▸ '+s.prac+'</div></div></div>';
+  }).join('');
+  var done=st.filter(Boolean).length;
+  var bar=document.getElementById('runnerBar');if(bar)bar.style.width=Math.round(done/7*100)+'%';
+  var cnt=document.getElementById('runnerCount');if(cnt)cnt.textContent=done+' / 7';
+  var sv=document.getElementById('runnerSaveBtn');
+  if(sv){if(o.saved){sv.textContent='✓ Saved — update';sv.disabled=false;sv.className='btn grn';}
+    else if(done===7){sv.textContent='Save day → calendar';sv.disabled=false;sv.className='btn grn';}
+    else{sv.textContent='Complete all 7 to save ('+done+'/7)';sv.disabled=true;sv.className='btn';}}
+  el.querySelectorAll('.rstep').forEach(function(r){r.addEventListener('click',function(){var i=+r.dataset.i;var oo=runGet(RUN_DATE);oo.steps[i]=!oo.steps[i];if(oo.saved&&oo.steps.filter(Boolean).length<7)oo.saved=false;runSet(RUN_DATE,oo);renderRunSteps();renderRunCal();});});
+}
+function renderRunCal(){
+  var cal=document.getElementById('runnerCal');if(!cal)return;
+  var y=RUN_CAL.y,m=RUN_CAL.m,first=new Date(Date.UTC(y,m,1)),sd=first.getUTCDay(),nd=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  var lbl=document.getElementById('runnerCalLbl');if(lbl)lbl.textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric',timeZone:'UTC'});
+  var today=runToday(),html='';
+  ['S','M','T','W','T','F','S'].forEach(function(h){html+='<div class="hd">'+h+'</div>';});
+  for(var i=0;i<sd;i++)html+='<div class="rcell empty"></div>';
+  for(var d=1;d<=nd;d++){
+    var ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var done=runDone(ds),past=ds<today,isT=ds===today,sel=ds===RUN_DATE;
+    var dot=done?'<span class="rdot g"></span>':(past?'<span class="rdot r"></span>':'<span style="height:6px"></span>');
+    html+='<div class="rcell'+(isT?' today':'')+(sel?' sel':'')+'" data-d="'+ds+'"><span>'+d+'</span>'+dot+'</div>';
+  }
+  cal.innerHTML=html;
+  cal.querySelectorAll('.rcell[data-d]').forEach(function(c){c.addEventListener('click',function(){RUN_DATE=c.dataset.d;renderRunner();});});
+  var el;
+  if(el=document.getElementById('rStreak'))el.textContent=currentStreak();
+  if(el=document.getElementById('rLongest'))el.textContent=longestStreak();
+  if(el=document.getElementById('rTotal'))el.textContent=totalDone();
+  if(el=document.getElementById('rMonth'))el.textContent=monthDone(y,m);
+  var L=longestStreak(),bb=document.getElementById('rBadges');
+  if(bb)bb.innerHTML=RBADGES.map(function(b){return '<span class="badge2'+(L>=b.d?' on':'')+'" title="'+b.d+'-day streak'+(L>=b.d?' — unlocked':' — locked')+'">'+b.e+'</span>';}).join('');
+  var s2=currentStreak(),mv=document.getElementById('rMotiv'),msg;
+  if(s2===0)msg='Run the sequence. Day one is a win.';
+  else if(s2<3)msg='Momentum building — keep it going.';
+  else if(s2<7)msg='On a roll 🔥 Protect the streak.';
+  else if(s2<21)msg='One week+ strong 💪 This is who you are now.';
+  else if(s2<66)msg='Deep groove. The identity is wiring in.';
+  else msg='Automatic. You ARE the process. 👑';
+  if(mv)mv.textContent=msg;
+}
+function renderRunner(){
+  if(!RUN_DATE)RUN_DATE=runToday();
+  if(!RUN_CAL){var t=runToday().split('-');RUN_CAL={y:+t[0],m:+t[1]-1};}
+  var today=runToday();
+  var dl=document.getElementById('runnerDate');if(dl)dl.textContent='· '+RUN_DATE+(RUN_DATE===today?' · today':'')+' ET';
+  var tb=document.getElementById('runnerTodayBtn');if(tb)tb.style.display=(RUN_DATE===today)?'none':'';
+  var note=document.getElementById('runnerNote');if(note)note.value=runGet(RUN_DATE).note||'';
+  renderRunSteps();renderRunCal();
+}
+function saveDay(){var o=runGet(RUN_DATE);if(o.steps.filter(Boolean).length<7)return;var n=document.getElementById('runnerNote');o.note=n?n.value:(o.note||'');o.saved=true;o.ts=Date.now();runSet(RUN_DATE,o);renderRunner();}
+function calNav(delta){RUN_CAL.m+=delta;if(RUN_CAL.m<0){RUN_CAL.m=11;RUN_CAL.y--;}if(RUN_CAL.m>11){RUN_CAL.m=0;RUN_CAL.y++;}renderRunCal();}
+function runnerReset(){var o=runGet(RUN_DATE);o.steps=[false,false,false,false,false,false,false];o.saved=false;runSet(RUN_DATE,o);renderRunner();}
 document.querySelectorAll(".navi[data-v]").forEach(n=>n.addEventListener("click",()=>{
   document.querySelectorAll(".navi").forEach(x=>x.classList.remove("active"));
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
   n.classList.add("active");const v=n.dataset.v;document.getElementById("view-"+v).classList.add("active");ensureView(v);
 }));
 document.getElementById("reloadBtn").addEventListener("click",()=>location.reload());
+(function(){function on(id,fn){var e=document.getElementById(id);if(e)e.onclick=fn;}on('runnerResetBtn',runnerReset);on('runnerSaveBtn',saveDay);on('runnerTodayBtn',function(){RUN_DATE=runToday();var t=runToday().split('-');RUN_CAL={y:+t[0],m:+t[1]-1};renderRunner();});on('runnerPrev',function(){calNav(-1);});on('runnerNext',function(){calNav(1);});var n=document.getElementById('runnerNote');if(n)n.addEventListener('input',function(){var o=runGet(RUN_DATE);o.note=n.value;runSet(RUN_DATE,o);});})();
 function curMonth(){const p=etParts();return{y:+p.date.slice(0,4),m:+p.date.slice(5,7)};}
 function tick(){
   const now=new Date();
@@ -1055,7 +1231,7 @@ function renderOverview(){
   const dir=draw==='HIGHER'?'longs from discount POIs':draw==='LOWER'?'shorts from premium POIs':'standing down until the triad picks a side';
   document.getElementById('overview').innerHTML=`<p>The NQ/ES/YM triad reads <b>${draw}</b> on HTF structure (NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM}). NQ is in <b>${zone}</b> of its daily range at ${fmtN(nq.price)}. Draw on liquidity favors ${dir}.</p><p>Scheduled risk today: ${evTxt}.${fomc?' FOMC on the docket — the 2:45–3:15 window is the tradeable read; let the release deliver, then trade the reaction.':''} Until a POI meets a time window with a correlated SMT and a CSD, there is no trade. Protocol first.</p>`;
 }
-/* ===== Coaches Conscious Framework — sourced from The Mastery of Self (Larson) + Dr. Joe Dispenza / Transformation OS + Identity Pro L1–L4.
+/* ===== Coaches Conscious Framework — sourced from The Mastery of Self (Larson) + Identity Pro L1–L4.
    Single focus per day, rotates deterministically by date. This is the priming to step into the session with. ===== */
 const CONSCIOUS_FRAMEWORKS=[
  {f:"Master, don't control",q:"He who has attained the mastery of self never tries to control anything or anybody, not even himself. His object is not to control himself, but to make the best possible use of himself.",p:7,c:"Control is the old identity forcing the tape. Today you drop the grip entirely — you are not here to control price, wins, or losses. You are here to make the fullest use of a regulated state and a proven protocol.",s:"Before the open, name one thing you were trying to control yesterday, and set it down. Trade to express, not to control.",src:"Mastery of Self p.7 · L1 Identity Core"},
@@ -1100,24 +1276,14 @@ const CONSCIOUS_FRAMEWORKS=[
  {f:"Subjective originates all",q:"As the subjective is, so is the objective; the subjective is the inner life, and originates everything that appears.",p:18,c:"The result on the screen originated in the state you carried in. If you want a different objective, author a different subjective first. This is why the morning matters more than the setup.",s:"Author the subjective before the market opens: certain, funded, non-attached. The objective will follow the inner life.",src:"Mastery of Self p.18 · L1/L4"},
  {f:"Willpower on consciousness",q:"To master any force, the will must act not upon the force itself, but upon the interior cause of that force.",p:12,c:"Don't apply willpower to the trade, the loss, or the urge directly — apply it to the consciousness beneath them. Use personal will only to move attention and focus back to the infinite source that creates the force.",s:"When something grips you today, don't wrestle it — use will to turn attention to the source. Master the cause, not the symptom.",src:"Mastery of Self p.12 · your note · L2 State"},
  {f:"One thing, done as genius",q:"If we would give all the forces of intelligence and genius to the faculty that is in action now, that faculty would invariably do the work of genius.",p:12,c:"Scattered attention is average. Pour the whole of your focus into the one thing in front of you — this window, this read, this execution — and it's done at the level of genius. Concentration is the multiplier.",s:"One trade, one window, full presence. Give this single execution everything and let the rest go.",src:"Mastery of Self p.12 · L3 Execution · one focus window"},
- {f:"Non-attached to the win",q:"To master one's desires is to give them more life, and then direct them where the greatest and best results can be obtained.",p:8,c:"Wanting the win is fine — needing it is scarcity, and scarcity forces size and chases confirmation. Give the desire full life, then aim it at perfect process. The account is already funded; you don't need this trade.",s:"Say it and mean it before the open: 'I don't need this trade. Abundance is the default.' Then size at protocol.",src:"Mastery of Self p.8 · L1 Identity · shadow: Oversize"},
- {f:"Personality creates personal reality",q:"Your personality creates your personal reality.",c:"The P&L on the screen is the printout of who you were being at the open. Change the person, not the tactic — you cannot out-trade your identity. Install the funded, regulated self first and let the session confirm it.",s:"Before the open, step into the identity of the consistently funded trader. The session is confirmation, not a bid.",src:"Dr. Joe Dispenza · Transformation OS · L1 Identity",book:"Dr. Joe Dispenza"},
- {f:"Don\u0027t believe everything you think",q:"Just because you have a thought doesn\u0027t mean it\u0027s true.",c:"At the hard right edge the mind says cut it, add here, make it back. None of it is truth — it is the old program firing. The moment you observe the thought, you are no longer the program; you are the one watching it.",s:"When a loud thought hits mid-trade, name it and check it against the protocol before you act.",src:"Dr. Joe Dispenza · Transformation OS · L1 Identity · metacognition",book:"Dr. Joe Dispenza"},
- {f:"Survival or creation, not both",q:"You are living in survival, or you are living in creation. You cannot be in both.",c:"Stress contracts you onto one tick and makes you force — matter trying to change matter. You cannot read the AMD clock or hold an A+ setup from survival. Coherence is the state that reads clearly; get there first.",s:"Run open focus into coherent alpha, then read HTF to M1. Never read price from a fragmented brain.",src:"Dr. Joe Dispenza · Transformation OS · L2 State",book:"Dr. Joe Dispenza"},
- {f:"Never act in the refractory period",q:"If you act during that refractory period, you will always say: I should never have done that.",c:"After a stop-out, a big win, or a near-miss, the stress chemicals distort perception — a gap opens between how things appear and how they are. Every revenge entry and impulsive oversize lives in that window.",s:"After any charged event, hands off the mouse. Step away until the chemistry clears, then re-read.",src:"Dr. Joe Dispenza · Transformation OS · L2 State · shadow: Identity Collapse / Oversize",book:"Dr. Joe Dispenza"},
- {f:"Fire the new, prune the old",q:"Nerve cells that no longer fire together, no longer wire together.",c:"Every rep of the new response (take the stop clean, size default) while restraining the old (revenge, oversize) starves and prunes the old circuit. That is why one just-this-once is never free — it keeps the old wiring alive.",s:"Pre-program your interrupt: rising urge, cue change, hands off, breathe. Fire it before the click.",src:"Dr. Joe Dispenza · Transformation OS · L3 Execution · shadow: Oversize",book:"Dr. Joe Dispenza"},
- {f:"Rehearse the executor",q:"The brain does not know the difference between the experience out there and the experience in here.",c:"Mentally rehearsing flawless execution installs the same circuitry as live reps — the hardware is wired before the session. And what you rehearse all day is who you are: replay losses off-hours and you wire the flinch.",s:"Before the open, rehearse setup to entry to hold to clean stop. Wire it before you trade it.",src:"Dr. Joe Dispenza · Transformation OS · L3 Execution",book:"Dr. Joe Dispenza"},
- {f:"Boredom is the tell of mastery",q:"When I start getting bored with my creation, I know I am getting close.",c:"The A+ setup is supposed to feel boring and repetitive — that is mastery becoming automatic, not a reason to chase a novel, exciting, unplanned trade. Most traders abandon a working edge exactly when it stops being exciting.",s:"If the setup feels boring today, you are doing it right. Wait for it; do not manufacture action.",src:"Dr. Joe Dispenza · Transformation OS · L3 Execution",book:"Dr. Joe Dispenza"},
- {f:"Cause an effect",q:"The moment you feel worthy and abundant, you are magnetizing your wealth.",c:"The old model waits for the win to feel good. The new model feels the state first and lets the result follow. Do not get up from the morning work in lack about the number — get up feeling free, and let the session confirm it.",s:"Generate the state the outcome represents (free, complete) now — not after the number arrives.",src:"Dr. Joe Dispenza · Transformation OS · L4 Vision",book:"Dr. Joe Dispenza"},
- {f:"Knowingness — one loss is data",q:"When you reach a state of being, you have memorized an internal order nothing outside you can move.",c:"I will make it back in two weeks — eat your salad. A true identity does not flinch at one red day because a loss is data, not a verdict. The account can be down; the identity does not move with the equity curve.",s:"After a red trade: one loss is part of the pattern. Take it clean; the identity stays put.",src:"Dr. Joe Dispenza · Transformation OS · L1 Identity · shadow: Identity Collapse",book:"Dr. Joe Dispenza"}
+ {f:"Non-attached to the win",q:"To master one's desires is to give them more life, and then direct them where the greatest and best results can be obtained.",p:8,c:"Wanting the win is fine — needing it is scarcity, and scarcity forces size and chases confirmation. Give the desire full life, then aim it at perfect process. The account is already funded; you don't need this trade.",s:"Say it and mean it before the open: 'I don't need this trade. Abundance is the default.' Then size at protocol.",src:"Mastery of Self p.8 · L1 Identity · shadow: Oversize"}
 ];
-const DISPENZA_LAYERS=`Transformation OS — Dr. Joe Dispenza (the neuroscience layer beneath L1–L4; they study and apply this to trading):\n- L1 Identity: Personality creates personal reality — the P&L is the printout of who they are being, so change the person, not the tactic. The brain is a record of the past (about 95% runs as a subconscious program); change is pruning the old self, not willpower. Metacognition: a thought is not truth ('cut it / add / make it back' is the old program) — observe it, do not obey it. Knowingness: a real identity is an internal order nothing external can move; a loss is data, not a verdict (antidote to Identity Collapse).\n- L2 State: Survival vs creation — they cannot be in both. Stress narrows them to one tick and forces outcomes ('matter trying to change matter'); coherence (brain + heart) IS Settled Authority. Open focus into coherent alpha is the reset. Refractory-period rule: after any charged event (loss, big win, near-miss) the stress chemicals distort perception — never act inside it; step away until it clears (antidote to revenge / tilt).\n- L3 Execution: Mental rehearsal installs the hardware ahead of the trade (what they rehearse all day is who they become). Repetition prunes the old operator — 'nerve cells that no longer fire together no longer wire together' — so one 'just this once' keeps the old circuit alive. The change game: a pre-installed pattern interrupt fired at the felt onset of the urge. Execute, then surrender the outcome — do not micromanage. Boredom is the tell of mastery becoming automatic (the A+ setup is supposed to feel boring — do not chase novelty).\n- L4 Vision: Cause an effect — feel the state (free, worthy, complete) before the result rather than waiting for the number to grant it. They want the state, not the number; gratitude is the state of receivership. The vision pulls when a clear intention is married to an elevated emotion.\nUse these mechanisms alongside the Mastery of Self frame when you diagnose, recode, and prescribe.`;
 function consciousIndex(ds){const t=Date.parse((ds||etParts().date)+'T12:00:00Z');const days=Math.floor(t/864e5);const n=CONSCIOUS_FRAMEWORKS.length;return ((days%n)+n)%n;}
 function consciousHtml(ds){
   const c=CONSCIOUS_FRAMEWORKS[consciousIndex(ds)];if(!c)return '';
   return `<div style="border-left:2px solid var(--grn);padding-left:12px">
     <div style="font-weight:700;font-size:15px;margin:0 0 9px;color:var(--ink)">Today&rsquo;s focus &middot; ${escH(c.f)}</div>
-    <blockquote style="margin:0 0 9px;padding:9px 11px;background:rgba(53,208,127,.06);border-radius:5px;color:var(--ink);font-style:italic">&ldquo;${escH(c.q)}&rdquo;<span style="display:block;margin-top:5px;font-style:normal;font-size:11px;color:var(--mut)">&mdash; ${escH(c.book||'The Mastery of Self')}${(c.p!=null&&c.p!=='')?' &middot; p.'+c.p:''}</span></blockquote>
+    <blockquote style="margin:0 0 9px;padding:9px 11px;background:rgba(53,208,127,.06);border-radius:5px;color:var(--ink);font-style:italic">&ldquo;${escH(c.q)}&rdquo;<span style="display:block;margin-top:5px;font-style:normal;font-size:11px;color:var(--mut)">&mdash; The Mastery of Self &middot; p.${c.p}</span></blockquote>
     <p style="margin:0 0 9px">${escH(c.c)}</p>
     <p style="margin:0"><b style="color:var(--grn)">Step in:</b> ${escH(c.s)}</p>
     <div style="margin-top:8px;font:600 10px/1.3 var(--mono);letter-spacing:.08em;color:var(--faint)">SOURCE &middot; ${escH(c.src)}</div>
@@ -2671,6 +2837,7 @@ function pmRenderRoutine(sel,cid){
 function pmRoutineVal(cid){return Array.prototype.slice.call(document.querySelectorAll('#'+(cid||'pm-routine')+' .pmrt')).filter(x=>x.checked).map(x=>x.value);}
 function readinessOf(pm){if(!pm||!pm.ready)return null;const v=['sleep','energy','focus'].map(k=>+pm.ready[k]||0).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
 let PV=curMonth(), selPmrDay=etParts().date, selWeek=null, selWeekDay=null, pmrShots=[], pmrDebriefData=null, pmrTechDebriefData=null;
+const SEVEN_STEPS=`DR. JOE'S 7-STEP SEQUENCE — the process this trader runs each morning and the spine beneath their Identity Pro layers (L1–L4). It is the FOUNDATION; the 4 Pillars / Mastery-of-Self frame sits above it. When you diagnose, name which step(s) broke, and in the ACTION field prescribe the exact practice note that repairs it (the trader keeps each as a file):\n1. Get beyond the analytical mind → coherence. [L2] Practice: 'Open Focus Practice' (+ 'Brainwave States'). Breaks as: executed from high-beta / survival, tilt, never dropped into Settled Authority.\n2. Retire the old self. [L1] Practice: 'Un-memorizing the Emotion', 'Breaking the Habit of the Old Self'. Breaks as: an old emotional program (fear, unworthiness, revenge, shame) ran the session.\n3. Install the new self. [L1→L3] Practice: 'Mental Rehearsal Practice', 'Who I Am Being'. Breaks as: acted as the old identity; no clear self decided or rehearsed.\n4. Marry a clear intention to an elevated emotion. [L4×L2] Practice: 'Elevated Emotions — Menu & Fusion'. Breaks as: traded from lack / need instead of a felt, funded, complete state.\n5. Command matter, then surrender the how. [L4] Practice: 'Command & Surrender', 'Non-Resistance & the Law of Reverse Effort'. Breaks as: forced the outcome, moved stops, micromanaged, revenge (reverse effort).\n6. Gratitude — the state of receivership. [L4] Practice: 'Gratitude — The State of Receivership'. Breaks as: traded from wanting / scarcity rather than 'already done'.\n7. Get up different, and maintain the state all day. [L3] Practice: 'Maintaining the State — All-Day Protocol', 'The Signs That It's Manifesting', 'Starting Again'. Breaks as: had the state, then dropped it mid-session; spiraled after a loss (Identity Collapse).\nRun order: State(1) → retire+install identity(2–3) → intention+elevated emotion(4) → command+surrender(5) → gratitude(6) → maintain all day(7). Diagnose in this order, and in ACTION always name the specific practice note above.`;
 const COACH_DEBRIEF_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro layers L1–L4 + Execution Protocol Framework).
 
 The 4 Pillars To Success — MASTER FILTER for every comment you make. In the briefing / pre-market, the 4 Pillars filter the whole conversation. In post-market reviews, L1–L4 is the primary lens but the 4 Pillars still sit above it:
@@ -2698,7 +2865,7 @@ Conscious framework — draw diagnosis and recode from The Mastery of Self (Lars
 - It is already done: execute from completion, not need. Poise = power + peace at once. Nonresistance: accept what came, then dwell on the ideal. You can only master what you have risen above.
 - Break the losing imprint: a losing state, felt strongly, reprints itself and reproduces losing habits — the loop breaks only by changing the internal state and backing it with genuine joy / peace / faith.
 
-${DISPENZA_LAYERS}
+${SEVEN_STEPS}
 
 Read the six-part Post Market Review below. Diagnose honestly and specifically — cite what they actually wrote. Follow the coaching order: Identity first, State second, Action third, Anchor fourth. If the day was clean, affirm it and reinforce the identity — do NOT invent problems.
 
@@ -2984,7 +3151,7 @@ Target operating state: "Settled Authority" — grounded, clear, unhurried, non-
 
 Shadow patterns: Hesitation Before Entry (L2), Identity Collapse After Loss (L1+L4), Oversize / Overtrade (L1+L2).
 
-${DISPENZA_LAYERS}
+${SEVEN_STEPS}
 
 You are reviewing an ENTIRE WEEK (Mon–Fri), not a single day. Below is the aggregated record: results, grades, plan-vs-execution adherence, rule breaks, state at execution, protocol-day violations, and the daily journals. Read the WEEK as a pattern — what repeated, what compounded, what improved across the five days. Cite specific days and numbers. If the week was clean, say so plainly and reinforce the identity; do NOT invent problems.
 
@@ -3646,7 +3813,7 @@ function csvDoImport(){
    ============================================================ */
 const COACH_TRADE_PROMPT=`You are this trader's 1-on-1 trading mentor — a savant who scaled past $100M. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their focus windows (Prime AM 09:40–10:15 · Silver Bullet 10:25–10:35 · Late AM 10:45–11:15 · Early PM 12:45–13:15 · Afternoon 13:45–14:15 ET).
 
-${DISPENZA_LAYERS}
+${SEVEN_STEPS}
 
 Review this COMPLETED TRADE like a mentor reviewing tape. You are given the trade record, a digest of the 1-minute price action around it, and (if attached) the trader's own annotated charts. Judge the EXECUTION, not the outcome — a winning trade can be badly executed and a losing trade can be perfect.
 
