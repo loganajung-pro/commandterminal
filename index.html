@@ -247,6 +247,22 @@ ul.tight li::marker{color:var(--org)}
 .rdot{width:6px;height:6px;border-radius:50%}
 .rdot.g{background:var(--grn);box-shadow:0 0 5px var(--grn)}
 .rdot.r{background:var(--red)}
+
+/* Awards */
+#view-awards .awgrid{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+@media(max-width:820px){#view-awards .awgrid{grid-template-columns:1fr}}
+.award{display:flex;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.award.lock{opacity:.62}
+.award.max{border-color:var(--grn-dim);background:rgba(53,208,127,.06)}
+.aicon{flex:0 0 40px;width:40px;height:40px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;filter:grayscale(1);opacity:.5}
+.award.on .aicon{filter:none;opacity:1}
+.atitle{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.adesc{font-size:11px;color:var(--mut);margin:2px 0 7px}
+.abar{height:7px;background:var(--panel2);border-radius:5px;overflow:hidden}
+.afill{height:100%;background:var(--grn);width:0;transition:.25s}
+.ameta{display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:10.5px;color:var(--mut)}
+.abtn{font-size:11px;padding:2px 9px;border:1px solid var(--line2);border-radius:6px;background:var(--panel2);color:var(--ink);cursor:pointer;user-select:none}
+.abtn:hover{border-color:var(--grn-dim);color:var(--grn)}
 </style>
 </head>
 <body>
@@ -259,6 +275,7 @@ ul.tight li::marker{color:var(--org)}
     <div class="navi" data-v="calendar"><span class="tip">Protocol Calendar</span><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg></div>
     <div class="navi" data-v="journal"><span class="tip">Trade Journal</span><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 3v18M13 8h3M13 12h3"/></svg></div>
     <div class="navi" data-v="pmr"><span class="tip">Post Market Review</span><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></div>
+    <div class="navi" data-v="awards"><span class="tip">Awards</span><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0z"/><path d="M8 4H5v2a3 3 0 0 0 3 3M16 4h3v2a3 3 0 0 1-3 3"/><path d="M12 12v3M9 20h6M10 17h4"/></svg></div>
     <div class="sp"></div>
     <div class="navi" id="settingsBtn"><span class="tip">Settings · API key</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2"/></svg></div>
     <div class="navi" id="reloadBtn"><span class="tip">Reload data</span><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 4v4h-4"/></svg></div>
@@ -538,6 +555,22 @@ ul.tight li::marker{color:var(--org)}
           <div id="pmrDetail"></div>
         </div>
       </div>
+    </section>
+    <section class="view" id="view-awards">
+      <div class="crumb">Identity Pro / <b>Awards</b></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h1 class="h1" style="margin:0">Awards &amp; Milestones</h1>
+        <span class="subtle">Process over outcome &mdash; most awards reward what you control.</span>
+      </div>
+      <hr class="d">
+      <div class="panel" style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div><span class="sec">Unlocked</span> <b id="awUnlocked" style="font-family:var(--num);font-size:18px">0 / 0</b> &nbsp;<span class="subtle">&#11088; <b id="awEarned">0</b> tiers earned</span></div>
+          <div style="flex:1;min-width:160px;max-width:340px;height:8px;background:var(--panel2);border-radius:5px;overflow:hidden"><div id="awBar" style="height:100%;width:0;background:var(--grn);transition:.25s"></div></div>
+        </div>
+      </div>
+      <div id="awardsBody"></div>
+      <div class="subtle" style="margin-top:12px">Auto-tracked awards read your trades, PMR and Sequence Runner. Manual awards (+1 / Mark done) are for behaviors only you can verify &mdash; log them honestly; the streak is with yourself.</div>
     </section>
   </main>
 </div>
@@ -1065,13 +1098,14 @@ function composedLvl(sh){if(!COMPOSED)return null;return (COMPOSED.levels||[]).f
 /* ============================ NAV + CLOCK ============================ */
 const RENDERED={};
 function ensureView(v){
-  if(RENDERED[v]){if(v==="macro")safe(renderMacro);if(v==="runner")safe(renderRunner);return;}   // revisiting Macro re-pulls everything live
+  if(RENDERED[v]){if(v==="macro")safe(renderMacro);if(v==="runner")safe(renderRunner);if(v==="awards")safe(renderAwards);return;}   // revisiting Macro re-pulls everything live
   RENDERED[v]=true;
   if(v==="macro")safe(renderMacro);
   if(v==="calendar"){MV=curMonth();safe(loadMonthView);}
   if(v==="journal"){JV=curMonth();safe(renderJournal);}
   if(v==="pmr"){PV=curMonth();safe(renderPmr);}
   if(v==="runner")safe(renderRunner);
+  if(v==="awards")safe(renderAwards);
 }
 /* ===== Daily Sequence Runner ===== */
 const RUNNER_STEPS=[
@@ -1163,6 +1197,78 @@ function renderRunner(){
 function saveDay(){var o=runGet(RUN_DATE);if(o.steps.filter(Boolean).length<7)return;var n=document.getElementById('runnerNote');o.note=n?n.value:(o.note||'');o.saved=true;o.ts=Date.now();runSet(RUN_DATE,o);renderRunner();}
 function calNav(delta){RUN_CAL.m+=delta;if(RUN_CAL.m<0){RUN_CAL.m=11;RUN_CAL.y--;}if(RUN_CAL.m>11){RUN_CAL.m=0;RUN_CAL.y++;}renderRunCal();}
 function runnerReset(){var o=runGet(RUN_DATE);o.steps=[false,false,false,false,false,false,false];o.saved=false;runSet(RUN_DATE,o);renderRunner();}
+/* ===== Awards ===== */
+const AWARDS=[
+ {cat:'Consistency',id:'seq_streak',icon:'🔥',name:'Sequence Streak',desc:'Run the Daily Sequence on consecutive days.',tiers:[7,21,66],val:function(C){return C.longest;}},
+ {cat:'Consistency',id:'seq_days',icon:'📅',name:'Days Run',desc:'Total days you completed the full 7-step sequence.',tiers:[30,100,365],val:function(C){return C.runDays;}},
+ {cat:'Consistency',id:'reflections',icon:'📝',name:'Reflective Practice',desc:'Days you saved a written reflection.',tiers:[10,30,90],val:function(C){return C.reflections;}},
+ {cat:'Consistency',id:'journaled',icon:'📓',name:'The Journalist',desc:'Post-market reviews completed.',tiers:[10,30,75],val:function(C){return C.pmr;}},
+ {cat:'State & Psychology',id:'settled',icon:'🧘',name:'Settled Authority',desc:'Trades executed from the Settled Authority state.',tiers:[10,30,75],val:function(C){return C.settled;}},
+ {cat:'State & Psychology',id:'tiltfree',icon:'🛡️',name:'Tilt-Free Sessions',desc:'Days with no trade tagged FOMO / Greed / Tilt / Fear.',tiers:[10,25,60],val:function(C){return C.tiltFree;}},
+ {cat:'State & Psychology',id:'composed',icon:'❄️',name:'Composed After Loss',desc:'Log each stop you took clean — no revenge. (+1)',tiers:[5,15,40],manual:1},
+ {cat:'State & Psychology',id:'inoculate',icon:'🌅',name:'Inoculated',desc:'Log mornings you regulated (open focus) before the open. (+1)',tiers:[10,30,66],manual:1},
+ {cat:'Execution & Protocol',id:'agrade',icon:'🎯',name:'A-Grade Execution',desc:'Trades you graded A on entry.',tiers:[10,25,50],val:function(C){return C.aGrade;}},
+ {cat:'Execution & Protocol',id:'oneandone',icon:'🎪',name:'One Trade, One Window',desc:'Days with a single, protocol-selective trade.',tiers:[10,30,75],val:function(C){return C.onePer;}},
+ {cat:'Execution & Protocol',id:'disc_no',icon:'✋',name:'The Discipline of No',desc:'Log days you correctly stood aside — no valid setup. (+1)',tiers:[5,20,50],manual:1},
+ {cat:'Execution & Protocol',id:'risk_disc',icon:'⚖️',name:'Risk Discipline',desc:'Trades logged with a defined risk in $.',tiers:[20,50,150],val:function(C){return C.riskLogged;}},
+ {cat:'Performance',id:'r_collect',icon:'📈',name:'R Collector',desc:'Cumulative R banked across closed trades.',tiers:[25,50,100],val:function(C){return Math.max(0,Math.round(C.totR));}},
+ {cat:'Performance',id:'greendays',icon:'🟢',name:'Green Days',desc:'Days that closed net positive.',tiers:[10,30,75],val:function(C){return C.green;}},
+ {cat:'Performance',id:'winstreak',icon:'⚡',name:'Win Streak',desc:'Best run of consecutive winning trades.',tiers:[3,6,10],val:function(C){return C.mw;}},
+ {cat:'Performance',id:'reps',icon:'🧾',name:'Reps In',desc:'Total trades logged — screen time compounds.',tiers:[25,100,300],val:function(C){return C.nTrades;}},
+ {cat:'Milestones',id:'m_funded',icon:'🏦',name:'First Funded Account',desc:'Passed an eval / got funded.',once:1},
+ {cat:'Milestones',id:'m_payout',icon:'💸',name:'First Payout',desc:'First withdrawal in hand.',once:1},
+ {cat:'Milestones',id:'m_40k',icon:'💰',name:'First $40K Prop Month',desc:'Hit the prop target for a month.',once:1},
+ {cat:'Milestones',id:'m_20k',icon:'🏛️',name:'First $20K Live Month',desc:'Live account monthly target.',once:1},
+ {cat:'Milestones',id:'m_digital',icon:'🧩',name:'First $10K Digital Month',desc:'Digital product income milestone.',once:1},
+];
+function awGet(){try{return JSON.parse(lsGet('ct_awards')||'{}')||{};}catch(e){return {};}}
+function awSet(o){lsSet('ct_awards',JSON.stringify(o));}
+function awVal(id){return +(awGet()[id]||0);}
+function awInc(id,st){var o=awGet();o[id]=(+o[id]||0)+st;if(o[id]<0)o[id]=0;awSet(o);renderAwards();}
+function awToggle(id){var o=awGet();o[id]=o[id]?0:1;awSet(o);renderAwards();}
+function awTier(cur,tiers){var lvl=0,i;for(i=0;i<tiers.length;i++){if(cur>=tiers[i])lvl=i+1;}var prev=lvl>0?tiers[lvl-1]:0;var maxed=lvl>=tiers.length;var next=maxed?tiers[tiers.length-1]:tiers[lvl];var pct=maxed?100:Math.round((cur-prev)/((next-prev)||1)*100);return {lvl:lvl,prev:prev,next:next,maxed:maxed,pct:Math.max(0,Math.min(100,pct))};}
+function awByDate(TR){var m={};TR.forEach(function(t){(m[t.date]=m[t.date]||[]).push(t);});return m;}
+var AW_NEG=['FOMO','Greed','Tilt','Urgent','Fear','Doubt','Hesitant','Overconfident'];
+function awGreenDays(TR){var m=awByDate(TR.filter(isClosed)),c=0;Object.keys(m).forEach(function(d){var x=0;m[d].forEach(function(t){x+=(tR(t)||0);});if(x>0)c++;});return c;}
+function awTiltFree(TR){var m=awByDate(TR),c=0;Object.keys(m).forEach(function(d){if(m[d].length&&!m[d].some(function(t){return AW_NEG.indexOf(t.state)>=0;}))c++;});return c;}
+function awOnePer(TR){var m=awByDate(TR),c=0;Object.keys(m).forEach(function(d){if(m[d].length===1)c++;});return c;}
+function awStateCount(TR,x){return TR.filter(function(t){return t.state===x;}).length;}
+function awGradeCount(TR,g){return TR.filter(function(t){return t.egrade===g;}).length;}
+function awReflections(){return Object.keys(MEM).filter(function(k){if(k.indexOf('ct_run_')!==0)return false;try{var o=JSON.parse(MEM[k]);return !!(o&&o.saved&&o.note&&String(o.note).trim());}catch(e){return false;}}).length;}
+function awPmrCount(){var p;try{p=JSON.parse(lsGet('ct_pmr')||'{}');}catch(e){p={};}return Object.keys(p).filter(function(k){var v=p[k];return v&&typeof v==='object'&&Object.keys(v).some(function(f){return v[f]&&String(v[f]).trim();});}).length;}
+function renderAwards(){
+  var body=document.getElementById('awardsBody');if(!body)return;
+  var TR=loadTrades(),PS=perfStats(TR);
+  var C={longest:longestStreak(),runDays:totalDone(),reflections:awReflections(),pmr:awPmrCount(),
+    settled:awStateCount(TR,'Settled Authority'),tiltFree:awTiltFree(TR),aGrade:awGradeCount(TR,'A'),
+    onePer:awOnePer(TR),riskLogged:TR.filter(function(t){return +t.risk>0;}).length,
+    totR:PS.totR||0,green:awGreenDays(TR),mw:PS.mw||0,nTrades:TR.length};
+  var cats=[],seen={};AWARDS.forEach(function(a){if(!seen[a.cat]){seen[a.cat]=1;cats.push(a.cat);}});
+  var unlocked=0,earned=0,html='';
+  cats.forEach(function(cat){
+    html+='<h2 class="sec" style="margin:16px 0 8px">'+cat+'</h2><div class="awgrid">';
+    AWARDS.filter(function(a){return a.cat===cat;}).forEach(function(a){
+      var pct,unl,meta,right,stars='',maxed=false,lvl=0;
+      if(a.once){var cur=awVal(a.id);unl=cur>=1;lvl=unl?1:0;pct=unl?100:0;meta=unl?'✓ Complete':'Locked';
+        right='<span class="abtn" data-act="toggle" data-id="'+a.id+'">'+(unl?'Undo':'Mark done')+'</span>';}
+      else{var v=a.manual?awVal(a.id):a.val(C);var ti=awTier(v,a.tiers);lvl=ti.lvl;unl=lvl>0;maxed=ti.maxed;pct=ti.pct;
+        stars=a.tiers.map(function(t,i){return '<span style="color:'+(lvl>i?'var(--grn)':'var(--faint)')+'">★</span>';}).join('');
+        meta=v+' / '+(maxed?a.tiers[a.tiers.length-1]:ti.next)+(maxed?' · MAX':' · Lv '+lvl);
+        right=a.manual?('<span class="abtn" data-act="dec" data-id="'+a.id+'">−1</span> <span class="abtn" data-act="inc" data-id="'+a.id+'">+1</span>'):('<span>'+pct+'%</span>');}
+      if(unl)unlocked++; earned+=lvl;
+      html+='<div class="award '+(unl?'on':'lock')+(maxed?' max':'')+'"><div class="aicon">'+a.icon+'</div>'
+        +'<div style="flex:1"><div class="atitle">'+a.name+' '+stars+'</div><div class="adesc">'+a.desc+'</div>'
+        +'<div class="abar"><div class="afill" style="width:'+pct+'%"></div></div>'
+        +'<div class="ameta"><span>'+meta+'</span><span>'+right+'</span></div></div></div>';
+    });
+    html+='</div>';
+  });
+  body.innerHTML=html;
+  var u=document.getElementById('awUnlocked');if(u)u.textContent=unlocked+' / '+AWARDS.length;
+  var e=document.getElementById('awEarned');if(e)e.textContent=earned;
+  var pb=document.getElementById('awBar');if(pb)pb.style.width=Math.round(unlocked/AWARDS.length*100)+'%';
+  body.querySelectorAll('[data-act]').forEach(function(el){el.addEventListener('click',function(ev){ev.stopPropagation();var id=el.dataset.id,act=el.dataset.act;if(act==='inc')awInc(id,1);else if(act==='dec')awInc(id,-1);else if(act==='toggle')awToggle(id);});});
+}
 document.querySelectorAll(".navi[data-v]").forEach(n=>n.addEventListener("click",()=>{
   document.querySelectorAll(".navi").forEach(x=>x.classList.remove("active"));
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
