@@ -1173,10 +1173,10 @@ const SEQCARD_ITEMS=[
  {g:'PRE-MARKET',items:[
   {id:'pm_state',t:'State — Settled Authority. One trade does not make me.'},
   {id:'pm_amd',t:'AMD identified — daily / weekly clock named'}]},
- {g:'SEQ 1 · POINT A',items:[
-  {id:'s1_a',t:'Point A — marked & graded — gap ✓ · +FVG ✓✓ · +SD ✓✓✓'}]},
- {g:'SEQ 2 · POINT B',items:[
-  {id:'s2_b',t:'Point B — marked — draw open (distant gap / timed liquidity / SD ladder far side)'}]},
+ {g:'SEQ 1 · LOCATION',items:[
+  {id:'s1_a',t:'Point A — POI Hit · gap / FVG violated & respected (no close-through · shallow tap = better)'}]},
+ {g:'SEQ 2 · DRAW',items:[
+  {id:'s2_b',t:'Point B still open — draw not yet reached'}]},
  {g:'SEQ 3 · SMT (NQ/ES)',items:[
   {id:'s3_timed',t:'Timed SMT — completed · right direction · unbroken'},
   {id:'s3_m1',t:'M1 SMT followed — NQ/ES vice versa'}]},
@@ -1204,7 +1204,7 @@ function renderSeqCard(){
       h+=`<label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer;font-size:12px;line-height:1.35;${st[it.id]?'color:var(--grn)':''}"><input type="checkbox" class="sq-box" data-id="${it.id}" ${st[it.id]?'checked':''} style="margin-top:2px;accent-color:#22c55e">${it.t}</label>`;
     });
   });
-  h+=`<hr class="d"><div class="subtle" style="font-size:11px;line-height:1.5"><b>GO rules:</b> Entry — calm trigger pull (retrace into the PD Array: fresh FVG / breaker) · stop at the M1 SMT H/L · TP ladder ±0.33 → ±0.66 → ±1.33 → ±1.66 to B · out by 11:30 (~99%) · default size · one trade per window.<br><b>Every box or no trade.</b> Skipped valid = taken invalid = deviation. Freeze at the trigger = Shadow 1 (L2): name it → exhale → “It is already done.”</div>`;
+  h+=`<hr class="d"><div class="subtle" style="font-size:11px;line-height:1.5"><b>Point A valid =</b> hit in the right time window · respected (price does not close through the gap/FVG) · shallow tap preferred (less trade into it = better). Pre-market grade: gap ✓ · +FVG ✓✓ · +SD ✓✓✓.<br><b>GO rules:</b> Entry — calm trigger pull (retrace into the PD Array: fresh FVG / breaker) · stop at the M1 SMT H/L · TP ladder ±0.33 → ±0.66 → ±1.33 → ±1.66 to B · out by 11:30 (~99%) · default size · one trade per window.<br><b>Every box or no trade.</b> Skipped valid = taken invalid = deviation. Freeze at the trigger = Shadow 1 (L2): name it → exhale → “It is already done.”</div>`;
   el.innerHTML=h;
   el.querySelectorAll('.sq-box').forEach(b=>b.addEventListener('change',()=>{const s=seqCardLoad();s[b.dataset.id]=b.checked;seqCardSave(s);renderSeqCard();}));
   const r=document.getElementById('seqCardReset');if(r)r.addEventListener('click',()=>{seqCardSave({});renderSeqCard();});
