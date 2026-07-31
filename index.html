@@ -263,6 +263,30 @@ ul.tight li::marker{color:var(--org)}
 .ameta{display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:10.5px;color:var(--mut)}
 .abtn{font-size:11px;padding:2px 9px;border:1px solid var(--line2);border-radius:6px;background:var(--panel2);color:var(--ink);cursor:pointer;user-select:none}
 .abtn:hover{border-color:var(--grn-dim);color:var(--grn)}
+
+/* rank chip + rank FX */
+.rchip{display:flex;align-items:center;gap:7px;cursor:pointer;padding:2px 9px;border:1px solid var(--line2);border-radius:20px;background:var(--panel)}
+.rchip:hover{border-color:var(--grn-dim)}
+.rchip .rcem{width:22px;height:22px;flex:0 0 22px}
+.rchip .rct{font-size:11px;color:var(--ink);font-weight:600;letter-spacing:.03em}
+.rchip .rcp{font-size:8.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.fx-hide{display:none!important}
+.fx-ov{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;background:rgba(4,6,9,.86);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+@keyframes lvlpop{0%{transform:scale(.4);opacity:0}45%{transform:scale(1.1);opacity:1}70%{transform:scale(.98)}100%{transform:scale(1);opacity:1}}
+.lvl-emblem{width:150px;height:150px;animation:lvlpop .6s cubic-bezier(.2,.85,.2,1) both;filter:drop-shadow(0 0 18px rgba(53,208,127,.5))}
+.lvl-title{font-family:var(--title);font-size:26px;color:var(--grn);letter-spacing:.2em;margin-top:16px;animation:lvlpop .6s .08s both}
+.lvl-sub{color:var(--ink);margin-top:6px;letter-spacing:.08em;animation:lvlpop .6s .16s both}
+@keyframes pcin{0%{transform:scale(.2) rotate(-14deg);opacity:0}50%{transform:scale(1.18) rotate(5deg);opacity:1}68%{transform:scale(.97) rotate(0)}100%{transform:scale(1)}}
+@keyframes pcslam{0%{transform:scale(1)}55%{transform:scale(1.3)}100%{transform:scale(.02);opacity:0}}
+@keyframes pcflash{0%{opacity:0}45%{opacity:.85}100%{opacity:0}}
+.pc-emblem{width:200px;height:200px;filter:drop-shadow(0 0 34px rgba(255,215,94,.65))}
+.pc-emblem.in{animation:pcin 1.2s cubic-bezier(.2,.9,.2,1) both}
+.pc-emblem.slam{animation:pcslam .55s ease-in both}
+.pc-flash{position:fixed;inset:0;background:radial-gradient(circle at center,rgba(255,215,94,.55),transparent 62%);pointer-events:none;animation:pcflash .6s ease-out}
+.pc-title{font-family:var(--title);font-size:30px;letter-spacing:.16em;margin-top:18px;color:#ffd75e;text-shadow:0 0 20px rgba(255,215,94,.6);animation:lvlpop .8s .2s both}
+.pm-box{max-width:520px;width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.6);text-align:left}
+.prestige-cta{animation:ctapulse 1.6s ease-in-out infinite}
+@keyframes ctapulse{0%,100%{box-shadow:0 0 0 0 rgba(53,208,127,.45)}50%{box-shadow:0 0 0 8px rgba(53,208,127,0)}}
 </style>
 </head>
 <body>
@@ -291,6 +315,7 @@ ul.tight li::marker{color:var(--org)}
     </div>
     <div class="c">SUPREME <span style="color:var(--grn)">//</span> COMMAND TERMINAL <span class="subtle" id="buildStamp" style="font-size:9px;letter-spacing:.08em;opacity:.5" title="Build version — if this does not match the latest file, you are on a cached or stale copy"></span></div>
     <div class="r">
+      <div class="rchip fx-hide" id="rankChip" onclick="gotoAwards()" title="Rank — open Awards"><div class="rcem" id="rankChipEm"></div><div style="line-height:1.05"><div class="rct" id="rankChipT">—</div><div class="rcp" id="rankChipP"></div></div></div>
       <span class="badge" id="liveAgo">—</span>
       <span class="badge" id="mktStatus">—</span>
       <span class="badge grn">FUNDED</span>
@@ -576,6 +601,7 @@ ul.tight li::marker{color:var(--org)}
           </div>
         </div>
         <div id="rankLadder" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;justify-content:center"></div>
+        <div id="rankAction" style="margin-top:14px;text-align:center"></div>
       </div>
       <div class="panel" style="margin-bottom:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -1252,7 +1278,7 @@ function awReflections(){return Object.keys(MEM).filter(function(k){if(k.indexOf
 function awPmrCount(){var p;try{p=JSON.parse(lsGet('ct_pmr')||'{}');}catch(e){p={};}return Object.keys(p).filter(function(k){var v=p[k];return v&&typeof v==='object'&&Object.keys(v).some(function(f){return v[f]&&String(v[f]).trim();});}).length;}
 function renderAwards(){
   var body=document.getElementById('awardsBody');if(!body)return;
-  if(typeof renderRank==='function')renderRank();
+  if(typeof rankTick==='function')rankTick();
   var TR=loadTrades(),PS=perfStats(TR);
   var C={longest:longestStreak(),runDays:totalDone(),reflections:awReflections(),pmr:awPmrCount(),
     settled:awStateCount(TR,'Settled Authority'),tiltFree:awTiltFree(TR),aGrade:awGradeCount(TR,'A'),
@@ -1330,21 +1356,92 @@ function rankCost(g){return Math.round(50+0.3*g);}
 var RCUM=null;
 function rankCum(){if(RCUM)return RCUM;RCUM=[0,0];var c=0;for(var g=1;g<=550;g++){c+=rankCost(g);RCUM[g+1]=c;}return RCUM;}
 function rankLevel(xp){var cum=rankCum(),L=1;for(var g=2;g<=550;g++){if(xp>=cum[g])L=g;else break;}return L;}
+var PRESTIGING=false;
+function rkState(){try{return JSON.parse(lsGet('ct_rank')||'null')||{claimed:0,seen:-1};}catch(e){return {claimed:0,seen:-1};}}
+function rkSetState(o){lsSet('ct_rank',JSON.stringify(o));}
+function rankInfo(){
+  var xp=rankXP(),cum=rankCum(),stt=rkState(),C=Math.min(9,Math.max(0,stt.claimed|0));
+  var rawL=rankLevel(xp),topG=(C+1)*55,effL=Math.min(Math.max(rawL,C*55+1),topG);
+  var P=C+1,lp=effL-C*55,maxed=(P===10&&xp>=cum[550]),ready=(P<10&&xp>=cum[topG+1]);
+  var into,need,pct;
+  if(ready||maxed){into=0;need=0;pct=100;}
+  else{into=xp-cum[effL];need=cum[effL+1]-cum[effL];pct=Math.round(into/need*100);}
+  return{xp:xp,C:C,P:P,effL:effL,lp:lp,maxed:maxed,ready:ready,into:into,need:need,pct:Math.max(0,Math.min(100,pct))};
+}
 function renderRank(){
-  var xp=rankXP(),cum=rankCum(),L=rankLevel(xp);
-  var P=Math.floor((L-1)/55)+1,lp=((L-1)%55)+1,maxed=L>=550;
-  var into=xp-cum[L],need=maxed?0:(cum[L+1]-cum[L]),pct=maxed?100:Math.round(into/need*100);
+  var info=rankInfo();
   var set=function(id,v,attr){var e=document.getElementById(id);if(e){if(attr)e.style.width=v;else e.textContent=v;}};
-  var em=document.getElementById('rankEmblem');if(em)em.innerHTML=rkEmblem(P);
-  set('rankName',PNAME[P-1]);
-  set('rankSub','Prestige '+P+' · Lvl '+lp+'/55 · Rank '+L+'/550');
-  set('rankXp','Total '+xp.toLocaleString()+' XP');
-  set('rankBar',pct+'%',true);
-  set('rankInto',maxed?'★ MASTER — max rank achieved':(into.toLocaleString()+' / '+need.toLocaleString()+' XP'));
-  set('rankNeed',maxed?'':((need-into).toLocaleString()+' XP to Lvl '+(lp+1===56?1:lp+1)));
+  var em=document.getElementById('rankEmblem');if(em)em.innerHTML=rkEmblem(info.P);
+  set('rankName',PNAME[info.P-1]);
+  set('rankSub','Prestige '+info.P+' · Lvl '+info.lp+'/55 · Rank '+info.effL+'/550');
+  set('rankXp','Total '+info.xp.toLocaleString()+' XP');
+  set('rankBar',info.pct+'%',true);
+  if(info.maxed){set('rankInto','★ MASTER — max rank achieved');set('rankNeed','');}
+  else if(info.ready){set('rankInto','Level 55 complete — ready to Prestige');set('rankNeed','bar full · advance below');}
+  else{set('rankInto',info.into.toLocaleString()+' / '+info.need.toLocaleString()+' XP');set('rankNeed',(info.need-info.into).toLocaleString()+' XP to next');}
+  var act=document.getElementById('rankAction');
+  if(act)act.innerHTML=info.ready?'<button class="btn grn prestige-cta" onclick="openPrestige()" style="padding:9px 30px;font-size:13px;letter-spacing:.14em;font-weight:700">★ PRESTIGE</button>':'';
   var lad=document.getElementById('rankLadder');
-  if(lad)lad.innerHTML=PNAME.map(function(nm,i){var pp=i+1,reached=P>=pp,cur=P===pp;
+  if(lad)lad.innerHTML=PNAME.map(function(nm,i){var pp=i+1,reached=info.P>=pp,cur=info.P===pp;
     return '<div title="Prestige '+pp+' · '+nm+'" style="width:40px;height:40px;border-radius:8px;'+(reached?'':'filter:grayscale(1);opacity:.3;')+(cur?'box-shadow:0 0 0 2px var(--grn);':'')+'">'+rkEmblem(pp)+'</div>';}).join('');
+}
+function updateRankChip(info){info=info||rankInfo();
+  var em=document.getElementById('rankChipEm');if(em)em.innerHTML=rkEmblem(info.P);
+  var t=document.getElementById('rankChipT');if(t)t.textContent='P'+info.P+' · Lv '+info.lp;
+  var p=document.getElementById('rankChipP');if(p)p.textContent=PNAME[info.P-1];
+  var c=document.getElementById('rankChip');if(c)c.classList.remove('fx-hide');
+}
+function gotoAwards(){var n=document.querySelector('.navi[data-v="awards"]');if(n)n.click();}
+function playLevelUp(info){
+  if(PRESTIGING)return;
+  var ov=document.createElement('div');ov.className='fx-ov';
+  ov.innerHTML='<div class="lvl-emblem">'+rkEmblem(info.P)+'</div><div class="lvl-title">RANK UP</div>'
+    +'<div class="lvl-sub">'+PNAME[info.P-1]+' · Level '+info.lp+'</div>'
+    +'<div class="subtle" style="margin-top:14px;letter-spacing:.1em">tap to continue</div>';
+  document.body.appendChild(ov);
+  var close=function(){if(ov.parentNode)ov.parentNode.removeChild(ov);};
+  ov.addEventListener('click',close);setTimeout(close,2800);
+}
+function rankTick(){
+  var info=rankInfo(),st=rkState();
+  if(st.seen==null||st.seen<0){st.seen=info.effL;rkSetState(st);}
+  else if(info.effL>st.seen&&!PRESTIGING){st.seen=info.effL;rkSetState(st);playLevelUp(info);}
+  renderRank();updateRankChip(info);
+}
+function openPrestige(){
+  PRESTIGING=true;
+  var np=rankInfo().P+1;
+  var ov=document.createElement('div');ov.className='fx-ov';ov.id='prestigeModal';
+  ov.innerHTML='<div class="pm-box">'
+    +'<div style="text-align:center;margin-bottom:6px"><div style="width:72px;height:72px;margin:0 auto">'+rkEmblem(np)+'</div></div>'
+    +'<h2 class="sec grn" style="text-align:center;font-size:14px;margin:8px 0 12px">The Weight of the Next Rank</h2>'
+    +'<div class="narr" style="font-size:13px;line-height:1.7">To prestige is to reset the ladder — not the man. Advancing means accepting <b>more</b>:<br><br>&bull; <b>Greater rank</b> demands greater discipline — the standard only rises.<br>&bull; <b>Greater knowledge</b> demands you keep learning and applying, never resting on what got you here.<br>&bull; <b>Greater capital</b> demands a steadier nervous system to hold it without flinching.<br><br>The emblem changes; the work does not end — it deepens. Prestige is a promise to your future self: you keep showing up, from a higher level of mind. <b>The work is just getting started.</b></div>'
+    +'<div style="display:flex;gap:10px;justify-content:center;margin-top:20px">'
+    +'<button class="btn" id="prestigeAckBtn" onclick="prestigeAck()">I acknowledge</button>'
+    +'<button class="btn" id="prestigeGoBtn" disabled style="opacity:.4">PRESTIGE</button></div>'
+    +'<div class="subtle" style="text-align:center;margin-top:12px;font-size:10.5px"><span id="prestigeCancel" style="cursor:pointer;text-decoration:underline" onclick="closePrestigeModal()">not yet</span> · read, acknowledge, then advance</div>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+function prestigeAck(){
+  var a=document.getElementById('prestigeAckBtn');if(a){a.textContent='✓ Acknowledged';a.className='btn grn';a.disabled=true;}
+  var g=document.getElementById('prestigeGoBtn');if(g){g.disabled=false;g.style.opacity='1';g.className='btn grn prestige-cta';g.onclick=doPrestige;}
+}
+function closePrestigeModal(){var m=document.getElementById('prestigeModal');if(m&&m.parentNode)m.parentNode.removeChild(m);PRESTIGING=false;}
+function doPrestige(){
+  var m=document.getElementById('prestigeModal');if(m&&m.parentNode)m.parentNode.removeChild(m);
+  var newP=rankInfo().P+1;
+  var st=rkState();st.claimed=Math.min(9,(st.claimed|0)+1);rkSetState(st);
+  var ni=rankInfo();var st2=rkState();st2.seen=ni.effL;rkSetState(st2);
+  var ov=document.createElement('div');ov.className='fx-ov';
+  ov.innerHTML='<div class="pc-flash"></div><div class="pc-emblem in" id="pcEm">'+rkEmblem(newP)+'</div>'
+    +'<div class="pc-title">PRESTIGE '+newP+'</div><div class="lvl-sub" style="margin-top:8px">'+PNAME[newP-1]+' — a higher level of mind</div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){var e=document.getElementById('pcEm');if(e){e.classList.remove('in');e.classList.add('slam');}},1500);
+  setTimeout(function(){if(ov.parentNode)ov.parentNode.removeChild(ov);PRESTIGING=false;
+    if(typeof renderAwards==='function')renderAwards();else{renderRank();updateRankChip();}
+    var re=document.getElementById('rankEmblem');if(re){re.style.animation='none';void re.offsetWidth;re.style.animation='pcin .5s both';}
+  },2050);
 }
 document.querySelectorAll(".navi[data-v]").forEach(n=>n.addEventListener("click",()=>{
   document.querySelectorAll(".navi").forEach(x=>x.classList.remove("active"));
@@ -4350,6 +4447,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   applyInterval();
   startDailySchedules();
   safe(initBubbles);
+  try{rankTick();}catch(e){}
 })();
 </script>
 </body>
