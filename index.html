@@ -305,6 +305,7 @@ ul.tight li::marker{color:var(--org)}
     <div class="navi" data-v="calendar"><span class="tip">Protocol Calendar</span><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg></div>
     <div class="navi" data-v="journal"><span class="tip">Trade Journal</span><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 3v18M13 8h3M13 12h3"/></svg></div>
     <div class="navi" data-v="pmr"><span class="tip">Post Market Review</span><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></div>
+    <div class="navi" data-v="prooflib"><span class="tip">Proof Library</span><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
     <div class="navi" data-v="awards"><span class="tip">Awards</span><svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0z"/><path d="M8 4H5v2a3 3 0 0 0 3 3M16 4h3v2a3 3 0 0 1-3 3"/><path d="M12 12v3M9 20h6M10 17h4"/></svg></div>
     <div class="sp"></div>
     <div class="navi" id="settingsBtn"><span class="tip">Settings · API key</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2"/></svg></div>
@@ -441,6 +442,7 @@ ul.tight li::marker{color:var(--org)}
             <hr class="d">
             <div class="subtle"><b>📝 My brief</b> — click the day to expand it below. <b>📄 Generated</b> — click the icon to pop the full review. Save the generated brief with the 💾 button in the bar above.</div>
           </div>
+          <div class="panel" id="seqCardPanel" style="margin-top:10px"></div>
           <div id="myBriefView"></div>
         </div>
       </div>
@@ -587,6 +589,18 @@ ul.tight li::marker{color:var(--org)}
         </div>
       </div>
     </section>
+    <!-- ===== PROOF LIBRARY ===== -->
+    <section class="view" id="view-prooflib">
+      <div class="crumb">Matrix / <b>Proof Library</b></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h1 class="h1" style="margin:0">Proof Library</h1>
+        <span class="subtle">Every journaled trade, reviewed against the five-sequence card. Proof over feeling.</span>
+      </div>
+      <hr class="d">
+      <div id="plSummary"></div>
+      <div id="plList"></div>
+    </section>
+
     <section class="view" id="view-awards">
       <div class="crumb">Identity Pro / <b>Awards</b></div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -1144,7 +1158,7 @@ function composedLvl(sh){if(!COMPOSED)return null;return (COMPOSED.levels||[]).f
 /* ============================ NAV + CLOCK ============================ */
 const RENDERED={};
 function ensureView(v){
-  if(RENDERED[v]){if(v==="macro")safe(renderMacro);if(v==="runner")safe(renderRunner);if(v==="awards")safe(renderAwards);return;}   // revisiting Macro re-pulls everything live
+  if(RENDERED[v]){if(v==="macro")safe(renderMacro);if(v==="runner")safe(renderRunner);if(v==="awards")safe(renderAwards);if(v==="prooflib")safe(renderProofLib);return;}   // revisiting Macro re-pulls everything live
   RENDERED[v]=true;
   if(v==="macro")safe(renderMacro);
   if(v==="calendar"){MV=curMonth();safe(loadMonthView);}
@@ -1152,6 +1166,84 @@ function ensureView(v){
   if(v==="pmr"){PV=curMonth();safe(renderPmr);}
   if(v==="runner")safe(renderRunner);
   if(v==="awards")safe(renderAwards);
+  if(v==="prooflib")safe(renderProofLib);
+}
+/* ===== Master Sequence Card — go/no-go, rests beside Live Notes ===== */
+const SEQCARD_ITEMS=[
+ {g:'PRE-MARKET',items:[
+  {id:'pm_state',t:'State — Settled Authority. Not needing this trade.'},
+  {id:'pm_amd',t:'AMD located — daily / weekly clock named'},
+  {id:'pm_b',t:'Point B marked — draw (distant gap / SD ladder far side)'},
+  {id:'pm_a',t:'Point A marked & graded — gap ✓ · +FVG ✓✓ · +SD ✓✓✓'}]},
+ {g:'SEQ 1-2 · LOCATION',items:[
+  {id:'s12_at',t:'Price at/near Point A — POI live (gap unviolated / FVG unfilled)'},
+  {id:'s12_b',t:'Point B still open — draw not yet reached'}]},
+ {g:'SEQ 3 · SMT (NQ/ES)',items:[
+  {id:'s3_timed',t:'Timed SMT — completed 90M/30M cycle H/L (or H1/M15) · right direction · unbroken'},
+  {id:'s3_m1',t:'Untimed M1 SMT followed — NQ took prior M1 H/L, ES didn’t'}]},
+ {g:'SEQ 4 · TIME',items:[
+  {id:'s4_win',t:'Clock 09:30–10:30 — Manip 09:00–09:30 ran price to POI, Distribution opening'},
+  {id:'s4_flow',t:'Prev-cycle H/L order flow agrees with direction'}]},
+ {g:'SEQ 5 · CSD (M1)',items:[
+  {id:'s5_sweep',t:'Liquidity swept at/through the POI'},
+  {id:'s5_disp',t:'Displacement — created FVG and/or closed through OB (breaker)'},
+  {id:'s5_fail',t:'Opposing structure failed'}]}];
+function seqCardKey(){return 'ct_seqcard_'+etParts().date;}
+function seqCardLoad(){try{return JSON.parse(lsGet(seqCardKey())||'{}');}catch(e){return {};}}
+function seqCardSave(st){try{lsSet(seqCardKey(),JSON.stringify(st));}catch(e){}}
+function renderSeqCard(){
+  const el=document.getElementById('seqCardPanel');if(!el)return;
+  const st=seqCardLoad();
+  const total=SEQCARD_ITEMS.reduce((a,g)=>a+g.items.length,0);
+  const done=SEQCARD_ITEMS.reduce((a,g)=>a+g.items.filter(i=>st[i.id]).length,0);
+  const go=done===total;
+  let h=`<div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec ${go?'grn':''}" style="margin:0">Master Sequence Card</h2><span class="subtle">${etParts().date} · resets daily</span></div><button class="btn" id="seqCardReset" style="padding:5px 10px">↺ Reset</button></div>`;
+  h+=`<div style="border:1px solid ${go?'var(--grn)':'var(--line2)'};border-radius:8px;padding:8px 10px;margin-bottom:8px;text-align:center;font-family:var(--mono);font-weight:700;color:${go?'var(--grn)':'var(--red)'}">${go?'🟩 GO — CSD prints → CLICK. It is already done.':'🟥 NO-GO — '+done+'/'+total+' · every box or no trade'}</div>`;
+  SEQCARD_ITEMS.forEach(gr=>{
+    h+=`<div class="sec" style="margin:8px 0 4px;font-size:11px">${gr.g}</div>`;
+    gr.items.forEach(it=>{
+      h+=`<label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer;font-size:12px;line-height:1.35;${st[it.id]?'color:var(--grn)':''}"><input type="checkbox" class="sq-box" data-id="${it.id}" ${st[it.id]?'checked':''} style="margin-top:2px;accent-color:#22c55e">${it.t}</label>`;
+    });
+  });
+  h+=`<hr class="d"><div class="subtle" style="font-size:11px;line-height:1.5"><b>GO rules:</b> Market @ M1 CSD · add on retrace into fresh FVG · stop beyond sweep · TP ladder ±0.33 → ±0.66 → ±1.33 → ±1.66 to B · out by 11:30 (~99%) · default size · one trade per window.<br><b>No 4-out-of-5.</b> Skipped valid = taken invalid = deviation. Freeze at the click = Shadow 1 (L2): name it → exhale → “It is already done.”</div>`;
+  el.innerHTML=h;
+  el.querySelectorAll('.sq-box').forEach(b=>b.addEventListener('change',()=>{const s=seqCardLoad();s[b.dataset.id]=b.checked;seqCardSave(s);renderSeqCard();}));
+  const r=document.getElementById('seqCardReset');if(r)r.addEventListener('click',()=>{seqCardSave({});renderSeqCard();});
+}
+/* ===== Proof Library — journaled trades reviewed against the card, nothing else ===== */
+const PL_GROUPS=[
+ {k:'s12',lab:'1-2 · A/B',chips:['HTF POI HIT','Liquidity Target']},
+ {k:'s3',lab:'3 · SMT',chips:['London SMT','Asia SMT','90M SMT','30M SMT','M1 SMT','Daily ES SMT','Daily YM SMT']},
+ {k:'s4',lab:'4 · TIME',chips:['0930 distribution','1030 reversal','0940-1015']},
+ {k:'s5',lab:'5 · CSD',chips:['CSD','Breaker Block','IFVG','Rejection Block','Mitigation Block']}];
+function plScore(tr){
+  const seq=(tr.seq&&tr.seq.length)?tr.seq:(tr.model?String(tr.model).split(' · ').filter(Boolean):[]);
+  const groups=PL_GROUPS.map(g=>{const hit=g.chips.filter(c=>seq.indexOf(c)>=0);return {lab:g.lab,ok:hit.length>0,hit};});
+  return {groups,n:groups.filter(g=>g.ok).length};
+}
+function renderProofLib(){
+  const sm=document.getElementById('plSummary'),ls=document.getElementById('plList');if(!sm||!ls)return;
+  const trades=loadTrades().slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!trades.length){sm.innerHTML='';ls.innerHTML='<div class="panel subtle">No trades logged yet. Every trade saved in the Journal appears here automatically, scored against the five-sequence card.</div>';return;}
+  let full=0,fullW=0,fullL=0,part=0,partW=0,partL=0;
+  trades.forEach(t=>{const s=plScore(t);const w=t.res==='Win',l=t.res==='Loss';if(s.n===4){full++;if(w)fullW++;if(l)fullL++;}else{part++;if(w)partW++;if(l)partL++;}});
+  const pct=(w,l)=>{const d=w+l;return d?Math.round(100*w/d)+'%':'—';};
+  sm.innerHTML=`<div class="panel" style="margin-bottom:10px"><div style="display:flex;gap:22px;flex-wrap:wrap;font-family:var(--mono);font-size:12px">
+    <div><span class="subtle">Trades</span><br><b style="font-size:18px">${trades.length}</b></div>
+    <div><span class="subtle">Full stack (4/4)</span><br><b style="font-size:18px;color:var(--grn)">${full}</b> <span class="subtle">· ${pct(fullW,fullL)} win</span></div>
+    <div><span class="subtle">Partial stack</span><br><b style="font-size:18px;color:var(--red)">${part}</b> <span class="subtle">· ${pct(partW,partL)} win</span></div>
+    <div style="flex:1;min-width:180px;align-self:center" class="subtle">The edge is the stack. This page exists to prove it to the identity — over time, full-stack vs partial-stack tells the whole story.</div>
+  </div></div>`;
+  ls.innerHTML=trades.map(t=>{
+    const s=plScore(t);const dirTag=t.dir==='Short'?'style="color:var(--red)"':'style="color:var(--grn)"';
+    const resCol=t.res==='Win'?'var(--grn)':t.res==='Loss'?'var(--red)':'var(--faint)';
+    const rows=s.groups.map(g=>`<div style="display:flex;gap:8px;align-items:baseline;padding:2px 0;font-size:12px"><span style="width:70px;flex:0 0 70px;font-family:var(--mono);color:${g.ok?'var(--grn)':'var(--red)'}">${g.ok?'✓':'✗'} ${g.lab}</span><span class="subtle">${g.ok?g.hit.map(escH).join(' · '):'not logged'}</span></div>`).join('');
+    return `<div class="panel" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <div style="font-family:var(--mono);font-size:12px"><b>${escH(t.date||'')}</b> · ${escH(t.pair||'')} · <b ${dirTag}>${escH(t.dir||'')}</b> · <span style="color:${resCol}">${escH(t.res||'')}</span>${t.r?` · ${escH(t.r)}R`:''}${t.time?` · ${escH(t.time)}`:''}</div>
+      <span class="tag ${s.n===4?'grn':''}" style="${s.n===4?'':'color:var(--red);border-color:var(--red)'}">${s.n===4?'FULL STACK':'STACK '+s.n+'/4'}</span></div>
+      <hr class="d" style="margin:6px 0">${rows}
+      ${t.pgrade||t.state?`<div class="subtle" style="font-size:11px;margin-top:4px">${t.pgrade?'Protocol grade: '+escH(t.pgrade):''}${t.pgrade&&t.state?' · ':''}${t.state?'State: '+escH(t.state):''}</div>`:''}
+    </div>`;}).join('');
 }
 /* ===== Daily Sequence Runner ===== */
 const RUNNER_STEPS=[
@@ -1844,14 +1936,15 @@ const FF_URLS=['https://nfs.faireconomy.media/ff_calendar_lastweek.json','https:
    in case it's allowed, then route through public CORS proxies. Note: proxies pass
    your (non-sensitive) calendar request through a third party. */
 const FF_PROXY='/ff?url=';/* DURABLE FIX: paste your own proxy prefix ending in url= — Cloudflare Worker "https://xxx.workers.dev/?url=" or Vercel "https://xxx.vercel.app/api/ff?url=". Empty = public fallbacks only. See PROXY-SETUP.md */
-const CORS_WRAPS=(FF_PROXY?[u=>FF_PROXY+encodeURIComponent(u)]:[]).concat([u=>u,u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://corsproxy.io/?url='+encodeURIComponent(u)]);
+const CORS_WRAPS=(FF_PROXY?[u=>FF_PROXY+encodeURIComponent(u)]:[u=>u]).concat([u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://corsproxy.io/?url='+encodeURIComponent(u)]);
 let FF_CACHE=null,FF_TS=0,FF_ERR=null,FF_LIVE=false,FF_MIN=null,FF_MAX=null;
 function ffImpact(v){v=String(v||'').toLowerCase();if(v.indexOf('high')>=0)return 'High';if(v.indexOf('medium')>=0)return 'Medium';if(v.indexOf('low')>=0)return 'Low';return null;}
 function ffToUtc(iso){const d=new Date(iso);if(isNaN(d.getTime()))return null;const p=n=>String(n).padStart(2,'0');return d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate())+' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':00';}
 async function ffFetchJson(url){
   for(let i=0;i<CORS_WRAPS.length;i++){
-    try{const r=await fetch(CORS_WRAPS[i](url),{cache:'no-store'});if(!r.ok)continue;const j=await r.json();if(j)return j;}catch(e){}
+    try{const r=await fetch(CORS_WRAPS[i](url),{cache:'no-store'});if(!r.ok){try{console.warn('[FF] wrap #'+i+' -> HTTP '+r.status);}catch(e){}continue;}const j=await r.json();if(j){try{window.__FF_PATH=i;console.info('[FF] loaded via wrap #'+i+(i===0&&FF_PROXY?' (your proxy)':''));}catch(e){}return j;}}catch(e){try{console.warn('[FF] wrap #'+i+' failed: '+(e&&e.message||e));}catch(_){}}
   }
+  try{console.error('[FF] all calendar fetch paths failed — see warnings above');}catch(e){}
   return null;
 }
 async function ffFetchAll(force){
@@ -2504,16 +2597,16 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
   const log=t.slice().sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('tlCount').textContent='('+t.length+')';
   document.getElementById('tradeLog').innerHTML=log.length?log.map(tr=>{const rt=tr.res==='Open'?'tag blue':tr.res==='Win'?'tag bull':tr.res==='Loss'?'tag bear':'tag neut';return `<div class="tl"><div class="trev" data-id="${tr.id}" style="cursor:pointer;flex:1"><b>${tr.pair}</b> <span class="tag ${tr.dir==='Long'?'bull':'bear'}">${tr.dir}</span> <span class="${rt}">${tr.res}${tr.r?' '+(+tr.r>0?'+':'')+tr.r+'R':''}</span><br><span class="subtle">${tr.date} · ${tr.model||''} · ${tr.sess||''}</span></div><span class="x" data-id="${tr.id}">✕</span></div>`;}).join(''):'<div class="subtle">No trades yet.</div>';
   document.querySelectorAll('#tradeLog .trev').forEach(x=>x.addEventListener('click',()=>openTradeReview(+x.dataset.id)));
-  document.querySelectorAll('#tradeLog .x').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();const id=+x.dataset.id;saveTrades(loadTrades().filter(t=>t.id!==id));renderJournal();if(RENDERED.pmr)safe(renderPmr);}));
+  document.querySelectorAll('#tradeLog .x').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();const id=+x.dataset.id;saveTrades(loadTrades().filter(t=>t.id!==id));renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);}));
 }
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
-document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);});
+document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
 document.getElementById('expCsv').addEventListener('click',()=>{const t=loadTrades();const h=['date','pair','dir','model','sess','res','r','state','notes'];const rows=[h.join(',')].concat(t.map(x=>h.map(k=>'"'+String(x[k]==null?'':x[k]).replace(/"/g,'""')+'"').join(',')));download('command-terminal-trades.csv',rows.join('\n'),'text/csv');});
 document.getElementById('impJson').addEventListener('click',()=>document.getElementById('impFile').click());
-document.getElementById('impFile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(Array.isArray(arr)){saveTrades(arr);renderJournal();if(RENDERED.pmr)safe(renderPmr);}}catch(e){alert('Invalid JSON');}};rd.readAsText(f);});
+document.getElementById('impFile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(Array.isArray(arr)){saveTrades(arr);renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);}}catch(e){alert('Invalid JSON');}};rd.readAsText(f);});
 
 /* ===== Daily Brief archive + pop-out ===== */
 function localBriefs(){try{return JSON.parse(lsGet('ct_briefs')||'{}');}catch(e){return {};}}
@@ -3845,7 +3938,7 @@ function openDayTrades(ds){curTradeId=null;const n=loadTrades().filter(t=>t.date
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
 function renderTradeShots(){renderShotStrip('tr-shots',tradeShots,renderTradeShots);}
 function trAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{tradeShots.push(u);renderTradeShots();});rd.readAsDataURL(file);}
-function saveTradeCharts(){if(curTradeId==null)return;const t=loadTrades();const i=t.findIndex(x=>x.id===curTradeId);if(i<0)return;t[i].shots=tradeShots.slice();saveTrades(t);const st=document.getElementById('tr-charts-status');if(st)st.innerHTML='<span class="up">✓ Charts saved — in the calendar & PDF</span>';renderJournal();if(RENDERED.pmr)safe(renderPmr);}
+function saveTradeCharts(){if(curTradeId==null)return;const t=loadTrades();const i=t.findIndex(x=>x.id===curTradeId);if(i<0)return;t[i].shots=tradeShots.slice();saveTrades(t);const st=document.getElementById('tr-charts-status');if(st)st.innerHTML='<span class="up">✓ Charts saved — in the calendar & PDF</span>';renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);}
 if(document.getElementById('tradeModalX')){
   document.getElementById('tradeModalX').addEventListener('click',closeTradeModal);
   document.getElementById('tradeModal').addEventListener('click',e=>{if(e.target.id==='tradeModal')closeTradeModal();});
@@ -4092,7 +4185,7 @@ function csvDoImport(){
   });
   saveTrades(out);
   if(st)st.innerHTML=`<span class="up">✓ Imported ${n} trade${n!==1?'s':''}${skipped?' · '+skipped+' skipped (no valid date)':''}.</span> <span class="subtle">Add stop prices to get R, then tag and grade them.</span>`;
-  renderJournal();if(RENDERED.pmr)safe(renderPmr);
+  renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);
 }
 /* ============================================================
    COACH'S TRADE REVIEW — the mentor reviews your tape.
@@ -4456,6 +4549,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   applyInterval();
   startDailySchedules();
   safe(initBubbles);
+  safe(renderSeqCard);
   try{rankTick();}catch(e){}
 })();
 </script>
