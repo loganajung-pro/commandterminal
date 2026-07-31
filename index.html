@@ -644,7 +644,7 @@ ul.tight li::marker{color:var(--org)}
   <div class="row2"><div class="field"><label>Instrument</label><select id="f-pair"><option>NQ</option><option>ES</option><option>YM</option></select></div>
     <div class="field"><label>Direction</label><select id="f-dir"><option>Long</option><option>Short</option></select></div></div>
   <div class="field"><label>Model / Protocol Sequences</label>
-    <select id="f-seq-pick"><option value="">＋ Add sequence…</option><option>HTF POI HIT</option><option>Liquidity Target</option><option>0930 distribution</option><option>1030 reversal</option><option>0940-1015</option><option>London SMT</option><option>Asia SMT</option><option>90M SMT</option><option>30M SMT</option><option>M1 SMT</option><option>Daily ES SMT</option><option>Daily YM SMT</option><option>CSD</option><option>Rejection Block</option><option>Breaker Block</option><option>Mitigation Block</option><option>IFVG</option></select>
+    <select id="f-seq-pick"><option value="">＋ Add sequence…</option><option>NWOG POI</option><option>NDOG POI</option><option>HTF POI HIT</option><option>Liquidity Target</option><option>0930 distribution</option><option>1030 reversal</option><option>0940-1015</option><option>London SMT</option><option>Asia SMT</option><option>90M SMT</option><option>30M SMT</option><option>M1 SMT</option><option>Daily ES SMT</option><option>Daily YM SMT</option><option>CSD</option><option>Rejection Block</option><option>Breaker Block</option><option>Mitigation Block</option><option>IFVG</option></select>
     <div id="f-seq-chips" style="margin-top:6px"></div></div>
   <div class="row2"><div class="field"><label>Session</label><select id="f-sess"><option>NY AM</option><option>NY PM</option><option>London</option><option>Asia</option></select></div>
     <div class="field"><label>Result</label><select id="f-res"><option>Open</option><option>Win</option><option>Loss</option><option>BE</option></select></div></div>
@@ -1171,23 +1171,22 @@ function ensureView(v){
 /* ===== Master Sequence Card — go/no-go, rests beside Live Notes ===== */
 const SEQCARD_ITEMS=[
  {g:'PRE-MARKET',items:[
-  {id:'pm_state',t:'State — Settled Authority. Not needing this trade.'},
-  {id:'pm_amd',t:'AMD located — daily / weekly clock named'},
-  {id:'pm_b',t:'Point B marked — draw (distant gap / SD ladder far side)'},
-  {id:'pm_a',t:'Point A marked & graded — gap ✓ · +FVG ✓✓ · +SD ✓✓✓'}]},
- {g:'SEQ 1-2 · LOCATION',items:[
-  {id:'s12_at',t:'Price at/near Point A — POI live (gap unviolated / FVG unfilled)'},
-  {id:'s12_b',t:'Point B still open — draw not yet reached'}]},
+  {id:'pm_state',t:'State — Settled Authority. One trade does not make me.'},
+  {id:'pm_amd',t:'AMD identified — daily / weekly clock named'}]},
+ {g:'SEQ 1 · POINT A',items:[
+  {id:'s1_a',t:'Point A — marked & graded — gap ✓ · +FVG ✓✓ · +SD ✓✓✓'}]},
+ {g:'SEQ 2 · POINT B',items:[
+  {id:'s2_b',t:'Point B — marked — draw open (distant gap / timed liquidity / SD ladder far side)'}]},
  {g:'SEQ 3 · SMT (NQ/ES)',items:[
-  {id:'s3_timed',t:'Timed SMT — completed 90M/30M cycle H/L (or H1/M15) · right direction · unbroken'},
-  {id:'s3_m1',t:'Untimed M1 SMT followed — NQ took prior M1 H/L, ES didn’t'}]},
+  {id:'s3_timed',t:'Timed SMT — completed · right direction · unbroken'},
+  {id:'s3_m1',t:'M1 SMT followed — NQ/ES vice versa'}]},
  {g:'SEQ 4 · TIME',items:[
-  {id:'s4_win',t:'Clock 09:30–10:30 — Manip 09:00–09:30 ran price to POI, Distribution opening'},
-  {id:'s4_flow',t:'Prev-cycle H/L order flow agrees with direction'}]},
+  {id:'s4_win',t:'Clock 09:30–10:30 — manipulated timed POI hit, distribution opening'}]},
  {g:'SEQ 5 · CSD (M1)',items:[
-  {id:'s5_sweep',t:'Liquidity swept at/through the POI'},
-  {id:'s5_disp',t:'Displacement — created FVG and/or closed through OB (breaker)'},
-  {id:'s5_fail',t:'Opposing structure failed'}]}];
+  {id:'s5_disp',t:'Displacement — FVG and/or closed through OB (breaker)'}]},
+ {g:'EXECUTION',items:[
+  {id:'ex_entry',t:'Entry — calm trigger pull'},
+  {id:'ex_stop',t:'Stop loss placement — M1 SMT H/L'}]}];
 function seqCardKey(){return 'ct_seqcard_'+etParts().date;}
 function seqCardLoad(){try{return JSON.parse(lsGet(seqCardKey())||'{}');}catch(e){return {};}}
 function seqCardSave(st){try{lsSet(seqCardKey(),JSON.stringify(st));}catch(e){}}
@@ -1198,21 +1197,21 @@ function renderSeqCard(){
   const done=SEQCARD_ITEMS.reduce((a,g)=>a+g.items.filter(i=>st[i.id]).length,0);
   const go=done===total;
   let h=`<div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec ${go?'grn':''}" style="margin:0">Master Sequence Card</h2><span class="subtle">${etParts().date} · resets daily</span></div><button class="btn" id="seqCardReset" style="padding:5px 10px">↺ Reset</button></div>`;
-  h+=`<div style="border:1px solid ${go?'var(--grn)':'var(--line2)'};border-radius:8px;padding:8px 10px;margin-bottom:8px;text-align:center;font-family:var(--mono);font-weight:700;color:${go?'var(--grn)':'var(--red)'}">${go?'🟩 GO — CSD prints → CLICK. It is already done.':'🟥 NO-GO — '+done+'/'+total+' · every box or no trade'}</div>`;
+  h+=`<div style="border:1px solid ${go?'var(--grn)':'var(--line2)'};border-radius:8px;padding:8px 10px;margin-bottom:8px;text-align:center;font-family:var(--mono);font-weight:700;color:${go?'var(--grn)':'var(--red)'}">${go?'🟩 GO — calm trigger pull. It is already done.':'🟥 NO-GO — '+done+'/'+total+' · every box or no trade'}</div>`;
   SEQCARD_ITEMS.forEach(gr=>{
     h+=`<div class="sec" style="margin:8px 0 4px;font-size:11px">${gr.g}</div>`;
     gr.items.forEach(it=>{
       h+=`<label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer;font-size:12px;line-height:1.35;${st[it.id]?'color:var(--grn)':''}"><input type="checkbox" class="sq-box" data-id="${it.id}" ${st[it.id]?'checked':''} style="margin-top:2px;accent-color:#22c55e">${it.t}</label>`;
     });
   });
-  h+=`<hr class="d"><div class="subtle" style="font-size:11px;line-height:1.5"><b>GO rules:</b> Market @ M1 CSD · add on retrace into fresh FVG · stop beyond sweep · TP ladder ±0.33 → ±0.66 → ±1.33 → ±1.66 to B · out by 11:30 (~99%) · default size · one trade per window.<br><b>No 4-out-of-5.</b> Skipped valid = taken invalid = deviation. Freeze at the click = Shadow 1 (L2): name it → exhale → “It is already done.”</div>`;
+  h+=`<hr class="d"><div class="subtle" style="font-size:11px;line-height:1.5"><b>GO rules:</b> Entry — calm trigger pull (retrace into the PD Array: fresh FVG / breaker) · stop at the M1 SMT H/L · TP ladder ±0.33 → ±0.66 → ±1.33 → ±1.66 to B · out by 11:30 (~99%) · default size · one trade per window.<br><b>Every box or no trade.</b> Skipped valid = taken invalid = deviation. Freeze at the trigger = Shadow 1 (L2): name it → exhale → “It is already done.”</div>`;
   el.innerHTML=h;
   el.querySelectorAll('.sq-box').forEach(b=>b.addEventListener('change',()=>{const s=seqCardLoad();s[b.dataset.id]=b.checked;seqCardSave(s);renderSeqCard();}));
   const r=document.getElementById('seqCardReset');if(r)r.addEventListener('click',()=>{seqCardSave({});renderSeqCard();});
 }
 /* ===== Proof Library — journaled trades reviewed against the card, nothing else ===== */
 const PL_GROUPS=[
- {k:'s12',lab:'1-2 · A/B',chips:['HTF POI HIT','Liquidity Target']},
+ {k:'s12',lab:'1-2 · A/B',chips:['NWOG POI','NDOG POI','HTF POI HIT','Liquidity Target']},
  {k:'s3',lab:'3 · SMT',chips:['London SMT','Asia SMT','90M SMT','30M SMT','M1 SMT','Daily ES SMT','Daily YM SMT']},
  {k:'s4',lab:'4 · TIME',chips:['0930 distribution','1030 reversal','0940-1015']},
  {k:'s5',lab:'5 · CSD',chips:['CSD','Breaker Block','IFVG','Rejection Block','Mitigation Block']}];
