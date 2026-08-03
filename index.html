@@ -301,7 +301,6 @@ ul.tight li::marker{color:var(--org)}
   <nav class="side" id="side">
     <div class="navi" data-v="runner"><span class="tip">Daily Sequence Runner</span><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/></svg></div>
     <div class="navi active" data-v="brief"><span class="tip">Market Brief</span><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
-    <div class="navi" data-v="macro"><span class="tip">Macro Overview</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
     <div class="navi" data-v="calendar"><span class="tip">Protocol Calendar</span><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg></div>
     <div class="navi" data-v="journal"><span class="tip">Trade Journal</span><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 3v18M13 8h3M13 12h3"/></svg></div>
     <div class="navi" data-v="pmr"><span class="tip">Post Market Review</span><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></div>
@@ -417,19 +416,7 @@ ul.tight li::marker{color:var(--org)}
               <li>HTF draw unclear · chop → NO TRADE</li>
               <li>SMTs both sides of range → NO TRADE</li>
             </ul>
-            <hr class="d"><div class="subtle">SMT → POI → Time → Displacement → CSD → M1</div></div></div>
-          <div class="bubble" data-bub="protoseq"><div class="bhead"><h2 class="sec">Protocol Sequence</h2><span class="chev">▸</span></div><div class="bbody">
-            <ul class="tight">
-              <li>Time</li>
-              <li>Cycle SMT</li>
-              <li>Target</li>
-              <li>POI</li>
-              <li>M1 SMT</li>
-              <li>CSD</li>
-              <li>Execution</li>
-            </ul>
-            <hr class="d">
-            <div style="color:var(--faint);font-style:italic">A cultivation of decisiveness and certainty, in the midst of a storm.</div></div></div>
+            </div></div>
         </div>
         <div>
           <div class="panel">
@@ -452,35 +439,6 @@ ul.tight li::marker{color:var(--org)}
     </section>
 
     <!-- ===== MACRO ===== -->
-    <section class="view" id="view-macro">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div><div class="crumb">Matrix / <b>Macro Overview</b></div><h1 class="h1" style="margin:2px 0 0">Macro Overview</h1></div>
-        <div style="display:flex;align-items:center;gap:10px"><span class="subtle" id="macroStamp">—</span><button class="btn grn" id="macroRefresh" style="padding:6px 14px">⟳ Refresh</button></div>
-      </div>
-      <div class="grid" style="grid-template-columns:1fr 1.2fr 1.3fr">
-        <div class="panel ti"><div class="ph"><h2>Central Bank Watch</h2><span class="meta" id="cbMeta">editorial</span></div>
-          <div class="pb" id="cbWatch"></div></div>
-        <div class="panel ti"><div class="ph"><h2>US Yield Curve</h2><span class="meta" id="curveSpread"></span></div>
-          <div class="pb"><div id="yieldCurve"></div><div id="curveChips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px"></div>
-          <div class="subtle" style="margin-top:6px">Source: US Treasury</div></div></div>
-        <div class="panel ti"><div class="ph"><h2>Economic Calendar</h2><span class="meta" id="calWeekLbl">this week · ET</span></div>
-          <div class="pb cal72" id="cal72"></div>
-          <div class="pb" style="padding-top:0"><div class="legend"><span class="lg"><span class="tag hi">High</span></span><span class="lg"><span class="tag med">Med</span></span><span class="faint">High + medium impact · US</span></div></div></div>
-      </div>
-      <hr class="d">
-      <div class="panel ti"><div class="ph"><h2>US Economic Indicators</h2><span class="meta">latest prints</span></div>
-        <div class="pb"><div class="sec" style="margin-bottom:8px">Inflation</div><div class="tiles" id="tilesInfl"></div>
-        <div class="sec" style="margin:14px 0 8px">Labor Market</div><div class="tiles" id="tilesLabor"></div></div></div>
-      <hr class="d">
-      <div class="panel ti"><div class="ph">
-          <h2>Geopolitical Overview</h2>
-          <span style="display:flex;align-items:center;gap:8px">
-            <button class="btn" id="geoFilterBtn" style="padding:4px 10px;font-size:11px">Geo only</button>
-            <span class="meta" id="geoMeta">—</span>
-          </span></div>
-        <div class="pb" id="geoNews"><div class="subtle">Loading geopolitical wire…</div></div></div>
-    </section>
-
     <!-- ===== PROTOCOL CALENDAR ===== -->
     <section class="view" id="view-calendar">
       <div class="crumb">Matrix / <b>Protocol Calendar</b></div>
@@ -815,16 +773,13 @@ ul.tight li::marker{color:var(--org)}
   <span class="x" id="pmrX">✕</span>
   <h3>Post Market Review <span class="subtle" id="pmrDayLbl"></span></h3>
   <div class="subtle">End-of-day journal — work through each prompt honestly. Saved to the Post Market Review calendar; reopen any day to review.</div>
-  <div class="briefsec"><h4>Surface Level Circumstance</h4><div class="field"><textarea id="pmr-surface" style="min-height:70px" placeholder="What happened on the surface — the setup, the session, the outcome. Blank line = new paragraph."></textarea></div></div>
-  <div class="briefsec"><h4>Conscious Inner Circumstance</h4><div class="field"><textarea id="pmr-inner" style="min-height:70px" placeholder="Your inner state — emotions, thoughts, the state you executed from (Settled Authority? urgency? doubt?)."></textarea></div></div>
-  <div class="briefsec"><h4>Risk Management</h4><div class="field"><textarea id="pmr-risk" style="min-height:70px" placeholder="Size, stop, R, exposure — did you honor the risk rules? One trade per window?"></textarea></div></div>
-  <div class="briefsec"><h4>Framework / Protocol Execution</h4><div class="field"><textarea id="pmr-framework" style="min-height:70px" placeholder="Did you follow protocol? SMT → POI → Time → Displacement → CSD → M1. Where did you deviate?"></textarea></div></div>
-  <div class="briefsec"><h4>Technical Review <span class="subtle">— annotated charts, saved at 1080p</span></h4>
+  <div class="briefsec"><h4>What state did I execute from?</h4><div class="field"><textarea id="pmr-inner" style="min-height:70px" placeholder="The state you executed from — Settled Authority? Calm? Or hesitation, doubt, urgency, FOMO?"></textarea></div></div>
+  <div class="briefsec"><h4>Did I follow the card — if so, where did I deviate?</h4><div class="field"><textarea id="pmr-framework" style="min-height:70px" placeholder="Every box or no trade. Where did you honor the sequence — and where, if anywhere, did you deviate?"></textarea></div></div>
+  <div class="briefsec"><h4>Framework / Technical Review <span class="subtle">— annotated charts, saved at 1080p</span></h4>
     <div class="drop" id="pmr-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
     <input type="file" id="pmr-file" accept="image/*" multiple style="display:none">
     <div id="pmr-shots"></div>
     <div class="field" style="margin-top:8px"><textarea id="pmr-technical" style="min-height:56px" placeholder="Notes on the technicals — what the charts show, what you'd mark differently."></textarea></div></div>
-  <div class="briefsec"><h4>Market Review</h4><div class="field"><textarea id="pmr-market" style="min-height:70px" placeholder="Broader market read — what the day meant, what to carry into tomorrow."></textarea></div></div>
   <div class="briefsec"><h4>Missed Trades <span class="subtle">— setups you saw but didn't take. This is how hesitation gets measured.</span></h4>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <input id="ms-setup" placeholder="Setup / POI — e.g. PDH sweep + CSD" style="flex:2;min-width:180px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:8px;color:var(--ink);font-family:var(--mono);font-size:12px">
@@ -841,13 +796,7 @@ ul.tight li::marker{color:var(--org)}
     <div id="ms-tags" class="tagrid"></div>
     <div id="ms-list" style="margin-top:10px"></div>
   </div>
-  <div class="briefsec"><h4>Plan vs Execution <span class="subtle">— links your pre-market framework to what you actually did</span></h4>
-    <div class="field"><label>Did you trade the framework you wrote?</label>
-      <select id="pmr-adhere"><option value="">—</option><option value="Y">Yes — followed the plan</option><option value="Partial">Partial — deviated somewhat</option><option value="N">No — abandoned the plan</option></select></div>
-    <div class="field" style="margin-top:8px"><label>Rule breaks — tick anything that happened</label>
-      <div id="pmr-breaks" style="display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:4px"></div></div>
-  </div>
-  <div style="margin-top:6px;display:flex;align-items:center;gap:10px"><button class="btn" id="pmr-debrief-btn" type="button">🧠 Coaches Debrief</button><span class="subtle" id="pmr-debrief-hint">Coach reads your six answers and reflects back where psychology or protocol slipped — tied to your L1–L4 layers and shadow patterns. Needs an Anthropic key (Settings ⚙).</span></div>
+  <div style="margin-top:6px;display:flex;align-items:center;gap:10px"><button class="btn" id="pmr-debrief-btn" type="button">🧠 Coaches Debrief</button><span class="subtle" id="pmr-debrief-hint">Coach reads your answers and reflects back where psychology or protocol slipped — tied to your L1–L4 layers and shadow patterns. Needs an Anthropic key (Settings ⚙).</span></div>
   <div id="pmr-debrief" style="margin-top:10px"></div>
   <div style="margin-top:10px;display:flex;align-items:center;gap:10px"><button class="btn grn" id="pmr-techdebrief-btn" type="button">Coaches Technical Debrief</button><span class="subtle" id="pmr-techdebrief-hint">Upload the day's charts in Technical Review above — coach reads them against your pre-market framework and grades what actually delivered vs the plan.</span></div>
   <div id="pmr-techdebrief" style="margin-top:10px"></div>
@@ -1158,9 +1107,8 @@ function composedLvl(sh){if(!COMPOSED)return null;return (COMPOSED.levels||[]).f
 /* ============================ NAV + CLOCK ============================ */
 const RENDERED={};
 function ensureView(v){
-  if(RENDERED[v]){if(v==="macro")safe(renderMacro);if(v==="runner")safe(renderRunner);if(v==="awards")safe(renderAwards);if(v==="prooflib")safe(renderProofLib);return;}   // revisiting Macro re-pulls everything live
+  if(RENDERED[v]){if(v==="runner")safe(renderRunner);if(v==="awards")safe(renderAwards);if(v==="prooflib")safe(renderProofLib);return;}
   RENDERED[v]=true;
-  if(v==="macro")safe(renderMacro);
   if(v==="calendar"){MV=curMonth();safe(loadMonthView);}
   if(v==="journal"){JV=curMonth();safe(renderJournal);}
   if(v==="pmr"){PV=curMonth();safe(renderPmr);}
@@ -1996,11 +1944,6 @@ async function loadCalendar(){
   safe(renderWindows);safe(renderOverview);safe(renderKeyThemes);safe(renderCoach);safe(renderCal72);
 }
 setInterval(()=>safe(renderWindows),30000);
-if(document.getElementById('macroRefresh'))document.getElementById('macroRefresh').addEventListener('click',()=>{
-  const b=document.getElementById('macroRefresh');if(b)b.textContent='⟳ Refreshing…';
-  Promise.resolve(renderMacro(true)).then(()=>{if(b)b.textContent='⟳ Refresh';}).catch(()=>{if(b)b.textContent='⟳ Refresh';});
-});
-setInterval(()=>{const mv=document.getElementById('view-macro');if(RENDERED.macro&&mv&&mv.classList.contains('active'))safe(renderGeoNews);},300000); // refresh geopolitical wire every 5 min while the Macro tab is open
 
 /* ============================================================
    LIVE MACRO DATA
@@ -4542,7 +4485,6 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   if(!COMPOSED)COMPOSED=composedForToday();
   tick();setInterval(tick,1000);
   loadQuotes();loadCalendar();   // page load / manual refresh always pulls fresh
-  if(geoWindow())safe(renderGeoNews);   // 9AM–12PM ET: every reload re-pulls the geopolitical wire
   safe(renderBriefCal);
   if(COMPOSED)safe(renderComposedCharts);
   applyInterval();
