@@ -406,7 +406,6 @@ ul.tight li::marker{color:var(--org)}
           <div class="bubble" data-bub="conscious"><div class="bhead"><h2 class="sec">Coaches Conscious Framework</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachConscious" class="narr">Reading…</div></div></div>
           <div class="bubble" data-bub="tech"><div class="bhead"><h2 class="sec">Technical Read</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachTech" class="narr"></div></div></div>
           <div class="bubble" data-bub="price"><div class="bhead"><h2 class="sec">Price Read</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachPrice" class="narr"></div></div></div>
-          <div class="bubble" data-bub="themes"><div class="bhead"><h2 class="sec">Key Themes</h2><span class="chev">▸</span></div><div class="bbody"><ul class="tight" id="keyThemes"><li>…</li></ul></div></div>
           <div class="bubble" data-bub="watch"><div class="bhead"><h2 class="sec">Watch Today</h2><span class="chev">▸</span></div><div class="bbody"><ul class="tight" id="watchToday"><li>…</li></ul></div></div>
           <hr class="d">
           <div class="bubble" data-bub="guardrails"><div class="bhead"><h2 class="sec">Guardrails — No Trade</h2><span class="chev">▸</span></div><div class="bbody">
@@ -699,6 +698,10 @@ ul.tight li::marker{color:var(--org)}
     </div>
     <div class="field" style="margin-top:8px"><label>Non-negotiables done</label><div id="cb-routine" style="display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:4px"></div></div>
   </div>
+  <div class="briefsec"><h4>Pre Market Sequence Checklist <span class="subtle">— before 09:30 · Draw → POI → SMT, pre-loaded in advance</span></h4>
+    <div id="cb-pmseq"></div>
+    <div class="subtle" style="margin-top:6px">Time and CSD align live in the Master Sequence Card once 09:30 hits. <b>No stacked POI in line with the Draw = nothing to prep. We wait.</b></div>
+  </div>
   <div class="briefsec"><h4>Session Read</h4>
     <div class="row2">
       <div class="field"><label>Date</label><input type="date" id="cb-date"></div>
@@ -712,26 +715,18 @@ ul.tight li::marker{color:var(--org)}
     </div>
     <div class="field"><label>YM bias</label><select id="cb-bias-YM"><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral</option></select></div>
   </div>
-  <div class="briefsec"><h4>Annotated Levels</h4>
-    <div style="overflow-x:auto"><table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th><th>Lon H</th><th>Lon L</th><th>Asia H</th><th>Asia L</th><th>Mid Open</th><th style="text-align:left">Key levels</th></tr></thead><tbody id="cb-lvl-body"></tbody></table></div>
-    <div class="subtle" style="margin-top:6px">Type the levels you marked on your charts. PDH/PDL/Open prefill from live data when available. Lon/Asia H-L = London & Asia session high/low · Mid Open = 00:00 midnight open.</div>
-  </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
     <div class="drop" id="cb-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
     <input type="file" id="cb-file" accept="image/*" multiple style="display:none">
     <div id="cb-shots"></div>
-    <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn" id="cb-read" type="button">🔍 Read levels from chart</button><button class="btn grn" id="cb-coach-btn" type="button">Coach's Technical Read</button><span class="subtle" id="cb-coach-status"></span></div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn grn" id="cb-coach-btn" type="button">Coach's Technical Read</button><span class="subtle" id="cb-coach-status"></span></div>
     <div id="cb-coach" style="margin-top:10px"></div>
-    <div class="subtle" style="margin-top:5px">Reads your marked PDH / PDL / Open / Now + key levels off the screenshots and fills the fields above — you confirm before Done. Needs an Anthropic key (Settings ⚙).<br><b>PNG or JPG only.</b> HEIC screenshots (iPhone / Continuity) cannot be read — on Mac open in Preview → File → Export → JPEG, or set Screenshot to PNG.</div>
+    <div class="subtle" style="margin-top:5px">The coach reads these charts through your Execution Protocol Framework and writes the Price Read. Needs an Anthropic key (Settings ⚙).<br><b>PNG or JPG only.</b> HEIC screenshots (iPhone / Continuity) cannot be read — on Mac open in Preview → File → Export → JPEG, or set Screenshot to PNG.</div>
   </div>
   <div class="briefsec"><h4>Overview</h4>
     <div class="field"><textarea id="cb-overview" style="min-height:90px" placeholder="Framing for the session — HTF draw, where price sits, what you're hunting. Blank line = new paragraph."></textarea></div></div>
   <div class="briefsec"><h4>Execution Framework <span class="subtle">— the A→B plan you will actually trade</span></h4>
     <div class="field"><textarea id="cb-framework" style="min-height:120px" placeholder="HTF bias · draw on liquidity · POI · time window · scenario A→B · displacement · CSD · entry trigger · invalidation. Blank line = new paragraph."></textarea></div></div>
-  <div class="briefsec"><h4>Key Themes <span class="subtle">— one per line</span></h4>
-    <div class="field"><textarea id="cb-themes" style="min-height:66px" placeholder="HTF draw higher across NQ/ES/YM&#10;One trade per focus window"></textarea></div></div>
-  <div class="briefsec"><h4>Watch Today <span class="subtle">— one per line</span></h4>
-    <div class="field"><textarea id="cb-watch" style="min-height:66px" placeholder="10:00 AM — ISM Services&#10;PDH sweep into NY AM"></textarea></div></div>
   <button class="btn grn" id="cb-save" style="width:100%;margin-top:8px">Done → save my brief</button>
   <div class="subtle" id="cb-status" style="margin-top:6px"></div>
 </div></div>
@@ -805,7 +800,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-07-19 · cycle-stack';
+const BUILD='2026-08-04b · pmseq+watch-auto';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1057,7 +1052,7 @@ async function loadQuotes(){
   RICH=!!(by.NQUSD&&typeof by.NQUSD.priceAvg50==="number"&&typeof by.NQUSD.dayHigh==="number");
   if(!by.NQUSD){const qs=document.getElementById("qstrip");if(qs)qs.innerHTML='<div class="panel down">Quotes unavailable.</div>';return;}
   LASTQ=by;
-  safe(renderQuotes);safe(renderLevels);safe(renderOverview);safe(renderCoach);safe(renderKeyThemes);
+  safe(renderQuotes);safe(renderOverview);safe(renderCoach);safe(renderKeyThemes);
   loadPrevLevels();
 }
 /* ---- Real previous-day high/low (prior completed session, not today's running range) ---- */
@@ -1075,7 +1070,7 @@ async function loadPrevLevels(){
     }
     await computeAutoLevels(sy); // intraday: Asia/London/Mid/NDOG/NWOG (+ precise Week) when available
   }catch(e){}}));
-  safe(renderLevels);safe(renderQuotes);safe(renderCoach);
+  safe(renderQuotes);safe(renderCoach);
 }
 function renderQuotes(){
   const qs=document.getElementById("qstrip");if(!qs)return;
@@ -1087,14 +1082,6 @@ function renderQuotes(){
       <div class="ch ${up?'up':'down'}">${up?'▲':'▼'} ${fmtN(d.change)} (${d.changePercentage>=0?'+':''}${(+d.changePercentage).toFixed(2)}%)</div>
       <div style="margin-top:6px">${pv}${rg}<div class="qrow"><span>Prev close</span><span>${fmtN(d.previousClose)}</span></div>${av}</div></div>`;});
   qs.innerHTML=h;
-}
-function renderLevels(){
-  const tb=document.querySelector("#lvlTable tbody");if(!tb)return;let h="";
-  if(COMPOSED){(COMPOSED.levels||[]).forEach(l=>{h+=`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`;});tb.innerHTML=h;return;}
-  SYMS.forEach(sy=>{const d=LASTQ[sy];if(!d)return;
-    const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;
-    h+=`<tr><td>${SHORT[sy]}</td><td>${fmtN(ph)}</td><td>${fmtN(pl)}</td><td>${fmtN(d.open)}</td><td class="${d.change>=0?'up':'down'}">${fmtN(d.price)}</td></tr>`;});
-  tb.innerHTML=h;
 }
 /* biasWord + coach reused across the brief */
 function biasWord(d){if(!d)return null;if(typeof d.priceAvg50==="number"&&typeof d.priceAvg200==="number"){if(d.price>d.priceAvg50&&d.priceAvg50>d.priceAvg200)return"bullish";if(d.price<d.priceAvg50&&d.priceAvg50<d.priceAvg200)return"bearish";return"mixed";}return d.change>0?"bullish":d.change<0?"bearish":"mixed";}
@@ -1117,14 +1104,43 @@ function ensureView(v){
   if(v==="prooflib")safe(renderProofLib);
 }
 /* ===== Master Sequence Card — go/no-go, rests beside Live Notes ===== */
+const PMSEQ_ITEMS=[
+ {g:'SEQ 1 — DRAW (where price wants to go)',items:[
+  {id:'d_tp',t:'Final take profit — STD DEV extensions aligned with HTF buyside / sellside liquidity (the draw\u2019s side)'},
+  {id:'d_partial',t:'Partial profits — 1M equal highs / lows that align with orderflow'},
+  {id:'d_dir',t:'Draw direction named — draw up = buyside above · draw down = sellside below'}]},
+ {g:'SEQ 2 — POI (where to act)',items:[
+  {id:'p_fib',t:'7AM–9AM FIB range drawn — anchor 07:00–09:00, project the STD DEV extensions'},
+  {id:'p_gaps',t:'NDOG / NWOG boxes plotted'},
+  {id:'p_stack',t:'Stack identified — POI = where STD DEVs and NDOG/NWOGs stack on the same level'},
+  {id:'p_or',t:'Opening range mapped — SIBIs / BISIs inside the 07:00–09:00 window'}]},
+ {g:'SEQ 3 — SMT (is the manipulation real?)',items:[
+  {id:'s_dir',t:'SMT in favor of the Draw — divergence agrees with Point B, does not fight it'},
+  {id:'s_tf',t:'M15 SMT or higher — M15 · H1 · 30M / 90M. Below M15 does not count. NQ vs ES.'}]}];
+function pmseqRender(sel){
+  const c=document.getElementById('cb-pmseq');if(!c)return;const on=sel||[];
+  c.innerHTML=PMSEQ_ITEMS.map(gr=>`<div class="sec" style="margin:8px 0 4px;font-size:11px">${gr.g}</div>`+
+    gr.items.map(it=>`<label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer;font-size:12px;line-height:1.35"><input type="checkbox" class="pmseqbox" value="${it.id}" ${on.indexOf(it.id)>=0?'checked':''} style="margin-top:2px;accent-color:#22c55e">${it.t}</label>`).join('')).join('');
+}
+function pmseqVal(){return Array.prototype.slice.call(document.querySelectorAll('#cb-pmseq .pmseqbox')).filter(x=>x.checked).map(x=>x.value);}
+function pmseqLabel(id){for(const g of PMSEQ_ITEMS)for(const i of g.items)if(i.id===id)return i.t;return id;}
+function pmseqCount(){return PMSEQ_ITEMS.reduce((a,g)=>a+g.items.length,0);}
+function pmseqHtml(b){
+  const on=(b&&b.pmseq)||[];if(!on.length)return '';
+  const tot=pmseqCount();
+  return `<div class="briefsec"><h4>Pre Market Sequence Checklist <span class="subtle">— ${on.length}/${tot} pre-loaded</span></h4>`+
+    PMSEQ_ITEMS.map(gr=>{const hit=gr.items.filter(i=>on.indexOf(i.id)>=0);
+      return `<div class="kv"><span class="k">${escH(gr.g.split(' (')[0])}</span><span class="v">${hit.length}/${gr.items.length} ${hit.length===gr.items.length?'<span class="tag bull">complete</span>':(hit.length?'<span class="tag med">partial</span>':'<span class="tag bear">not prepped</span>')}</span></div>`;}).join('')+
+    `<ul class="tight">${on.map(id=>`<li>${escH(pmseqLabel(id))}</li>`).join('')}</ul></div>`;
+}
 const SEQCARD_ITEMS=[
  {g:'PRE-MARKET',items:[
   {id:'pm_state',t:'State — Settled Authority. One trade does not make me.'},
   {id:'pm_amd',t:'AMD identified — daily / weekly clock named'}]},
- {g:'SEQ 1 · LOCATION',items:[
-  {id:'s1_a',t:'Point A — POI Hit · gap / FVG violated & respected (no close-through · shallow tap = better)'}]},
- {g:'SEQ 2 · DRAW',items:[
+ {g:'SEQ 1 · DRAW',items:[
   {id:'s2_b',t:'Point B still open — draw not yet reached'}]},
+ {g:'SEQ 2 · LOCATION',items:[
+  {id:'s1_a',t:'Point A — POI Hit · gap / FVG violated & respected (no close-through · shallow tap = better)'}]},
  {g:'SEQ 3 · SMT (NQ/ES)',items:[
   {id:'s3_timed',t:'Timed SMT — completed · right direction · unbroken'},
   {id:'s3_m1',t:'M1 SMT followed — NQ/ES vice versa'}]},
@@ -1627,74 +1643,27 @@ function coachHtmlAuto(){
 /* Price Read built from YOUR composed brief — the levels you marked off your
    screenshots plus the framework you wrote. Falls back to the auto read. */
 function composedReadHtml(b){
-  const bias=b.bias||{},lv=(b.levels||[]).filter(l=>l.s==='NQ')[0]||{};
+  const bias=b.bias||{};
   const draw=b.draw||'TWO-SIDED';
   const stance=draw==='HIGHER'
     ?'Favor <b>longs</b> from discount POIs. Hunt sellside sweeps + bullish SMT into a time window.'
     :draw==='LOWER'
     ?'Favor <b>shorts</b> from premium POIs. Hunt buyside sweeps + bearish SMT into a time window.'
     :'Two-sided draw — demand a clean sweep + CSD at a time window, or stand aside.';
-  const val=v=>(v&&v!=='—')?escH(v):null;
   const bw=k=>bias[k]?escH(bias[k]):'—';
-  let h=`<p><b>HTF draw:</b> ${escH(draw)} <span class="subtle">(NQ ${bw('NQ')}, ES ${bw('ES')}, YM ${bw('YM')} · your marks)</span>`;
-  const pdh=val(lv.pdh),pdl=val(lv.pdl);
-  if(pdh||pdl)h+=`<br><b>NQ range:</b> PDH ${pdh||'—'} · PDL ${pdl||'—'}`;
-  const sess=[['London',val(lv.lonH),val(lv.lonL)],['Asia',val(lv.asiaH),val(lv.asiaL)]]
-    .filter(x=>x[1]||x[2]).map(x=>`${x[0]} ${x[1]||'—'} / ${x[2]||'—'}`).join(' · ');
-  if(sess)h+=`<br><b>Session H/L:</b> ${sess}`;
-  const mid=val(lv.mid);if(mid)h+=`<br><b>Midnight open:</b> ${mid}`;
-  const poi=val(lv.key);if(poi)h+=`<br><b>POI:</b> ${poi}`;
+  let h=`<p><b>HTF draw:</b> ${escH(draw)} <span class="subtle">(NQ ${bw('NQ')}, ES ${bw('ES')}, YM ${bw('YM')} · your read)</span>`;
+  if(b.poi)h+=`<br><b>POI:</b> ${escH(b.poi)}`;
   if(b.liq)h+=`<br><b>Liquidity target:</b> ${escH(b.liq)}`;
   h+=`<br>${stance}</p>`;
   if(b.framework&&b.framework.length)
     h+=`<div style="border-top:1px dashed var(--line2);margin:13px 0 10px"></div>`+
        `<div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Your Framework</div>`+
        b.framework.map(p=>`<p>${escH(p)}</p>`).join('');
-  const rd=readinessOf(b);
-  if(rd!=null)h+=`<p class="subtle" style="margin-top:8px">Readiness ${rd.toFixed(1)}/5${(b.routine&&b.routine.length)?' · '+b.routine.length+' non-negotiables done':''}</p>`;
-  h+=liveVsMarksHtml(b);
+  const rd=readinessOf(b),pq=(b.pmseq||[]).length;
+  if(rd!=null||pq)h+=`<p class="subtle" style="margin-top:8px">${rd!=null?'Readiness '+rd.toFixed(1)+'/5':''}${(rd!=null&&b.routine&&b.routine.length)?' · '+b.routine.length+' non-negotiables done':''}${pq?((rd!=null?' · ':'')+'Pre-market sequence '+pq+'/'+pmseqCount()):''}</p>`;
   return h;
 }
-function composedHasRead(b){return !!(b&&((b.framework&&b.framework.length)||b.liq||(b.levels||[]).some(l=>l&&((l.pdh&&l.pdh!=='—')||(l.pdl&&l.pdl!=='—')||l.key))));}
-/* ---- Auto-context the app can add to YOUR read ---- */
-/* Where live price actually sits inside the range you marked, and whether the
-   app's own structural bias backs the direction you wrote. */
-function liveVsMarksHtml(b){
-  const nq=LASTQ.NQUSD;if(!nq||nq.price==null)return '';
-  const lv=(b.levels||[]).filter(l=>l.s==='NQ')[0]||{};
-  const hi=parseLvlNum(lv.pdh),lo=parseLvlNum(lv.pdl),mid=parseLvlNum(lv.mid);
-  const px=+nq.price;const bits=[];
-  if(hi!=null&&lo!=null&&hi>lo){
-    const pct=(px-lo)/(hi-lo)*100;
-    const where=px>hi?'<b>above</b> your PDH — expansion outside the marked range'
-      :px<lo?'<b>below</b> your PDL — expansion outside the marked range'
-      :(pct>=50?`in <b>premium</b> (${Math.round(pct)}% of your range)`:`in <b>discount</b> (${Math.round(pct)}% of your range)`);
-    bits.push(`Price ${fmtN(px)} sits ${where}`);
-    if(px<=hi&&px>=lo)bits.push(`${fmtN(hi-px)} to your PDH · ${fmtN(px-lo)} to your PDL`);
-  }
-  if(mid!=null)bits.push(px>mid?`above your midnight open (${fmtN(mid)})`:`below your midnight open (${fmtN(mid)})`);
-  let agree='';
-  try{
-    const s=drawState();
-    if(s&&s.draw&&b.draw){
-      const same=(s.draw===b.draw);
-      const neutral=(s.draw==='TWO-SIDED'||b.draw==='TWO-SIDED');
-      agree=neutral?`<span class="tag neut">structure mixed</span> live read is ${s.draw}, yours is ${b.draw}`
-        :same?`<span class="tag bull">structure agrees</span> live 50/200-day read is also ${s.draw}`
-        :`<span class="tag bear">structure conflicts</span> live read is ${s.draw} against your ${b.draw} — expect chop or a deeper sweep first`;
-    }
-  }catch(e){}
-  let smt='';
-  try{
-    const arr=[['NQ',LASTQ.NQUSD&&LASTQ.NQUSD.changePercentage],['ES',LASTQ.ESUSD&&LASTQ.ESUSD.changePercentage],['YM',LASTQ.YMUSD&&LASTQ.YMUSD.changePercentage]].filter(x=>typeof x[1]==='number');
-    if(arr.length>1&&new Set(arr.map(x=>Math.sign(x[1]))).size>1)smt='<span class="tag hi">SMT</span> triad divergence live — one index is not confirming';
-  }catch(e){}
-  if(!bits.length&&!agree&&!smt)return '';
-  return `<div style="border-top:1px dashed var(--line2);margin:13px 0 10px"></div>`+
-    `<div style="font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--org);margin-bottom:9px">Live vs Your Marks</div>`+
-    (bits.length?`<p>${bits.join(' · ')}</p>`:'')+
-    (agree?`<p>${agree}</p>`:'')+(smt?`<p>${smt}</p>`:'');
-}
+function composedHasRead(b){return !!(b&&((b.framework&&b.framework.length)||b.liq||b.poi||(b.pmseq&&b.pmseq.length)));}
 /* Today's protocol verdict, computed from your Protocol Calendar rules. */
 function protocolVerdict(ds){
   try{
@@ -1838,36 +1807,32 @@ function initBubbles(){
   });
 }
 function renderKeyThemes(){
-  const ktEl=document.getElementById('keyThemes'),wtEl=document.getElementById('watchToday');
-  const cTh=(COMPOSED&&COMPOSED.themes)||[],cWt=(COMPOSED&&COMPOSED.watch)||[];
-  const ds=etParts().date,evs=todayHigh();
-  const themes=[],watch=[];
-  /* 1 — what you wrote comes first */
-  cTh.forEach(t=>themes.push(escH(t)));
-  cWt.forEach(t=>watch.push(escH(t)));
-  /* 2 — auto structural themes only when you haven't written your own */
-  if(!cTh.length&&LASTQ.NQUSD){
-    try{
-      const {draw}=drawState();
-      themes.push(`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw, not against it`);
-    }catch(e){}
-    themes.push(evs.length?`${evs.length} high-impact US print(s) today — expect engineered volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact US prints today — structure leads, cleaner protocol tape');
-    themes.push('One trade per focus window · size at protocol default · abundance is the default');
+  const wtEl=document.getElementById('watchToday');if(!wtEl)return;
+  const ds=etParts().date,evs=todayHigh(),watch=[];
+  /* 1 — the key points of your AM framework, lifted from the Coach's Technical Read */
+  const cd=(COMPOSED&&COMPOSED.coachData)||null;
+  if(cd){
+    if(cd.context&&String(cd.context).trim())watch.push(`<b>Context</b> — ${escH(cd.context)}`);
+    if(cd.poi)watch.push(`<b>POI</b> — ${escH(cd.poi)}`);
+    if(cd.draw)watch.push(`<b>Draw</b> — ${escH(cd.draw)}`);
+    if(cd.sequence)watch.push(`<b>Must happen</b> — ${escH(cd.sequence)}`);
+    if(cd.invalidation)watch.push(`<b>Invalidation</b> — ${escH(cd.invalidation)}`);
+    if(cd.standaside)watch.push(`<span class="tag med">STAND ASIDE IF</span> ${escH(cd.standaside)}`);
+  }else if(COMPOSED&&(COMPOSED.poi||COMPOSED.liq)){
+    if(COMPOSED.poi)watch.push(`<b>POI</b> — ${escH(COMPOSED.poi)}`);
+    if(COMPOSED.liq)watch.push(`<b>Liquidity target</b> — ${escH(COMPOSED.liq)}`);
   }
-  /* 3 — today's protocol verdict, from your calendar rules */
+  /* 2 — today's protocol verdict, from your calendar rules */
   const pv=protocolVerdict(ds);
-  if(pv&&pv.lab)themes.push(`<span class="tag ${pv.tag}">${pv.lab}</span> ${escH(pv.why)}`);
-  /* 4 — scheduled events and prime windows always show */
+  if(pv&&pv.lab)watch.push(`<span class="tag ${pv.tag}">${pv.lab}</span> ${escH(pv.why)}`);
+  /* 3 — scheduled events + prime windows */
   evs.forEach(e=>watch.push(`${fmtEtTime(utcToEt(e.date))} — <b>${cleanEv(e.event)}</b>${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`));
   try{const wins=todaysWindows();if(wins&&wins.length)watch.push(`Prime windows: ${wins.slice(0,3).map(w=>fmt12(w.s)).join(' · ')}`);}catch(e){}
-  if(!evs.length&&!cWt.length)watch.push('PDH / PDL are the levels that matter for the sweep');
-  /* 5 — carry last night's coach action into today */
+  /* 4 — carry last night's coach action into today (unchanged) */
   const la=lastCoachAction();
   if(la&&(la.action||la.recode))watch.push(`<b>Carry-over</b> <span class="subtle">${fmtDay(la.ds)} debrief</span> — ${escH(la.action||la.recode)}`);
-  if(ktEl)ktEl.innerHTML=themes.length?themes.map(t=>`<li>${t}</li>`).join(''):'<li class="subtle">—</li>';
-  if(wtEl)wtEl.innerHTML=watch.length?watch.map(t=>`<li>${t}</li>`).join(''):'<li class="subtle">—</li>';
+  wtEl.innerHTML=watch.length?watch.map(t=>`<li>${t}</li>`).join(''):'<li class="subtle">Compose your framework and run the Coach&rsquo;s Technical Read — the key points land here.</li>';
 }
-
 /* ===== Calendar fetch (shared) ===== */
 function ymd(d){return d.toISOString().slice(0,10);}
 async function fetchCalChunked(f,t){const ch=[];let s=new Date(f+'T00:00:00Z'),end=new Date(t+'T00:00:00Z');while(s<=end){let e=new Date(s.getTime()+6*864e5);if(e>end)e=end;ch.push([ymd(s),ymd(e)]);s=new Date(e.getTime()+864e5);}let out=[];for(const c of ch){try{const r=await mcp('economics',{endpoint:'economics-calendar',country:'US',from_date:c[0],to_date:c[1]});if(Array.isArray(r))out=out.concat(r);}catch(e){}}return out;}
@@ -2560,26 +2525,18 @@ function buildBriefObject(){
   const evs=todayHigh();const dir=draw==='HIGHER'?'longs from discount POIs':draw==='LOWER'?'shorts from premium POIs':'standing down until the triad picks a side';
   const overview=[`The NQ/ES/YM triad reads ${draw} on HTF structure (NQ ${w.NQ}, ES ${w.ES}, YM ${w.YM}). NQ is in ${zone} of its daily range at ${fmtN(nq.price)}. Draw on liquidity favors ${dir}.`,
     `Scheduled risk today: ${evs.length?evs.map(e=>fmtEtTime(utcToEt(e.date))+' '+cleanEv(e.event)).join(', '):'no high-impact US prints — clean tape'}. Until a POI meets a time window with a correlated SMT and a CSD, there is no trade.`];
-  const themes=[`HTF draw is ${draw.toLowerCase()} across NQ/ES/YM — trade with the draw`, evs.length?`${evs.length} high-impact print(s) today — expect volatility near ${fmtEtTime(utcToEt(evs[0].date))}`:'No high-impact prints — structure leads', 'One trade per focus window · protocol size'];
-  const watch=evs.map(e=>`${fmtEtTime(utcToEt(e.date))} — ${cleanEv(e.event)}${e.estimate!=null?` (est ${e.estimate}, prev ${e.previous})`:''}`);if(!watch.length)watch.push('PDH / PDL are the levels that matter for the sweep');
-  const levels=SYMS.map(sy=>{const d=LASTQ[sy];const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;const F=v=>(v==null||!isFinite(v))?'—':fmtN(v);return {s:SHORT[sy],pdh:fmtN(ph),pdl:fmtN(pl),open:fmtN(d.open),now:fmtN(d.price),lonH:F(d.lonH),lonL:F(d.lonL),asiaH:F(d.asiaH),asiaL:F(d.asiaL),mid:F(d.mid),ndogH:F(d.ndogH),ndogL:F(d.ndogL),nwogH:F(d.nwogH),nwogL:F(d.nwogL),wkH:F(d.wkH),wkL:F(d.wkL)};});
   const events=evs.map(e=>({t:fmtEtTime(utcToEt(e.date)),name:cleanEv(e.event),impact:'High'}));
-  return {date:etParts().date,gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET',draw,zone,bias:w,coach:coachHtmlAuto(),overview,themes,watch,levels,events};
+  return {date:etParts().date,gen:new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET',draw,zone,bias:w,coach:coachHtmlAuto(),overview,events};
 }
 function briefHtml(b,hideShots){
   return `<div class="briefsec"><h4>Overview · HTF draw ${b.draw||''}</h4><div class="narr">${(b.overview||[]).map(p=>'<p>'+p+'</p>').join('')}</div></div>
   <div class="briefsec"><h4>Coaches Framework</h4><div class="narr">${consciousHtml(b.date)}${b.coach?techDivider()+b.coach:''}</div></div>
-  <div class="briefsec"><h4>Key Themes</h4><ul class="tight">${(b.themes||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
-  <div class="briefsec"><h4>Watch Today</h4><ul class="tight">${(b.watch||[]).map(t=>'<li>'+t+'</li>').join('')}</ul></div>
-  <div class="briefsec"><h4>Intraday Reversion Levels</h4><table class="lvl"><thead><tr><th></th><th>PDH</th><th>PDL</th><th>Open</th><th>Now</th></tr></thead><tbody>${(b.levels||[]).map(l=>`<tr><td>${l.s}</td><td>${l.pdh}</td><td>${l.pdl}</td><td>${l.open}</td><td>${l.now}</td></tr>`).join('')}</tbody></table></div>
-  ${(b.levels&&b.levels.some(hasSess))?`<div class="briefsec"><h4>Session Levels</h4>${sessTable(b.levels)}</div>`:''}
-  ${(b.levels&&b.levels.some(hasGapRange))?`<div class="briefsec"><h4>Gaps &amp; Weekly Range</h4>${gapTable(b.levels)}</div>`:''}
-  ${(b.levels&&b.levels.some(l=>l.key))?`<div class="briefsec"><h4>Key Levels</h4><ul class="tight">${b.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${String(l.key).replace(/</g,'&lt;')}</li>`).join('')}</ul></div>`:''}
+  ${pmseqHtml(b)}
   ${(b.shots&&b.shots.length)?(hideShots?`<div class="briefsec"><h4>Annotated Charts</h4><div class="subtle">📎 ${b.shots.length} chart${b.shots.length>1?'s':''} attached — Open full ↗ to view.</div></div>`:`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`):''}
   <div class="briefsec"><h4>High-Impact Events</h4>${(b.events&&b.events.length)?b.events.map(e=>`<div class="evrow"><span class="tm">${e.t}</span><span>${e.name}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`).join(''):'<div class="subtle">Clean tape — no high-impact prints.</div>'}</div>`;
 }
 /* Your saved brief — exactly what you asked for, in order:
-   POI + Liquidity Target · Execution Framework · Charts · Key Themes · Watch Today. */
+   POI + Liquidity Target · Execution Framework · Charts · Pre Market Sequence Checklist. */
 function myBriefHtml(b){
   let h='';
   if(b.poi||b.liq){
@@ -2592,10 +2549,7 @@ function myBriefHtml(b){
     h+=`<div class="briefsec"><h4>Execution Framework</h4><div class="narr">${b.framework.map(p=>'<p>'+escH(p)+'</p>').join('')}</div></div>`;
   if(b.shots&&b.shots.length)
     h+=`<div class="briefsec"><h4>Annotated Charts</h4>${b.shots.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`;
-  if(b.themes&&b.themes.length)
-    h+=`<div class="briefsec"><h4>Key Themes</h4><ul class="tight">${b.themes.map(t=>'<li>'+escH(t)+'</li>').join('')}</ul></div>`;
-  if(b.watch&&b.watch.length)
-    h+=`<div class="briefsec"><h4>Watch Today</h4><ul class="tight">${b.watch.map(t=>'<li>'+escH(t)+'</li>').join('')}</ul></div>`;
+  h+=pmseqHtml(b);
   return h||'<div class="subtle">Nothing composed yet — hit ＋ Compose Framework.</div>';
 }
 /* Full saved brief — everything you captured, plus the Coaches Technical Read.
@@ -2618,6 +2572,7 @@ function myBriefFullHtml(b){
     if(b.routine&&b.routine.length)h+=`<div class="kv"><span class="k">Non-negotiables</span><span class="v">${b.routine.map(r=>`<span class="tag bull" style="margin:1px">${escH(r)}</span>`).join(' ')}</span></div>`;
     h+='</div>';
   }
+  h+=pmseqHtml(b);
   /* everything else the compose form captures: overview, conscious framework, themes, watch, levels, charts, events */
   h+=briefHtml(b);
   if(b.liveNotes&&b.liveNotes.length)h+=liveNotesHtml(b,false);
@@ -2742,23 +2697,16 @@ let cbShots=[],cbCoachData=null;
 function cbEl(id){return document.getElementById(id);}
 function cbRenderShots(){renderShotStrip('cb-shots',cbShots,cbRenderShots);}
 function cbAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{cbShots.push(u);cbRenderShots();});rd.readAsDataURL(file);}
-function cbBuildLevels(){const body=cbEl('cb-lvl-body');if(!body)return;body.innerHTML=['NQ','ES','YM'].map(k=>`<tr><td>${k}</td><td><input id="cb-pdh-${k}" class="cbin"></td><td><input id="cb-pdl-${k}" class="cbin"></td><td><input id="cb-open-${k}" class="cbin"></td><td><input id="cb-now-${k}" class="cbin"></td><td><input id="cb-lonH-${k}" class="cbin"></td><td><input id="cb-lonL-${k}" class="cbin"></td><td><input id="cb-asiaH-${k}" class="cbin"></td><td><input id="cb-asiaL-${k}" class="cbin"></td><td><input id="cb-mid-${k}" class="cbin"></td><td><input id="cb-key-${k}" class="cbin" style="text-align:left" placeholder="OB · FVG · equal highs…"></td></tr>`).join('');}
 function openCompose(day){
   const ds=(typeof day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day))?day:etParts().date;
   cbEl('cb-date').value=ds;
   const dl=cbEl('cbDayLbl');if(dl)dl.textContent='· '+fmtDayLong(ds);
   try{const s=drawState();cbEl('cb-draw').value=(s&&s.draw)?s.draw:'HIGHER';}catch(e){cbEl('cb-draw').value='HIGHER';}
-  cbBuildLevels();
   const q=LASTQ||{};
   ['NQ','ES','YM'].forEach(k=>{const d=q[k+'USD'];const bb=cbEl('cb-bias-'+k);
-    if(d){const bw=biasWord(d);bb.value=(bw==='bullish'||bw==='bearish')?bw:'neutral';
-      const ph=(d.pdh!=null)?d.pdh:d.dayHigh,pl=(d.pdl!=null)?d.pdl:d.dayLow;
-      if(ph!=null)cbEl('cb-pdh-'+k).value=fmtN(ph);
-      if(pl!=null)cbEl('cb-pdl-'+k).value=fmtN(pl);
-      if(d.open!=null)cbEl('cb-open-'+k).value=fmtN(d.open);
-      if(d.price!=null)cbEl('cb-now-'+k).value=fmtN(d.price);}});
-  cbShots=[];['cb-overview','cb-themes','cb-watch','cb-framework','cb-poi','cb-liq'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
-  ['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value='';});pmRenderRoutine([],'cb-routine');
+    if(d&&bb){const bw=biasWord(d);bb.value=(bw==='bullish'||bw==='bearish')?bw:'neutral';}});
+  cbShots=[];['cb-overview','cb-framework','cb-poi','cb-liq'].forEach(id=>{if(cbEl(id))cbEl(id).value='';});
+  ['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value='';});pmRenderRoutine([],'cb-routine');pmseqRender([]);
   cbCoachData=null;{const _c=cbEl('cb-coach');if(_c)_c.innerHTML='';}{const _s=cbEl('cb-coach-status');if(_s)_s.textContent='';}
   // Reopen keeps your work: load your own saved brief for this day if you've made one.
   const existing=myBriefs()[ds];if(existing)cbLoad(existing);
@@ -2768,15 +2716,12 @@ function openCompose(day){
 function cbLoad(b){
   if(b.draw)cbEl('cb-draw').value=b.draw;
   if(b.bias)['NQ','ES','YM'].forEach(k=>{if(b.bias[k]&&cbEl('cb-bias-'+k))cbEl('cb-bias-'+k).value=b.bias[k];});
-  (b.levels||[]).forEach(l=>{const k=l.s;if(cbEl('cb-pdh-'+k)){const setv=(id,v)=>{if(cbEl(id))cbEl(id).value=(v&&v!=='—')?v:'';};setv('cb-pdh-'+k,l.pdh);setv('cb-pdl-'+k,l.pdl);setv('cb-open-'+k,l.open);setv('cb-now-'+k,l.now);setv('cb-lonH-'+k,l.lonH);setv('cb-lonL-'+k,l.lonL);setv('cb-asiaH-'+k,l.asiaH);setv('cb-asiaL-'+k,l.asiaL);setv('cb-mid-'+k,l.mid);if(cbEl('cb-key-'+k))cbEl('cb-key-'+k).value=l.key||'';}});
   cbEl('cb-overview').value=(b.overview||[]).join('\n\n');
-  cbEl('cb-themes').value=(b.themes||[]).join('\n');
-  cbEl('cb-watch').value=(b.watch||[]).join('\n');
   if(cbEl('cb-framework'))cbEl('cb-framework').value=(b.framework||[]).join('\n\n');
   if(cbEl('cb-poi'))cbEl('cb-poi').value=b.poi||'';
   if(cbEl('cb-liq'))cbEl('cb-liq').value=b.liq||'';
   const rd=b.ready||{};['sleep','energy','focus'].forEach(k=>{const e=cbEl('cb-'+k);if(e)e.value=rd[k]||'';});
-  pmRenderRoutine(b.routine||[],'cb-routine');
+  pmRenderRoutine(b.routine||[],'cb-routine');pmseqRender(b.pmseq||[]);
   cbShots=(b.shots||[]).slice();
   cbCoachData=b.coachData||null;
   const _cc=cbEl('cb-coach');if(_cc)_cc.innerHTML=cbCoachData?coachReadHtml(cbCoachData):'';
@@ -2787,17 +2732,14 @@ function buildComposedObject(){
   const draw=cbEl('cb-draw').value;
   const g=k=>cbEl(k)?cbEl(k).value.trim():'';
   const bias={NQ:g('cb-bias-NQ'),ES:g('cb-bias-ES'),YM:g('cb-bias-YM')};
-  const levels=['NQ','ES','YM'].map(k=>({s:k,pdh:g('cb-pdh-'+k)||'—',pdl:g('cb-pdl-'+k)||'—',open:g('cb-open-'+k)||'—',now:g('cb-now-'+k)||'—',lonH:g('cb-lonH-'+k)||'—',lonL:g('cb-lonL-'+k)||'—',asiaH:g('cb-asiaH-'+k)||'—',asiaL:g('cb-asiaL-'+k)||'—',mid:g('cb-mid-'+k)||'—',key:g('cb-key-'+k)}));
   const overview=cbEl('cb-overview').value.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
-  const themes=cbEl('cb-themes').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const watch=cbEl('cb-watch').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const gen=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date())+' ET · manual';
   const framework=(cbEl('cb-framework')?cbEl('cb-framework').value:'').split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
   const liq=g('cb-liq');
   const poi=g('cb-poi');
   const ready={sleep:g('cb-sleep'),energy:g('cb-energy'),focus:g('cb-focus')};
   const routine=pmRoutineVal('cb-routine');
-  return {date,gen,draw,zone:'',bias,overview,themes,watch,levels,events:[],framework,poi,liq,ready,routine,coachData:cbCoachData||null,shots:cbShots.slice(),manual:true};
+  return {date,gen,draw,zone:'',bias,overview,events:[],framework,poi,liq,ready,routine,pmseq:pmseqVal(),coachData:cbCoachData||null,shots:cbShots.slice(),manual:true};
 }
 /* Compose now builds YOUR OWN brief — saved separately, it does NOT overwrite the generated page brief. */
 function myBriefs(){try{return JSON.parse(lsGet('ct_mybriefs')||'{}');}catch(e){return {};}}
@@ -2809,8 +2751,7 @@ function saveMyBrief(b){const all=myBriefs();all[b.date]=b;try{lsSet('ct_mybrief
 function syncFrameworkFromBrief(b){
   try{
     const dirMap={bullish:'Long',bearish:'Short'};
-    const nqKey=((b.levels||[]).filter(l=>l.s==='NQ')[0]||{}).key||'';
-    const obj={date:b.date,dir:(dirMap[(b.bias&&b.bias.NQ)||'']||'—'),poi:{key:(b.poi||nqKey||'')},liq:b.liq||'',
+    const obj={date:b.date,dir:(dirMap[(b.bias&&b.bias.NQ)||'']||'—'),poi:{key:(b.poi||'')},liq:b.liq||'',
       ready:b.ready||{},routine:(b.routine||[]).slice(),scenario:(b.framework||[]).slice(),
       shots:[],fromBrief:true};
     const all=loadPm();
@@ -2831,29 +2772,11 @@ function composedForToday(){
   try{const b=BRIEFS[ds];if(b&&b.manual)return b;}catch(e){}
   return null;
 }
-function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderLevels);safe(renderCoach);safe(renderComposedCharts);}
-const SESS_FIELDS=['lonH','lonL','asiaH','asiaL','mid'];
-function lvlShow(v){return (v&&v!=='—')?escH(v):'—';}
-function hasSess(l){return SESS_FIELDS.some(f=>l[f]&&l[f]!=='—');}
-function sessTable(levels){const rows=(levels||[]).filter(hasSess);if(!rows.length)return'';return `<table class="lvl"><thead><tr><th></th><th>London H</th><th>London L</th><th>Asia H</th><th>Asia L</th><th>Mid Open</th></tr></thead><tbody>${rows.map(l=>`<tr><td>${l.s}</td><td>${lvlShow(l.lonH)}</td><td>${lvlShow(l.lonL)}</td><td>${lvlShow(l.asiaH)}</td><td>${lvlShow(l.asiaL)}</td><td>${lvlShow(l.mid)}</td></tr>`).join('')}</tbody></table>`;}
-const GAP_FIELDS=['ndogH','ndogL','nwogH','nwogL','wkH','wkL'];
-function hasGapRange(l){return GAP_FIELDS.some(f=>l[f]&&l[f]!=='—');}
-function gapTable(levels){const rows=(levels||[]).filter(hasGapRange);if(!rows.length)return'';return `<table class="lvl"><thead><tr><th></th><th>NDOG H</th><th>NDOG L</th><th>NWOG H</th><th>NWOG L</th><th>Week H</th><th>Week L</th></tr></thead><tbody>${rows.map(l=>`<tr><td>${l.s}</td><td>${lvlShow(l.ndogH)}</td><td>${lvlShow(l.ndogL)}</td><td>${lvlShow(l.nwogH)}</td><td>${lvlShow(l.nwogL)}</td><td>${lvlShow(l.wkH)}</td><td>${lvlShow(l.wkL)}</td></tr>`).join('')}</tbody></table>`;}
-function renderComposedCharts(){
-  const el=cbEl('composedCharts');if(!el)return;
-  if(!COMPOSED){el.innerHTML='';return;}
-  const hasKey=COMPOSED.levels&&COMPOSED.levels.some(l=>l.key);
-  const st=sessTable(COMPOSED.levels);
-  if(!hasKey&&!st){el.innerHTML='';return;}
-  // Key-level text + session levels only on the main page. Chart screenshots live in the pop-outs (composer + brief review), never on the main brief.
-  let h='<hr class="d">';
-  if(st)h+=`<div class="panel"><h2 class="sec">Session Levels — your marks</h2>${st}<div class="subtle" style="margin-top:6px">London / Asia session highs & lows · 00:00 midnight open.</div></div>`;
-  if(hasKey){if(st)h+='<hr class="d">';h+=`<div class="panel"><h2 class="sec">Key Levels — your marks</h2><ul class="tight">${COMPOSED.levels.filter(l=>l.key).map(l=>`<li><b>${l.s}:</b> ${escH(l.key)}</li>`).join('')}</ul></div>`;}
-  el.innerHTML=h;
-}
+function applyComposed(){safe(renderOverview);safe(renderKeyThemes);safe(renderCoach);safe(renderComposedCharts);}
+function renderComposedCharts(){const el=cbEl('composedCharts');if(el)el.innerHTML='';}
 function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-/* ===== Vision: read levels off chart screenshots (Anthropic API, your key, browser-side) ===== */
+/* ===== Anthropic vision keys — used by the coach's chart read ===== */
 function anthKey(){try{return (lsGet('ct_anthropic_key')||'').trim();}catch(e){return '';}}
 function visionModel(){try{return (lsGet('ct_vision_model')||'').trim()||'claude-sonnet-5';}catch(e){return 'claude-sonnet-5';}}
 /* Long prose fields break naive JSON parsing two ways: raw newlines inside
@@ -2896,64 +2819,12 @@ function salvageFields(txt,keys){
   });
   return any?o:null;
 }
-const CHART_PROMPT=`You are reading annotated futures index charts (NQ = Nasdaq 100, ES = S&P 500, YM = Dow). Each image is one instrument with price levels the trader has marked. Identify the instrument from the ticker/title on the chart, then read the marked horizontal price levels and the current price.
-
-Return ONLY strict JSON — no prose, no code fences — in exactly this shape:
-{"NQ":{"pdh":"","pdl":"","open":"","now":"","lonH":"","lonL":"","asiaH":"","asiaL":"","mid":"","key":""},"ES":{"pdh":"","pdl":"","open":"","now":"","lonH":"","lonL":"","asiaH":"","asiaL":"","mid":"","key":""},"YM":{"pdh":"","pdl":"","open":"","now":"","lonH":"","lonL":"","asiaH":"","asiaL":"","mid":"","key":""},"bias":{"NQ":"neutral","ES":"neutral","YM":"neutral"},"draw":"TWO-SIDED"}
-
-Rules:
-- Include an instrument object ONLY if that instrument appears in an image; omit the others entirely.
-- pdh = prior day high, pdl = prior day low, open = session/day open, now = current/last price (usually the highlighted price on the right axis).
-- The trader marks session levels with these exact labels on the chart — map each to the matching field and read the price line it points to:
-    • "L.H." (also "LH" / "London High") -> lonH (London session high)
-    • "L.L." (also "LL" / "London Low") -> lonL (London session low)
-    • "A.H." (also "AH" / "Asia High") -> asiaH (Asia session high)
-    • "A.L." (also "AL" / "Asia Low") -> asiaL (Asia session low)
-    • "0:00" (also "00:00" / "Midnight" / "Midnight Open") -> mid (00:00 midnight open)
-  Capture the exact price for every one of these labels that appears in the image. Read these only if the trader marked them; if a label is absent, leave that field "".
-- Preserve the number formatting as shown (commas are fine). If a value is not marked or visible, use "".
-- key = any other marked levels as short text, e.g. "OB 29,650 · FVG 29,720 · equal lows 29,400". Use "" if none.
-- bias per instrument: bullish, bearish, or neutral — infer from structure/annotations only if clear, else neutral.
-- draw: HIGHER if the marks/bias skew long, LOWER if short, TWO-SIDED if mixed or unclear.`;
-async function cbReadChart(){
-  const st=cbEl('cb-read-status');
-  const say=(cls,msg)=>{if(st)st.innerHTML='<span class="'+cls+'">'+msg+'</span>';};
-  if(!cbShots.length){say('down','Add a chart screenshot first.');return;}
-  const key=anthKey();
-  if(!key){say('down','Add your Anthropic API key in Settings ⚙ first.');return;}
-  say('mut','Reading chart…');
-  const vp=visionParts(cbShots,4);
-  if(!vp.parts.length){say('down','No usable charts. '+(vp.skipped.join(' · ')||'Re-add them.')+' — PNG or JPG required.');return;}
-  const content=vp.parts.slice();
-  content.push({type:'text',text:CHART_PROMPT});
-  try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:1024,messages:[{role:'user',content}]})});
-    if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
-    const j=await r.json();
-    const txt=(j.content&&j.content.length)?j.content.map(c=>c.text||'').join(''):'';
-    const data=parseJsonLoose(txt);
-    if(!data){throw new Error('Could not parse the model output.');}
-    const n=cbApplyRead(data);
-    say(n?'up':'down',n?('✓ Read '+n+' instrument'+(n>1?'s':'')+' — confirm the numbers, then Done.'):'No levels detected — mark them more clearly or type manually.');
-  }catch(e){say('down','Read failed: '+escH((e&&e.message)||'error'));}
-}
-function cbApplyRead(data){
-  let n=0;const setIf=(id,v)=>{const el=cbEl(id);if(el&&v!=null&&String(v).trim()!=='')el.value=String(v).trim();};
-  ['NQ','ES','YM'].forEach(k=>{const o=data[k]||data[k.toLowerCase()];if(!o||typeof o!=='object')return;
-    const before=['pdh','pdl','open','now','lonH','lonL','asiaH','asiaL','mid','key'].some(f=>o[f]&&String(o[f]).trim()!=='');if(before)n++;
-    setIf('cb-pdh-'+k,o.pdh);setIf('cb-pdl-'+k,o.pdl);setIf('cb-open-'+k,o.open);setIf('cb-now-'+k,o.now);setIf('cb-lonH-'+k,o.lonH);setIf('cb-lonL-'+k,o.lonL);setIf('cb-asiaH-'+k,o.asiaH);setIf('cb-asiaL-'+k,o.asiaL);setIf('cb-mid-'+k,o.mid);setIf('cb-key-'+k,o.key);
-    const bb=cbEl('cb-bias-'+k),bw=data.bias&&(data.bias[k]||data.bias[k.toLowerCase()]);if(bb&&bw&&['bullish','bearish','neutral'].indexOf(String(bw).toLowerCase())>=0)bb.value=String(bw).toLowerCase();
-  });
-  if(data.draw&&cbEl('cb-draw')){const dv=String(data.draw).toUpperCase();if(['HIGHER','LOWER','TWO-SIDED'].indexOf(dv)>=0)cbEl('cb-draw').value=dv;}
-  return n;
-}
 if(cbEl('composeBriefBtn')){
   cbEl('composeBriefBtn').addEventListener('click',openCompose);
   cbEl('composeX').addEventListener('click',closeCompose);
   cbEl('composeModal').addEventListener('click',e=>{if(e.target.id==='composeModal')closeCompose();});
   cbEl('cb-drop').addEventListener('click',()=>cbEl('cb-file').click());
   cbEl('cb-file').addEventListener('change',ev=>{[...ev.target.files].forEach(cbAddFile);ev.target.value='';});
-  if(cbEl('cb-read'))cbEl('cb-read').addEventListener('click',cbReadChart);
   if(cbEl('cb-coach-btn'))cbEl('cb-coach-btn').addEventListener('click',cbCoachRead);
   cbEl('cb-save').addEventListener('click',doneCompose);
   document.addEventListener('paste',ev=>{if(!cbEl('composeModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){cbAddFile(f);ev.preventDefault();}}}});
@@ -3062,7 +2933,7 @@ async function refreshLight(){
     const c=await mcp('quote',{endpoint:'full-commodities-quotes'});
     if(Array.isArray(c)){let any=false;
       c.forEach(x=>{if(x&&SYMS.includes(x.symbol)&&LASTQ[x.symbol]){const d=LASTQ[x.symbol];d.price=x.price;d.change=x.change;const pv=(x.previousClose!=null)?x.previousClose:((d.previousClose!=null)?d.previousClose:(x.price-x.change));d.previousClose=pv;d.changePercentage=(x.changePercentage!=null)?x.changePercentage:(pv?(x.change/pv*100):0);if(x.dayHigh!=null)d.dayHigh=x.dayHigh;if(x.dayLow!=null)d.dayLow=x.dayLow;any=true;}});
-      if(any){lastUpdate=Date.now();safe(renderQuotes);safe(renderLevels);safe(renderCoach);safe(renderOverview);}
+      if(any){lastUpdate=Date.now();safe(renderQuotes);safe(renderCoach);safe(renderOverview);}
     }
   }catch(e){}
 }
