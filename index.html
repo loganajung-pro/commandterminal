@@ -698,7 +698,7 @@ ul.tight li::marker{color:var(--org)}
     </div>
     <div class="field" style="margin-top:8px"><label>Non-negotiables done</label><div id="cb-routine" style="display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:4px"></div></div>
   </div>
-  <div class="briefsec"><h4>Pre Market Sequence Checklist <span class="subtle">— before 09:30 · Draw → POI → SMT, pre-loaded in advance</span></h4>
+  <div class="briefsec"><h4>Pre Market Report <span class="subtle">— before 09:30 · Draw → POI → SMT, pre-loaded in advance</span></h4>
     <div id="cb-pmseq"></div>
     <div class="subtle" style="margin-top:6px">Time and CSD align live in the Master Sequence Card once 09:30 hits. <b>No stacked POI in line with the Draw = nothing to prep. We wait.</b></div>
   </div>
@@ -1105,18 +1105,25 @@ function ensureView(v){
 }
 /* ===== Master Sequence Card — go/no-go, rests beside Live Notes ===== */
 const PMSEQ_ITEMS=[
- {g:'SEQ 1 — DRAW (where price wants to go)',items:[
-  {id:'d_tp',t:'Final take profit — STD DEV extensions aligned with HTF buyside / sellside liquidity (the draw\u2019s side)'},
-  {id:'d_partial',t:'Partial profits — 1M equal highs / lows that align with orderflow'},
-  {id:'d_dir',t:'Draw direction named — draw up = buyside above · draw down = sellside below'}]},
- {g:'SEQ 2 — POI (where to act)',items:[
-  {id:'p_fib',t:'7AM–9AM FIB range drawn — anchor 07:00–09:00, project the STD DEV extensions'},
+ {g:'SEQ 1 — Narrative',items:[
+  {id:'n_htf',t:'D + H1 + Weekly Time Cycle (HTF) Narrative'},
+  {id:'n_ltf',t:'M15 + M1 Narrative'},
+  {id:'n_dist',t:'Narratives are examined and distinguished via Time & PD Arrays.'},
+  {id:'n_mm',t:'Impeccable Money Management'}]},
+ {g:'SEQ 2 — DRAW (where\u2019s price seeking?)',items:[
+  {id:'d_1m',t:'1M equal high / low that align with orderflow'},
+  {id:'d_htf',t:'HTF equals high / low that align with orderflow'},
+  {id:'d_ineff',t:'Inefficiency to rebalance'}]},
+ {g:'SEQ 2 — POI (where\u2019s smart money participating?)',items:[
+  {id:'p_range',t:'7AM–9AM Range - Map key levels'},
   {id:'p_gaps',t:'NDOG / NWOG boxes plotted'},
-  {id:'p_stack',t:'Stack identified — POI = where STD DEVs and NDOG/NWOGs stack on the same level'},
-  {id:'p_or',t:'Opening range mapped — SIBIs / BISIs inside the 07:00–09:00 window'}]},
- {g:'SEQ 3 — SMT (is the manipulation real?)',items:[
-  {id:'s_dir',t:'SMT in favor of the Draw — divergence agrees with Point B, does not fight it'},
-  {id:'s_tf',t:'M15 SMT or higher — M15 · H1 · 30M / 90M. Below M15 does not count. NQ vs ES.'}]}];
+  {id:'p_stack',t:'Stack identified — POI = where STD DEVs and NDOG/NWOGs stack on the same level'}]},
+ {g:'SEQ 3 — SMT (manipulation consistent - highs or lows?)',items:[
+  {id:'s_dir',t:'SMT in favor of the Draw'},
+  {id:'s_tf',t:'M15 SMT or higher — M15 · H1 · 30M / 90M. Below M15 does not count. NQ vs ES.'}]},
+ {g:'Participation Invalidated',items:[
+  {id:'pi_inv',t:'Market opens inverse of each other'},
+  {id:'pi_smt',t:'Pre Market &/or Market open with SMT @ high and low'}]}];
 function pmseqRender(sel){
   const c=document.getElementById('cb-pmseq');if(!c)return;const on=sel||[];
   c.innerHTML=PMSEQ_ITEMS.map(gr=>`<div class="sec" style="margin:8px 0 4px;font-size:11px">${gr.g}</div>`+
@@ -1128,7 +1135,7 @@ function pmseqCount(){return PMSEQ_ITEMS.reduce((a,g)=>a+g.items.length,0);}
 function pmseqHtml(b){
   const on=(b&&b.pmseq)||[];if(!on.length)return '';
   const tot=pmseqCount();
-  return `<div class="briefsec"><h4>Pre Market Sequence Checklist <span class="subtle">— ${on.length}/${tot} pre-loaded</span></h4>`+
+  return `<div class="briefsec"><h4>Pre Market Report <span class="subtle">— ${on.length}/${tot} pre-loaded</span></h4>`+
     PMSEQ_ITEMS.map(gr=>{const hit=gr.items.filter(i=>on.indexOf(i.id)>=0);
       return `<div class="kv"><span class="k">${escH(gr.g.split(' (')[0])}</span><span class="v">${hit.length}/${gr.items.length} ${hit.length===gr.items.length?'<span class="tag bull">complete</span>':(hit.length?'<span class="tag med">partial</span>':'<span class="tag bear">not prepped</span>')}</span></div>`;}).join('')+
     `<ul class="tight">${on.map(id=>`<li>${escH(pmseqLabel(id))}</li>`).join('')}</ul></div>`;
@@ -2536,7 +2543,7 @@ function briefHtml(b,hideShots){
   <div class="briefsec"><h4>High-Impact Events</h4>${(b.events&&b.events.length)?b.events.map(e=>`<div class="evrow"><span class="tm">${e.t}</span><span>${e.name}</span><span class="tag ${e.impact==='High'?'hi':'med'}">${e.impact}</span></div>`).join(''):'<div class="subtle">Clean tape — no high-impact prints.</div>'}</div>`;
 }
 /* Your saved brief — exactly what you asked for, in order:
-   POI + Liquidity Target · Execution Framework · Charts · Pre Market Sequence Checklist. */
+   POI + Liquidity Target · Execution Framework · Charts · Pre Market Report. */
 function myBriefHtml(b){
   let h='';
   if(b.poi||b.liq){
