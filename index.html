@@ -195,7 +195,7 @@ ul.tight li::marker{color:var(--org)}
 /* ideas: framework editor + day review */
 .iday.sel{box-shadow:0 0 0 1.5px var(--grn) inset}
 .frm{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn);vertical-align:middle;margin-left:3px}
-.drop{border:1px dashed var(--line2);border-radius:7px;padding:14px 10px;text-align:center;color:var(--mut);font-size:11px;cursor:pointer}
+.drop{border:1px dashed var(--line2);border-radius:7px;padding:14px 10px;text-align:center;color:var(--mut);font-size:11px;cursor:pointer;display:block}
 .drop:hover{border-color:var(--grn-dim);color:var(--ink)}
 .shots{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .shotw{position:relative;width:80px}
@@ -639,7 +639,7 @@ ul.tight li::marker{color:var(--org)}
   <div class="briefsec"><h4>Tags <span class="subtle">— pick from each dropdown; add as many as apply</span></h4>
     <div id="f-tags" class="tagrid"></div></div>
   <div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
-    <div class="drop" id="te-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
+    <label class="drop" id="te-drop" for="te-file">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</label>
     <input type="file" id="te-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="te-shots"></div></div>
   <button class="btn grn" id="logBtn" style="width:100%">+ Log Trade</button>
@@ -654,7 +654,7 @@ ul.tight li::marker{color:var(--org)}
   <span class="x" id="impX">✕</span>
   <h3>Import Trades from CSV</h3>
   <div class="subtle">Export your trade history from Tradovate, Rithmic, NinjaTrader, TopStep or Apex and drop the file here. Columns are auto-detected — fix anything it gets wrong before importing.</div>
-  <div class="drop" id="imp-drop" style="margin-top:10px">＋ Click to choose a CSV — or paste the contents below</div>
+  <label class="drop" id="imp-drop" for="imp-csvfile" style="margin-top:10px">＋ Click to choose a CSV — or paste the contents below</label>
   <input type="file" id="imp-csvfile" accept=".csv,text/csv" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
   <div class="field" style="margin-top:8px"><textarea id="imp-paste" style="min-height:70px" placeholder="…or paste raw CSV text here and hit Parse"></textarea></div>
   <button class="btn" id="imp-parse" type="button" style="padding:6px 14px">Parse CSV</button>
@@ -716,7 +716,7 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><label>YM bias</label><select id="cb-bias-YM"><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral</option></select></div>
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
-    <div class="drop" id="cb-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
+    <label class="drop" id="cb-drop" for="cb-file">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</label>
     <input type="file" id="cb-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="cb-shots"></div>
     <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn grn" id="cb-coach-btn" type="button">Coach's Technical Read</button><span class="subtle" id="cb-coach-status"></span></div>
@@ -757,7 +757,7 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><input id="pm-liq" placeholder="Draw on liquidity — PDH / PDL · equal highs / lows · session extreme · price…" style="width:100%"></div>
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
-    <div class="drop" id="pm-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
+    <label class="drop" id="pm-drop" for="pm-file">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</label>
     <input type="file" id="pm-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="pm-shots"></div>
   </div>
@@ -771,7 +771,7 @@ ul.tight li::marker{color:var(--org)}
   <div class="briefsec"><h4>What state did I execute from?</h4><div class="field"><textarea id="pmr-inner" style="min-height:70px" placeholder="The state you executed from — Settled Authority? Calm? Or hesitation, doubt, urgency, FOMO?"></textarea></div></div>
   <div class="briefsec"><h4>Did I follow the card — if so, where did I deviate?</h4><div class="field"><textarea id="pmr-framework" style="min-height:70px" placeholder="Every box or no trade. Where did you honor the sequence — and where, if anywhere, did you deviate?"></textarea></div></div>
   <div class="briefsec"><h4>Framework / Technical Review <span class="subtle">— annotated charts, saved at 1080p</span></h4>
-    <div class="drop" id="pmr-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
+    <label class="drop" id="pmr-drop" for="pmr-file">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</label>
     <input type="file" id="pmr-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="pmr-shots"></div>
     <div class="field" style="margin-top:8px"><textarea id="pmr-technical" style="min-height:56px" placeholder="Notes on the technicals — what the charts show, what you'd mark differently."></textarea></div></div>
@@ -800,7 +800,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-08-10 · uploads-fixed';
+const BUILD='2026-08-10b · label-upload';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2830,7 +2830,6 @@ if(cbEl('composeBriefBtn')){
   cbEl('composeBriefBtn').addEventListener('click',openCompose);
   cbEl('composeX').addEventListener('click',closeCompose);
   cbEl('composeModal').addEventListener('click',e=>{if(e.target.id==='composeModal')closeCompose();});
-  cbEl('cb-drop').addEventListener('click',()=>cbEl('cb-file').click());
   cbEl('cb-file').addEventListener('change',ev=>{[...ev.target.files].forEach(cbAddFile);ev.target.value='';});
   if(cbEl('cb-coach-btn'))cbEl('cb-coach-btn').addEventListener('click',cbCoachRead);
   cbEl('cb-save').addEventListener('click',doneCompose);
@@ -2926,7 +2925,6 @@ if(cbEl('pmModal')){
   if(cbEl('pmOpen'))cbEl('pmOpen').addEventListener('click',()=>{if(!selDay){alert('Pick a day on the calendar first.');return;}openCompose(selDay);});
   cbEl('pmX').addEventListener('click',closePm);
   cbEl('pmModal').addEventListener('click',e=>{if(e.target.id==='pmModal')closePm();});
-  cbEl('pm-drop').addEventListener('click',()=>cbEl('pm-file').click());
   cbEl('pm-file').addEventListener('change',ev=>{[...ev.target.files].forEach(pmAddFile);ev.target.value='';});
   cbEl('pm-save').addEventListener('click',savePm);
   document.addEventListener('paste',ev=>{if(!cbEl('pmModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){pmAddFile(f);ev.preventDefault();}}}});
@@ -3678,7 +3676,6 @@ if(cbEl('pmrOpen')){
   if(cbEl('pmrFramework'))cbEl('pmrFramework').addEventListener('click',()=>{const d=selWeekDay||selPmrDay;if(!d){alert('Pick a day on the calendar first.');return;}openCompose(d);});
   cbEl('pmrX').addEventListener('click',closePmrModal);
   cbEl('pmrModal').addEventListener('click',e=>{if(e.target.id==='pmrModal')closePmrModal();});
-  cbEl('pmr-drop').addEventListener('click',()=>cbEl('pmr-file').click());
   cbEl('pmr-file').addEventListener('change',ev=>{[...ev.target.files].forEach(pmrAddFile);ev.target.value='';});
   if(cbEl('pmr-debrief-btn'))cbEl('pmr-debrief-btn').addEventListener('click',pmrDebrief);
   if(cbEl('pmr-techdebrief-btn'))cbEl('pmr-techdebrief-btn').addEventListener('click',pmrTechDebrief);
@@ -3742,14 +3739,13 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
     <div id="tr-coach">${tr.review?tradeReviewHtml(tr.review):''}</div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button class="btn grn" id="tr-coach-btn" style="padding:5px 12px">🧠 ${tr.review?'Re-review':'Review this trade'}</button><span class="subtle" id="tr-coach-status">${tr.review?'':'Uses your Anthropic key · reads the bars + your annotated charts.'}</span></div></div>`;
   const editor=`<div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
-    <div class="drop" id="tr-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
+    <label class="drop" id="tr-drop" for="tr-file">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</label>
     <div id="tr-shots"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button class="btn grn" id="tr-savecharts" style="padding:6px 12px">Save charts</button><span class="subtle" id="tr-charts-status"></span></div></div>`;
   const editBtn=`<div style="text-align:right;margin-bottom:8px"><button class="btn grn" id="tr-edit" style="padding:5px 12px">✎ Edit trade</button></div>`;
   document.getElementById('tradeModalBody').innerHTML=editBtn+tradeFieldsHtml(tr)+replay+editor;
   renderTradeShots();
   const eb=document.getElementById('tr-edit');if(eb)eb.addEventListener('click',()=>{const t=loadTrades().find(x=>x.id===id);closeTradeModal();openLogModal(t);});
-  const dr=document.getElementById('tr-drop');if(dr)dr.addEventListener('click',()=>{const fi=document.getElementById('tr-file');if(fi)fi.click();});
   const sv=document.getElementById('tr-savecharts');if(sv)sv.addEventListener('click',saveTradeCharts);
   const rb=document.getElementById('tr-replay-btn');if(rb)rb.addEventListener('click',()=>{const t=loadTrades().filter(x=>x.id===id)[0];if(t)renderReplay(t,'tr-replay');});
   const cb2=document.getElementById('tr-coach-btn');if(cb2)cb2.addEventListener('click',()=>coachTradeReview(id));
@@ -4316,7 +4312,6 @@ if(document.getElementById('openLogBtn')){
   document.getElementById('tradeEntryModal').addEventListener('click',e=>{if(e.target.id==='tradeEntryModal')closeLogModal();});
   ['f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-dir'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',teApplyDerived);e.addEventListener('change',teApplyDerived);}});
   if(document.getElementById('f-autoex'))document.getElementById('f-autoex').addEventListener('click',teAutoExcursion);
-  document.getElementById('te-drop').addEventListener('click',()=>document.getElementById('te-file').click());
   document.getElementById('te-file').addEventListener('change',ev=>{[...ev.target.files].forEach(teAddFile);ev.target.value='';});
   document.addEventListener('paste',ev=>{if(!document.getElementById('tradeEntryModal').classList.contains('open'))return;const it=(ev.clipboardData&&ev.clipboardData.items)||[];for(const x of it){if(x.type&&x.type.indexOf('image')===0){const f=x.getAsFile();if(f){teAddFile(f);ev.preventDefault();}}}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLogModal();});
@@ -4331,7 +4326,6 @@ if(document.getElementById('impCsvBtn')){
   document.getElementById('impCsvBtn').addEventListener('click',openImp);
   document.getElementById('impX').addEventListener('click',()=>document.getElementById('impModal').classList.remove('open'));
   document.getElementById('impModal').addEventListener('click',e=>{if(e.target.id==='impModal')document.getElementById('impModal').classList.remove('open');});
-  document.getElementById('imp-drop').addEventListener('click',()=>document.getElementById('imp-csvfile').click());
   document.getElementById('imp-csvfile').addEventListener('change',ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const ta=document.getElementById('imp-paste');if(ta)ta.value=rd.result;csvParseNow();};rd.readAsText(f);ev.target.value='';});
   document.getElementById('imp-parse').addEventListener('click',csvParseNow);
   document.getElementById('imp-go').addEventListener('click',csvDoImport);
