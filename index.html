@@ -466,7 +466,7 @@ ul.tight li::marker{color:var(--org)}
           <hr class="d">
           <div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec">Trade Log <span class="mut" id="tlCount"></span></h2>
             <div style="display:flex;gap:6px"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button></div></div>
-          <input type="file" id="impFile" accept="application/json" style="display:none">
+          <input type="file" id="impFile" accept="application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
           <div class="tlog" id="tradeLog"></div>
         </div>
         <div>
@@ -593,7 +593,7 @@ ul.tight li::marker{color:var(--org)}
 </div>
 <div class="modal" id="briefModal"><div class="box"><span class="x" id="briefModalX">✕</span><button class="btn" id="briefModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="briefModalTitle">Daily Brief</h3><div class="subtle" id="briefModalGen"></div><div id="briefModalBody"></div></div></div>
 <div class="modal" id="dayModal"><div class="box" style="max-width:640px"><span class="x" id="dayModalX">✕</span><h3 id="dayModalTitle">Day</h3><div class="subtle" id="dayModalSub"></div><div id="dayModalBody" style="margin-top:12px"></div></div></div>
-<div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><input type="file" id="tr-file" accept="image/*" multiple style="display:none"><div id="tradeModalBody"></div></div></div>
+<div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><input type="file" id="tr-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px"><div id="tradeModalBody"></div></div></div>
 <div class="modal" id="tradeEntryModal"><div class="box" style="max-width:620px">
   <span class="x" id="teX">✕</span>
   <h3 id="teTitle">Log a Trade</h3>
@@ -640,7 +640,7 @@ ul.tight li::marker{color:var(--org)}
     <div id="f-tags" class="tagrid"></div></div>
   <div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
     <div class="drop" id="te-drop">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</div>
-    <input type="file" id="te-file" accept="image/*" multiple style="display:none">
+    <input type="file" id="te-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="te-shots"></div></div>
   <button class="btn grn" id="logBtn" style="width:100%">+ Log Trade</button>
   <div class="subtle" id="te-status" style="margin-top:6px"></div>
@@ -655,7 +655,7 @@ ul.tight li::marker{color:var(--org)}
   <h3>Import Trades from CSV</h3>
   <div class="subtle">Export your trade history from Tradovate, Rithmic, NinjaTrader, TopStep or Apex and drop the file here. Columns are auto-detected — fix anything it gets wrong before importing.</div>
   <div class="drop" id="imp-drop" style="margin-top:10px">＋ Click to choose a CSV — or paste the contents below</div>
-  <input type="file" id="imp-csvfile" accept=".csv,text/csv" style="display:none">
+  <input type="file" id="imp-csvfile" accept=".csv,text/csv" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
   <div class="field" style="margin-top:8px"><textarea id="imp-paste" style="min-height:70px" placeholder="…or paste raw CSV text here and hit Parse"></textarea></div>
   <button class="btn" id="imp-parse" type="button" style="padding:6px 14px">Parse CSV</button>
   <div id="imp-preview" style="margin-top:12px"></div>
@@ -717,7 +717,7 @@ ul.tight li::marker{color:var(--org)}
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
     <div class="drop" id="cb-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
-    <input type="file" id="cb-file" accept="image/*" multiple style="display:none">
+    <input type="file" id="cb-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="cb-shots"></div>
     <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn grn" id="cb-coach-btn" type="button">Coach's Technical Read</button><span class="subtle" id="cb-coach-status"></span></div>
     <div id="cb-coach" style="margin-top:10px"></div>
@@ -758,7 +758,7 @@ ul.tight li::marker{color:var(--org)}
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
     <div class="drop" id="pm-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
-    <input type="file" id="pm-file" accept="image/*" multiple style="display:none">
+    <input type="file" id="pm-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="pm-shots"></div>
   </div>
   <button class="btn grn" id="pm-save" style="width:100%;margin-top:8px">Save Framework</button>
@@ -772,7 +772,7 @@ ul.tight li::marker{color:var(--org)}
   <div class="briefsec"><h4>Did I follow the card — if so, where did I deviate?</h4><div class="field"><textarea id="pmr-framework" style="min-height:70px" placeholder="Every box or no trade. Where did you honor the sequence — and where, if anywhere, did you deviate?"></textarea></div></div>
   <div class="briefsec"><h4>Framework / Technical Review <span class="subtle">— annotated charts, saved at 1080p</span></h4>
     <div class="drop" id="pmr-drop">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</div>
-    <input type="file" id="pmr-file" accept="image/*" multiple style="display:none">
+    <input type="file" id="pmr-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
     <div id="pmr-shots"></div>
     <div class="field" style="margin-top:8px"><textarea id="pmr-technical" style="min-height:56px" placeholder="Notes on the technicals — what the charts show, what you'd mark differently."></textarea></div></div>
   <div class="briefsec"><h4>Missed Trades <span class="subtle">— setups you saw but didn't take. This is how hesitation gets measured.</span></h4>
