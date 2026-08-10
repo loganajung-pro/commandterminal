@@ -593,7 +593,7 @@ ul.tight li::marker{color:var(--org)}
 </div>
 <div class="modal" id="briefModal"><div class="box"><span class="x" id="briefModalX">✕</span><button class="btn" id="briefModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="briefModalTitle">Daily Brief</h3><div class="subtle" id="briefModalGen"></div><div id="briefModalBody"></div></div></div>
 <div class="modal" id="dayModal"><div class="box" style="max-width:640px"><span class="x" id="dayModalX">✕</span><h3 id="dayModalTitle">Day</h3><div class="subtle" id="dayModalSub"></div><div id="dayModalBody" style="margin-top:12px"></div></div></div>
-<div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><input type="file" id="tr-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px"><div id="tradeModalBody"></div></div></div>
+<div class="modal" id="tradeModal"><div class="box"><span class="x" id="tradeModalX">✕</span><button class="btn" id="tradeModalPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button><h3 id="tradeModalTitle">Trade</h3><div class="subtle" id="tradeModalSub"></div><div id="tradeModalBody"></div></div></div>
 <div class="modal" id="tradeEntryModal"><div class="box" style="max-width:620px">
   <span class="x" id="teX">✕</span>
   <h3 id="teTitle">Log a Trade</h3>
@@ -639,8 +639,8 @@ ul.tight li::marker{color:var(--org)}
   <div class="briefsec"><h4>Tags <span class="subtle">— pick from each dropdown; add as many as apply</span></h4>
     <div id="f-tags" class="tagrid"></div></div>
   <div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
-    <label class="drop" id="te-drop" for="te-file">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</label>
-    <input type="file" id="te-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
+    <label class="drop" id="te-drop" style="position:relative">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots<input type="file" id="te-file" accept="image/*" multiple style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0"></label>
+    
     <div id="te-shots"></div></div>
   <button class="btn grn" id="logBtn" style="width:100%">+ Log Trade</button>
   <div class="subtle" id="te-status" style="margin-top:6px"></div>
@@ -654,8 +654,8 @@ ul.tight li::marker{color:var(--org)}
   <span class="x" id="impX">✕</span>
   <h3>Import Trades from CSV</h3>
   <div class="subtle">Export your trade history from Tradovate, Rithmic, NinjaTrader, TopStep or Apex and drop the file here. Columns are auto-detected — fix anything it gets wrong before importing.</div>
-  <label class="drop" id="imp-drop" for="imp-csvfile" style="margin-top:10px">＋ Click to choose a CSV — or paste the contents below</label>
-  <input type="file" id="imp-csvfile" accept=".csv,text/csv" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
+  <label class="drop" id="imp-drop" style="position:relative;margin-top:10px">＋ Click to choose a CSV — or paste the contents below<input type="file" id="imp-csvfile" accept=".csv,text/csv" style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0"></label>
+  
   <div class="field" style="margin-top:8px"><textarea id="imp-paste" style="min-height:70px" placeholder="…or paste raw CSV text here and hit Parse"></textarea></div>
   <button class="btn" id="imp-parse" type="button" style="padding:6px 14px">Parse CSV</button>
   <div id="imp-preview" style="margin-top:12px"></div>
@@ -716,8 +716,8 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><label>YM bias</label><select id="cb-bias-YM"><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral</option></select></div>
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
-    <label class="drop" id="cb-drop" for="cb-file">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</label>
-    <input type="file" id="cb-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
+    <label class="drop" id="cb-drop" style="position:relative">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts<input type="file" id="cb-file" accept="image/*" multiple style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0"></label>
+    
     <div id="cb-shots"></div>
     <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn grn" id="cb-coach-btn" type="button">Coach's Technical Read</button><span class="subtle" id="cb-coach-status"></span></div>
     <div id="cb-coach" style="margin-top:10px"></div>
@@ -757,8 +757,8 @@ ul.tight li::marker{color:var(--org)}
     <div class="field"><input id="pm-liq" placeholder="Draw on liquidity — PDH / PDL · equal highs / lows · session extreme · price…" style="width:100%"></div>
   </div>
   <div class="briefsec"><h4>Chart Screenshots</h4>
-    <label class="drop" id="pm-drop" for="pm-file">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</label>
-    <input type="file" id="pm-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
+    <label class="drop" id="pm-drop" style="position:relative">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts<input type="file" id="pm-file" accept="image/*" multiple style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0"></label>
+    
     <div id="pm-shots"></div>
   </div>
   <button class="btn grn" id="pm-save" style="width:100%;margin-top:8px">Save Framework</button>
@@ -771,8 +771,8 @@ ul.tight li::marker{color:var(--org)}
   <div class="briefsec"><h4>What state did I execute from?</h4><div class="field"><textarea id="pmr-inner" style="min-height:70px" placeholder="The state you executed from — Settled Authority? Calm? Or hesitation, doubt, urgency, FOMO?"></textarea></div></div>
   <div class="briefsec"><h4>Did I follow the card — if so, where did I deviate?</h4><div class="field"><textarea id="pmr-framework" style="min-height:70px" placeholder="Every box or no trade. Where did you honor the sequence — and where, if anywhere, did you deviate?"></textarea></div></div>
   <div class="briefsec"><h4>Framework / Technical Review <span class="subtle">— annotated charts, saved at 1080p</span></h4>
-    <label class="drop" id="pmr-drop" for="pmr-file">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts</label>
-    <input type="file" id="pmr-file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
+    <label class="drop" id="pmr-drop" style="position:relative">＋ Click to add — or paste (⌘/Ctrl+V) your annotated charts<input type="file" id="pmr-file" accept="image/*" multiple style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0"></label>
+    
     <div id="pmr-shots"></div>
     <div class="field" style="margin-top:8px"><textarea id="pmr-technical" style="min-height:56px" placeholder="Notes on the technicals — what the charts show, what you'd mark differently."></textarea></div></div>
   <div class="briefsec"><h4>Missed Trades <span class="subtle">— setups you saw but didn't take. This is how hesitation gets measured.</span></h4>
@@ -800,7 +800,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-08-10c · label+dnd';
+const BUILD='2026-08-10e · overlay+dnd';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -3739,7 +3739,7 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
     <div id="tr-coach">${tr.review?tradeReviewHtml(tr.review):''}</div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button class="btn grn" id="tr-coach-btn" style="padding:5px 12px">🧠 ${tr.review?'Re-review':'Review this trade'}</button><span class="subtle" id="tr-coach-status">${tr.review?'':'Uses your Anthropic key · reads the bars + your annotated charts.'}</span></div></div>`;
   const editor=`<div class="briefsec"><h4>Charts <span class="subtle">— annotated, saved at 1080p</span></h4>
-    <label class="drop" id="tr-drop" for="tr-file">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots</label>
+    <label class="drop" id="tr-drop" style="position:relative">＋ Click to add — or paste (⌘/Ctrl+V) chart screenshots<input type="file" id="tr-file" accept="image/*" multiple style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0"></label>
     <div id="tr-shots"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button class="btn grn" id="tr-savecharts" style="padding:6px 12px">Save charts</button><span class="subtle" id="tr-charts-status"></span></div></div>`;
   const editBtn=`<div style="text-align:right;margin-bottom:8px"><button class="btn grn" id="tr-edit" style="padding:5px 12px">✎ Edit trade</button></div>`;
@@ -4365,14 +4365,16 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   safe(renderSeqCard);
   try{rankTick();}catch(e){}
 })();
-/* Drag-and-drop chart screenshots onto any drop zone (in addition to click + paste). */
+/* Drag an image onto any drop zone (in addition to clicking the box or pasting ⌘V).
+   Handled on the label; preventDefault cancels the overlay input's native drop so images add once. */
 (function(){
   function wireDnD(dropId,addFn){
     var d=document.getElementById(dropId);if(!d||typeof addFn!=='function')return;
-    d.addEventListener('dragenter',function(e){e.preventDefault();e.stopPropagation();d.style.borderColor='var(--grn)';d.style.color='var(--grn)';});
-    d.addEventListener('dragover',function(e){e.preventDefault();e.stopPropagation();try{e.dataTransfer.dropEffect='copy';}catch(_){}d.style.borderColor='var(--grn)';});
-    d.addEventListener('dragleave',function(e){e.preventDefault();e.stopPropagation();d.style.borderColor='';d.style.color='';});
-    d.addEventListener('drop',function(e){e.preventDefault();e.stopPropagation();d.style.borderColor='';d.style.color='';
+    function hi(on){d.style.borderColor=on?'var(--grn)':'';d.style.color=on?'var(--grn)':'';}
+    d.addEventListener('dragenter',function(e){e.preventDefault();e.stopPropagation();hi(true);});
+    d.addEventListener('dragover',function(e){e.preventDefault();e.stopPropagation();try{e.dataTransfer.dropEffect='copy';}catch(_){}hi(true);});
+    d.addEventListener('dragleave',function(e){e.preventDefault();e.stopPropagation();hi(false);});
+    d.addEventListener('drop',function(e){e.preventDefault();e.stopPropagation();hi(false);
       var fs=(e.dataTransfer&&e.dataTransfer.files)?e.dataTransfer.files:[];
       for(var i=0;i<fs.length;i++){if(!fs[i].type||fs[i].type.indexOf('image')===0)addFn(fs[i]);}});
   }
