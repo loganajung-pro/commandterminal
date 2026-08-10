@@ -800,7 +800,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-08-10b · label-upload';
+const BUILD='2026-08-10c · label+dnd';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -4364,6 +4364,20 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   safe(initBubbles);
   safe(renderSeqCard);
   try{rankTick();}catch(e){}
+})();
+/* Drag-and-drop chart screenshots onto any drop zone (in addition to click + paste). */
+(function(){
+  function wireDnD(dropId,addFn){
+    var d=document.getElementById(dropId);if(!d||typeof addFn!=='function')return;
+    d.addEventListener('dragenter',function(e){e.preventDefault();e.stopPropagation();d.style.borderColor='var(--grn)';d.style.color='var(--grn)';});
+    d.addEventListener('dragover',function(e){e.preventDefault();e.stopPropagation();try{e.dataTransfer.dropEffect='copy';}catch(_){}d.style.borderColor='var(--grn)';});
+    d.addEventListener('dragleave',function(e){e.preventDefault();e.stopPropagation();d.style.borderColor='';d.style.color='';});
+    d.addEventListener('drop',function(e){e.preventDefault();e.stopPropagation();d.style.borderColor='';d.style.color='';
+      var fs=(e.dataTransfer&&e.dataTransfer.files)?e.dataTransfer.files:[];
+      for(var i=0;i<fs.length;i++){if(!fs[i].type||fs[i].type.indexOf('image')===0)addFn(fs[i]);}});
+  }
+  var map=[['cb-drop',window.cbAddFile],['pm-drop',window.pmAddFile],['pmr-drop',window.pmrAddFile],['te-drop',window.teAddFile],['tr-drop',window.trAddFile]];
+  for(var i=0;i<map.length;i++)wireDnD(map[i][0],map[i][1]);
 })();
 </script>
 </body>
