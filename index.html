@@ -2922,8 +2922,8 @@ function pmPrintHtml(ex){
   const shots=(ex.shots&&ex.shots.length)?`<div class="briefsec"><h4>Annotated Charts</h4>${ex.shots.map(s=>`<div class="fwshot"><img src="${s}"></div>`).join('')}</div>`:'';
   return `${scen}<div class="briefsec">${poi}</div>${shots}`;
 }
-if(cbEl('pmOpen')){
-  cbEl('pmOpen').addEventListener('click',()=>{if(!selDay){alert('Pick a day on the calendar first.');return;}openCompose(selDay);});
+if(cbEl('pmModal')){
+  if(cbEl('pmOpen'))cbEl('pmOpen').addEventListener('click',()=>{if(!selDay){alert('Pick a day on the calendar first.');return;}openCompose(selDay);});
   cbEl('pmX').addEventListener('click',closePm);
   cbEl('pmModal').addEventListener('click',e=>{if(e.target.id==='pmModal')closePm();});
   cbEl('pm-drop').addEventListener('click',()=>cbEl('pm-file').click());
