@@ -451,14 +451,6 @@ ul.tight li::marker{color:var(--org)}
           <div class="bubble" data-bub="price"><div class="bhead"><h2 class="sec">Price Read</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachPrice" class="narr"></div></div></div>
           <div class="bubble" data-bub="watch"><div class="bhead"><h2 class="sec">Watch Today</h2><span class="chev">▸</span></div><div class="bbody"><ul class="tight" id="watchToday"><li>…</li></ul></div></div>
           <hr class="d">
-          <div class="bubble" data-bub="guardrails"><div class="bhead"><h2 class="sec">Guardrails — No Trade</h2><span class="chev">▸</span></div><div class="bbody">
-            <ul class="tight" style="color:var(--red)">
-              <li>No CSD after POI → NO TRADE</li>
-              <li>POI/SMT outside time filter → NO TRADE</li>
-              <li>HTF draw unclear · chop → NO TRADE</li>
-              <li>SMTs both sides of range → NO TRADE</li>
-            </ul>
-            </div></div>
           <div class="bubble" data-bub="writeups"><div class="bhead"><h2 class="sec">Chart Write-Ups</h2><span class="chev">▸</span></div><div class="bbody">
             <div class="subtle" style="margin-bottom:8px">Pre-market &amp; post-market chart reads to sharpen your price read — 7 sections, notes + screenshots, export to PDF. Clears at local midnight; save the PDF to keep it.</div>
             <button class="btn grn" id="openWriteups" style="width:100%;padding:10px">＋ Open Chart Write-Ups</button>
@@ -873,7 +865,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2h · 2026-08-12 · Chart Write-Ups';
+const BUILD='v2j · 2026-08-12 · full-year red-folder schedule';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1960,8 +1952,62 @@ async function ffFetchAll(force){
   FF_MIN=days[0]||null;FF_MAX=days[days.length-1]||null;
   FF_CACHE=dd;FF_TS=Date.now();return dd;
 }
+/* ============================================================
+   BAKED-IN HIGH-IMPACT SCHEDULE — official rest-of-2026 release dates
+   (BLS · Fed · BEA · Census · ISM). ForexFactory only publishes a 3-week
+   feed, so this guarantees the red folders your NO-TRADE rules key on are
+   ALWAYS present for the whole year, offline, deduped against FF/FMP.
+   Sources verified Aug 2026. Times are ET; converted to UTC (EDT +4 before
+   Nov 1 2026, EST +5 on/after) so the calendar shows the correct ET time.
+   ============================================================ */
+function schedRaw(){
+  var S=[];
+  function add(dates,t,k,ev,imp){dates.forEach(function(d){S.push({d:d,t:t,k:k,ev:ev,imp:imp});});}
+  add(['2026-08-12','2026-09-11','2026-10-14','2026-11-10','2026-12-10'],'08:30','cpi','Consumer Price Index (CPI)','High');
+  add(['2026-08-13','2026-09-10','2026-10-15','2026-11-13','2026-12-15'],'08:30','ppi','Producer Price Index (PPI)','High');
+  add(['2026-09-04','2026-10-02','2026-11-06','2026-12-04'],'08:30','nfp','Employment Situation (Nonfarm Payrolls)','High');
+  add(['2026-09-16','2026-10-28','2026-12-09'],'14:00','fomc','FOMC Rate Decision','High');
+  add(['2026-08-26','2026-09-30','2026-10-29','2026-11-25','2026-12-23'],'08:30','pce','Personal Income & Outlays (PCE)','High');
+  add(['2026-08-14','2026-09-16','2026-10-15','2026-11-17','2026-12-16'],'08:30','retail','Advance Retail Sales','High');
+  add(['2026-09-01','2026-10-01','2026-11-02','2026-12-01'],'10:00','ismm','ISM Manufacturing PMI','High');
+  add(['2026-09-03','2026-10-05','2026-11-04','2026-12-03'],'10:00','isms','ISM Services PMI','High');
+  add(['2026-10-29'],'08:30','gdp','GDP (Advance Estimate)','High');
+  add(['2026-08-26','2026-11-25'],'08:30','gdp','GDP (Second Estimate)','Medium');
+  add(['2026-09-30','2026-12-23'],'08:30','gdp','GDP (Third Estimate)','Medium');
+  add(['2026-09-01','2026-11-03','2026-12-01'],'10:00','jolts','JOLTS Job Openings','Medium');
+  add(['2026-08-20','2026-08-27','2026-09-03','2026-09-10','2026-09-17','2026-09-24','2026-10-01','2026-10-08','2026-10-15','2026-10-22','2026-10-29','2026-11-05','2026-11-12','2026-11-19','2026-11-25','2026-12-03','2026-12-10','2026-12-17','2026-12-24','2026-12-31'],'08:30','claims','Initial Jobless Claims','Medium');
+  return S;
+}
+function schedKey(title){var s=String(title||'').toLowerCase();
+  if(/consumer price|\bcpi\b/.test(s))return 'cpi';
+  if(/producer price|\bppi\b/.test(s))return 'ppi';
+  if(/non.?farm|employment situation|payroll/.test(s))return 'nfp';
+  if(/fomc|federal funds|rate decision|interest rate dec/.test(s))return 'fomc';
+  if(/personal income|personal spending|personal consumption|\bpce\b/.test(s))return 'pce';
+  if(/retail sales/.test(s))return 'retail';
+  if(/ism.*manufactur|manufacturing pmi/.test(s))return 'ismm';
+  if(/ism.*service|services pmi|non-manufacturing/.test(s))return 'isms';
+  if(/gross domestic|\bgdp\b/.test(s))return 'gdp';
+  if(/jobless|unemployment claims|initial claims/.test(s))return 'claims';
+  if(/jolts|job openings/.test(s))return 'jolts';
+  return null;
+}
+function schedEvents(fromDs,toDs){
+  return schedRaw().filter(function(x){return x.d>=fromDs&&x.d<=toDs;}).map(function(x){
+    var off=(x.d<'2026-11-01')?4:5;var hm=x.t.split(':');var h=(+hm[0])+off;
+    return {date:x.d+' '+String(h).padStart(2,'0')+':'+hm[1]+':00',event:x.ev,impact:x.imp,previous:'',estimate:'',country:'US',src:'sched',_k:x.k};
+  });
+}
+function mergeSched(out,fromDs,toDs){
+  out=out||[];var have={};
+  out.forEach(function(e){try{var d=etDateStr(utcToEt(e.date));var k=schedKey(e.event);if(k)have[d+'|'+k]=1;}catch(_){}});
+  schedEvents(fromDs,toDs).forEach(function(e){var d=etDateStr(utcToEt(e.date));var key=d+'|'+(e._k||schedKey(e.event));if(have[key])return;have[key]=1;out.push(e);});
+  return out;
+}
+
 /* ForexFactory owns its ~3-week window; FMP fills everything outside it (out to 2027).
-   That's the only way to have FF folders near-term AND full coverage long-term. */
+   That's the only way to have FF folders near-term AND full coverage long-term.
+   The baked-in schedule then guarantees the big red folders in every month. */
 async function calEventsFor(fromDs,toDs){
   const ff=await ffFetchAll(false);
   const out=[];
@@ -1974,9 +2020,9 @@ async function calEventsFor(fromDs,toDs){
         fmp.forEach(e=>{const d=etDateStr(utcToEt(e.date));if(d<FF_MIN||d>FF_MAX){if(d>=fromDs&&d<=toDs)out.push(e);}});  // FF owns its window; FMP only outside it
       }catch(e){}
     }
-    return out;
+    return mergeSched(out,fromDs,toDs);
   }
-  try{return await fetchCalChunked(fromDs,toDs);}catch(e){return [];}   // feed unreachable → pure FMP
+  try{return mergeSched(await fetchCalChunked(fromDs,toDs),fromDs,toDs);}catch(e){return mergeSched([],fromDs,toDs);}   // feed unreachable → FMP + baked schedule
 }
 function calSourceLabel(){
   const el=document.getElementById('calSource');if(!el)return;
