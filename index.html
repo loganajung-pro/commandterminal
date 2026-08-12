@@ -459,6 +459,11 @@ ul.tight li::marker{color:var(--org)}
               <li>SMTs both sides of range → NO TRADE</li>
             </ul>
             </div></div>
+          <div class="bubble" data-bub="writeups"><div class="bhead"><h2 class="sec">Chart Write-Ups</h2><span class="chev">▸</span></div><div class="bbody">
+            <div class="subtle" style="margin-bottom:8px">Pre-market &amp; post-market chart reads to sharpen your price read — 7 sections, notes + screenshots, export to PDF. Clears at local midnight; save the PDF to keep it.</div>
+            <button class="btn grn" id="openWriteups" style="width:100%;padding:10px">＋ Open Chart Write-Ups</button>
+            <div class="subtle" id="wuSummary" style="margin-top:6px"></div>
+          </div></div>
         </div>
         <div>
           <div class="panel">
@@ -857,9 +862,18 @@ ul.tight li::marker{color:var(--org)}
   <button class="btn grn" id="pmr-save" style="width:100%;margin-top:8px">Save Journal</button>
   <div class="subtle" id="pmr-status" style="margin-top:6px"></div>
 </div></div>
+<div class="modal" id="writeupsModal"><div class="box" style="max-width:860px">
+  <span class="x" id="wuX">✕</span>
+  <button class="btn" id="wuPdf" style="float:right;margin-right:10px;padding:4px 10px">⬇ PDF</button>
+  <h3>Chart Write-Ups <span class="subtle" id="wuDateLbl"></span></h3>
+  <div class="subtle" style="margin-bottom:6px">Title each read (grey text is a suggested title), add your notes, and drop chart screenshots. Empty sections are dropped from the PDF. Clears at local midnight — save the PDF to your computer to keep it.</div>
+  <div id="wuSections"></div>
+  <div style="display:flex;gap:8px;margin-top:12px"><button class="btn grn" id="wuSave" style="flex:1">Save</button><button class="btn grn" id="wuSavePdf" style="flex:1">Save + Export PDF</button></div>
+  <div class="subtle" id="wuStatus" style="margin-top:6px"></div>
+</div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2g · 2026-08-12 · bars time-window fix';
+const BUILD='v2h · 2026-08-12 · Chart Write-Ups';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -5040,6 +5054,78 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
 
   // expose hooks (debug + brief coach-read context + on-demand sync)
   window.TSX_LIVE={tick:tick,auth:auth,accounts:accounts,sync:doSync,ensureContext:ensureContext,contextText:contextText};
+})();
+
+/* ==================== CHART WRITE-UPS ==================== */
+(function(){
+  var TITLES=['Daily Chart NQ v. ES','H1 Chart','15M Chart (Asia / London Session)','7AM - 9AM Range','New York AM Session DATE','New York PM Session DATE','Points of Interest'];
+  var KEY='ct_writeups';
+  function localYmd(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function blank(){return {date:localYmd(),sections:TITLES.map(function(){return {title:'',notes:'',shots:[]};})};}
+  function load(){var w=null;try{w=JSON.parse(lsGet(KEY)||'null');}catch(e){}if(!w||w.date!==localYmd()||!Array.isArray(w.sections)||w.sections.length!==TITLES.length){w=blank();persist(w);}return w;}
+  function persist(w){try{lsSet(KEY,JSON.stringify(w));}catch(e){}}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function el(id){return document.getElementById(id);}
+  var WU=null;
+
+  function filled(s){return (s.notes&&s.notes.trim())||(s.shots&&s.shots.length)||(s.title&&s.title.trim());}
+  function renderThumbs(){
+    var host=el('wuSections');if(!host)return;
+    WU.sections.forEach(function(s,i){
+      var t=host.querySelector('.wu-thumbs[data-i="'+i+'"]');if(!t)return;
+      t.innerHTML=s.shots.map(function(u,k){return '<div style="position:relative"><img src="'+u+'" style="height:52px;border:1px solid var(--line2);border-radius:5px;display:block"><span data-i="'+i+'" data-k="'+k+'" class="wu-rm" style="position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;font-size:11px;line-height:16px;text-align:center;cursor:pointer">×</span></div>';}).join('');
+      t.querySelectorAll('.wu-rm').forEach(function(b){b.addEventListener('click',function(){WU.sections[+b.dataset.i].shots.splice(+b.dataset.k,1);renderThumbs();});});
+    });
+  }
+  function addShot(i,file){if(!file)return;var rd=new FileReader();rd.onload=function(){if(typeof shrinkImg==='function')shrinkImg(rd.result,function(u){WU.sections[i].shots.push(u);renderThumbs();});else{WU.sections[i].shots.push(rd.result);renderThumbs();}};rd.readAsDataURL(file);}
+  function renderSections(){
+    var host=el('wuSections');if(!host)return;
+    host.innerHTML=WU.sections.map(function(s,i){
+      return '<div class="briefsec" data-wu="'+i+'">'+
+        '<input class="wu-title" data-i="'+i+'" placeholder="'+esc(TITLES[i])+'" value="'+esc(s.title||'')+'" style="width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:9px;color:var(--ink);font-family:var(--mono);font-weight:600;font-size:13px">'+
+        '<textarea class="wu-notes" data-i="'+i+'" placeholder="Your read — structure, levels, bias, what you are watching…" style="width:100%;min-height:70px;margin-top:6px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:9px;color:var(--ink);font-family:var(--mono);resize:vertical">'+esc(s.notes||'')+'</textarea>'+
+        '<div class="wu-drop" data-i="'+i+'" style="margin-top:6px;border:1px dashed var(--line2);border-radius:7px;padding:10px;text-align:center;color:var(--mut);cursor:pointer;font-size:12px">＋ Drag charts here, or click to add</div>'+
+        '<input type="file" class="wu-file" data-i="'+i+'" accept="image/png,image/jpeg,image/gif,image/webp" multiple style="display:none">'+
+        '<div class="wu-thumbs" data-i="'+i+'" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>'+
+      '</div>';
+    }).join('');
+    host.querySelectorAll('.wu-title').forEach(function(e){e.addEventListener('input',function(){WU.sections[+e.dataset.i].title=e.value;});});
+    host.querySelectorAll('.wu-notes').forEach(function(e){e.addEventListener('input',function(){WU.sections[+e.dataset.i].notes=e.value;});});
+    host.querySelectorAll('.wu-file').forEach(function(e){e.addEventListener('change',function(ev){var i=+e.dataset.i,fs=ev.target.files||[];for(var k=0;k<fs.length;k++)addShot(i,fs[k]);e.value='';});});
+    host.querySelectorAll('.wu-drop').forEach(function(d){var i=+d.dataset.i;
+      d.addEventListener('click',function(){var f=host.querySelector('.wu-file[data-i="'+i+'"]');if(f)f.click();});
+      d.addEventListener('dragover',function(ev){ev.preventDefault();d.style.borderColor='var(--grn)';d.style.color='var(--grn)';});
+      d.addEventListener('dragleave',function(ev){ev.preventDefault();d.style.borderColor='';d.style.color='';});
+      d.addEventListener('drop',function(ev){ev.preventDefault();d.style.borderColor='';d.style.color='';var fs=(ev.dataTransfer&&ev.dataTransfer.files)||[];for(var k=0;k<fs.length;k++){if(!fs[k].type||fs[k].type.indexOf('image')===0)addShot(i,fs[k]);}});
+    });
+    renderThumbs();
+  }
+  function summary(){
+    var w=load();var f=w.sections.filter(filled).length;var ch=w.sections.reduce(function(a,s){return a+s.shots.length;},0);
+    var e=el('wuSummary');if(e)e.innerHTML=f?('<span class="up">'+f+'/7 sections</span> · '+ch+' chart'+(ch!==1?'s':'')+' <span class="subtle">· clears at local midnight — export the PDF to keep it</span>'):'<span class="subtle">Not started today.</span>';
+  }
+  function openModal(){WU=load();var d=el('wuDateLbl');if(d)d.textContent='· '+localYmd();renderSections();var st=el('wuStatus');if(st)st.textContent='';el('writeupsModal').classList.add('open');}
+  function closeModal(){el('writeupsModal').classList.remove('open');}
+  function doSave(){persist(WU);summary();var st=el('wuStatus');if(st)st.innerHTML='<span class="up">Saved — kept on this dashboard until local midnight.</span>';}
+  function toPdf(){
+    var body='';
+    WU.sections.forEach(function(s,i){
+      if(!filled(s))return;
+      var title=(s.title&&s.title.trim())?s.title:TITLES[i];
+      var notes=(s.notes&&s.notes.trim())?(typeof nl2p==='function'?nl2p(s.notes):('<p>'+escH(s.notes)+'</p>')):'';
+      var imgs=s.shots.map(function(u){return '<img src="'+u+'" style="max-width:100%;border:1px solid #ccc;border-radius:6px;margin:6px 0;display:block">';}).join('');
+      body+='<div class="briefsec"><h2>'+escH(title)+'</h2>'+notes+imgs+'</div>';
+    });
+    if(!body){var st=el('wuStatus');if(st)st.innerHTML='<span class="down">Nothing to export — fill at least one section.</span>';return;}
+    if(typeof printDoc==='function')printDoc('Chart Write-Ups — '+localYmd(),body);
+  }
+  var ob=el('openWriteups');if(ob)ob.addEventListener('click',openModal);
+  var x=el('wuX');if(x)x.addEventListener('click',closeModal);
+  var mm=el('writeupsModal');if(mm)mm.addEventListener('click',function(e){if(e.target.id==='writeupsModal')closeModal();});
+  var sv=el('wuSave');if(sv)sv.addEventListener('click',doSave);
+  var sp=el('wuSavePdf');if(sp)sp.addEventListener('click',function(){doSave();toPdf();});
+  var pb=el('wuPdf');if(pb)pb.addEventListener('click',function(){if(WU)persist(WU);toPdf();});
+  load();summary();
 })();
 </script>
 </body>
