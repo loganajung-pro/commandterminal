@@ -293,6 +293,43 @@ ul.tight li::marker{color:var(--org)}
 .pm-box{max-width:520px;width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.6);text-align:left}
 .prestige-cta{animation:ctapulse 1.6s ease-in-out infinite}
 @keyframes ctapulse{0%,100%{box-shadow:0 0 0 0 rgba(53,208,127,.45)}50%{box-shadow:0 0 0 8px rgba(53,208,127,0)}}
+/* ===== LIVE TAB (v2) ===== */
+.subtabs{display:inline-flex;background:var(--panel2);border:1px solid var(--line2);border-radius:9px;padding:3px;gap:2px}
+.subtab{background:transparent;border:0;color:var(--mut);font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.subtab:hover{color:var(--ink)}
+.subtab.active{background:rgba(53,208,127,.12);color:var(--grn)}
+.livedotmini{width:6px;height:6px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);animation:lvpulse 1.6s ease-in-out infinite}
+@keyframes lvpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.lvgrid{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
+@media(max-width:900px){.lvgrid{grid-template-columns:1fr}}
+.lvgrid2{display:grid;gap:12px;grid-template-columns:1.4fr 1fr}
+@media(max-width:900px){.lvgrid2{grid-template-columns:1fr}}
+.qcard{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:12px 13px}
+.qcard .sym{font-family:var(--title);font-size:13px;letter-spacing:.06em;color:var(--mut)}
+.qcard .px{font-family:var(--num);font-size:26px;font-weight:600;line-height:1.1;margin:2px 0}
+.qrange{height:6px;background:var(--bg);border-radius:4px;position:relative;margin-top:8px;overflow:hidden}
+.qrange>i{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+.lvtable{width:100%;border-collapse:collapse;font-size:12px}
+.lvtable th,.lvtable td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;font-family:var(--num)}
+.lvtable th{color:var(--mut);text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;font-family:var(--mono)}
+.lvtable td.lbl,.lvtable th.lbl{text-align:left;font-family:var(--mono);color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+.lvmeter{height:9px;background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:6px}
+.lvmeter>i{display:block;height:100%;transition:width .3s,background .3s}
+.smtbadge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:7px;font-weight:700;font-size:12px;letter-spacing:.04em}
+.smt-align{background:rgba(53,208,127,.12);color:var(--grn);border:1px solid var(--grn-dim)}
+.smt-div{background:rgba(216,162,58,.12);color:var(--amber);border:1px solid #6b5320}
+.smt-none{background:var(--panel2);color:var(--mut);border:1px solid var(--line2)}
+.lvpill{display:inline-block;font-size:9.5px;letter-spacing:.06em;padding:2px 7px;border-radius:20px;text-transform:uppercase;font-weight:700}
+.lvpill.auto{background:rgba(53,208,127,.14);color:var(--grn)}
+.lvpill.assist{background:rgba(74,158,255,.14);color:var(--blue)}
+.lvpill.man{background:var(--panel2);color:var(--faint);border:1px solid var(--line)}
+.lvpill.on{background:rgba(53,208,127,.14);color:var(--grn)}
+.lvpill.off{background:var(--panel2);color:var(--faint);border:1px solid var(--line)}
+.winrow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--line);font-size:12px}
+.winrow.live{color:var(--grn)}
+.lverr{color:var(--red);font-size:11.5px}
+.lvhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.lvh4{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--org);margin:0}
 </style>
 </head>
 <body>
@@ -397,10 +434,16 @@ ul.tight li::marker{color:var(--org)}
     </section>
     <section class="view active" id="view-brief">
       <div class="crumb">Matrix / <b>Market Brief</b></div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
         <h1 class="h1" style="margin:0">Daily Brief <span class="subtle" id="briefDate"></span></h1>
+        <div class="subtabs" id="briefSubtabs">
+          <button class="subtab active" data-sub="brief">Brief</button>
+          <button class="subtab" data-sub="live"><span class="livedotmini"></span>Live</button>
+        </div>
       </div>
       <hr class="d">
+      <div id="liveTab" style="display:none"></div>
+      <div id="briefBody">
       <div class="grid" style="grid-template-columns:2fr 1fr">
         <div>
           <div class="bubble" data-bub="conscious"><div class="bhead"><h2 class="sec">Coaches Conscious Framework</h2><span class="chev">▸</span></div><div class="bbody"><div id="coachConscious" class="narr">Reading…</div></div></div>
@@ -435,6 +478,7 @@ ul.tight li::marker{color:var(--org)}
       <div id="composedCharts"></div>
       <hr class="d">
       <div class="subtle" style="text-align:center;padding:0 0 14px">Save Daily Brief and Compose Framework both sit in the Daily Briefings bar on the right — hit save when you're ready.</div>
+      </div><!-- /#briefBody -->
     </section>
 
     <!-- ===== MACRO ===== -->
@@ -684,6 +728,16 @@ ul.tight li::marker{color:var(--org)}
       <div class="field"><label>Max drawdown $</label><input id="setAcctDD" placeholder="e.g. 4500"></div></div>
     <button class="btn grn" id="setSave" style="width:100%;margin-top:12px">Save</button>
     <div class="subtle" id="setStatus" style="margin-top:6px"></div>
+    <hr class="d">
+    <h4 style="font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--org);margin:0 0 6px">Live Account — TopstepX</h4>
+    <div class="subtle" style="margin-bottom:8px">Powers the <b>Live</b> tab: real-time quotes, key levels, SMT, account governor and positions. Read-only — no orders are ever placed. Key stored only in this browser.</div>
+    <div class="row2"><div class="field"><label>Username</label><input id="setTsxUser" placeholder="TopstepX username" autocomplete="off"></div>
+      <div class="field"><label>API key</label><input id="setTsxKey" type="password" placeholder="loginKey API key" autocomplete="off"></div></div>
+    <div class="field" style="margin-top:8px"><label>Account</label><select id="setTsxAcct"><option value="">— connect to load —</option></select></div>
+    <div class="row2" style="margin-top:8px"><div class="field"><label>Refresh</label><select id="setTsxMs"><option value="15000">Every 15 sec</option><option value="30000">Every 30 sec</option><option value="60000">Every 60 sec</option><option value="0">Manual only</option></select></div>
+      <div class="field"><label>API base <span class="subtle">(default)</span></label><input id="setTsxBase" placeholder="https://api.topstepx.com" autocomplete="off"></div></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="setTsxTest" style="flex:1">Test &amp; load accounts</button><button class="btn grn" id="setTsxSave" style="flex:1">Save live settings</button></div>
+    <div class="subtle" id="setTsxStatus" style="margin-top:6px"></div>
   </div>
 </div></div>
 <div class="modal" id="composeModal"><div class="box" style="max-width:840px">
@@ -800,7 +854,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='2026-08-10e · overlay+dnd';
+const BUILD='v2 · 2026-08-12 · TopstepX Live tab';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -4380,6 +4434,369 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   }
   var map=[['cb-drop',window.cbAddFile],['pm-drop',window.pmAddFile],['pmr-drop',window.pmrAddFile],['te-drop',window.teAddFile],['tr-drop',window.trAddFile]];
   for(var i=0;i<map.length;i++)wireDnD(map[i][0],map[i][1]);
+})();
+
+/* ==================== TOPSTEPX LIVE TAB (v2) ====================
+   Read-only. Auth via loginKey → REST polling. No orders are ever sent.
+   Tolerant parsing: field names are matched across common ProjectX variants. */
+(function(){
+  const DEF_BASE='https://api.topstepx.com';
+  const ROOTS=['NQ','ES','YM'];
+  const RLABEL={NQ:'NQ · NASDAQ 100',ES:'ES · S&P 500',YM:'YM · DOW'};
+  function L(k){return lsGet(k);}
+  function base(){return (L('ct_tsx_base')||DEF_BASE).replace(/\/+$/,'');}
+  function uname(){return (L('ct_tsx_user')||'').trim();}
+  function akey(){return (L('ct_tsx_key')||'').trim();}
+  function acctId(){return L('ct_tsx_acct')||'';}
+  function refMs(){var v=L('ct_tsx_ms');return (v==null)?30000:(+v||0);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function money(n){if(n==null||n===''||isNaN(n))return '—';var a=Math.abs(+n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});return (n<0?'-$':'$')+a;}
+  function fx(n,d){if(n==null||n===''||isNaN(n))return '—';d=(d==null?2:d);return (+n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});}
+  function cls(n){return n>0?'up':(n<0?'down':'mut');}
+
+  /* ---- seed (obfuscated key — not plaintext) ---- */
+  function seed(){
+    try{ if(L('ct_tsx_key')==null){var S="PUFDcEh2Uy81YlFnNnhReGtsRk0rY2MyTzZBbE1LeGVtM3d6aFdtSXFiOWo=";lsSet('ct_tsx_key',atob(S).split('').reverse().join(''));} }catch(e){}
+    if(L('ct_tsx_user')==null)lsSet('ct_tsx_user','LoganJ');
+    if(L('ct_tsx_ms')==null)lsSet('ct_tsx_ms','30000');
+  }
+  seed();
+
+  /* ---- ET helpers (reuse etParts from the page) ---- */
+  function etOf(t){return etParts(new Date(t));}
+  function etWkday(t){try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short'}).format(new Date(t));}catch(e){return '';}}
+  function etMidnightISO(){var p=etParts(new Date());return new Date(Date.now()-(p.min*60+p.s)*1000).toISOString();}
+
+  /* ---- auth + api ---- */
+  var _tok=null,_tokAt=0;
+  async function auth(force){
+    if(_tok && !force && (Date.now()-_tokAt)<18*60*1000)return _tok;
+    var u=uname(),k=akey();
+    if(!u||!k)throw new Error('Add your TopstepX username + key in Settings.');
+    var r=await fetch(base()+'/api/Auth/loginKey',{method:'POST',headers:{'accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({userName:u,apiKey:k})});
+    var t=await r.text(),j=null;try{j=JSON.parse(t);}catch(e){}
+    if(!r.ok||!j||!j.token)throw new Error('Auth failed (HTTP '+r.status+')'+(j&&j.errorMessage?' — '+j.errorMessage:''));
+    _tok=j.token;_tokAt=Date.now();return _tok;
+  }
+  async function api(path,body,_retry){
+    var tk=await auth(false);
+    var r=await fetch(base()+path,{method:'POST',headers:{'accept':'application/json','Content-Type':'application/json','Authorization':'Bearer '+tk},body:JSON.stringify(body||{})});
+    if(r.status===401 && !_retry){_tok=null;return api(path,body,true);}
+    var t=await r.text(),j=null;try{j=JSON.parse(t);}catch(e){}
+    if(!r.ok)throw new Error('HTTP '+r.status+' '+path+(j&&j.errorMessage?' — '+j.errorMessage:''));
+    return j;
+  }
+  function arr(j,keys){if(!j)return [];for(var i=0;i<keys.length;i++){if(Array.isArray(j[keys[i]]))return j[keys[i]];}return Array.isArray(j)?j:[];}
+
+  async function accounts(){return arr(await api('/api/Account/search',{onlyActiveAccounts:false}),['accounts','data']);}
+  async function positions(id){return arr(await api('/api/Position/searchOpen',{accountId:id}),['positions','data']);}
+  async function trades(id,a,b){return arr(await api('/api/Trade/search',{accountId:id,startTimestamp:a,endTimestamp:b}),['trades','data']);}
+
+  var _con={};
+  async function contractId(root){
+    if(_con[root])return _con[root];
+    var list=arr(await api('/api/Contract/search',{searchText:root,live:false}),['contracts','data']);
+    var pick=null;
+    for(var i=0;i<list.length;i++){var nm=((list[i].name||list[i].symbol||list[i].description||'')+'').toUpperCase();if(nm.indexOf(root)>=0){pick=list[i];break;}}
+    if(!pick)pick=list[0];
+    var cid=pick&&(pick.id||pick.contractId||pick.symbolId);
+    if(cid)_con[root]=cid;
+    return cid||null;
+  }
+  async function bars(cid,unit,unitNumber,startISO,endISO,limit){
+    var body={contractId:cid,live:false,unit:unit,unitNumber:unitNumber,limit:limit||300,includePartialBar:true};
+    if(startISO)body.startTime=startISO;if(endISO)body.endTime=endISO;
+    var b=arr(await api('/api/History/retrieveBars',body),['bars','data']);
+    b=b.map(function(x){return {t:(x.t||x.timestamp||x.time),o:+(x.o!=null?x.o:x.open),h:+(x.h!=null?x.h:x.high),l:+(x.l!=null?x.l:x.low),c:+(x.c!=null?x.c:x.close),v:+(x.v!=null?x.v:(x.volume||0))};});
+    b.sort(function(a,c){return new Date(a.t)-new Date(c.t);});
+    return b;
+  }
+
+  /* ---- levels ---- */
+  async function levelsFor(root){
+    var cid=await contractId(root);if(!cid)throw new Error('no contract');
+    var day=await bars(cid,4,1,null,null,14);
+    var o={cid:cid};
+    if(day.length>=2){
+      var prev=day[day.length-2],cur=day[day.length-1];
+      o.pdh=prev.h;o.pdl=prev.l;o.pClose=prev.c;o.dOpen=cur.o;o.dHigh=cur.h;o.dLow=cur.l;
+      o.ndogTop=Math.max(prev.c,cur.o);o.ndogBot=Math.min(prev.c,cur.o);
+      for(var i=day.length-1;i>0;i--){if(etWkday(day[i-1].t)==='Fri'){o.nwogTop=Math.max(day[i-1].c,day[i].o);o.nwogBot=Math.min(day[i-1].c,day[i].o);break;}}
+    }
+    var mins=await bars(cid,2,1,new Date(Date.now()-15*3600*1000).toISOString(),null,900);
+    var today=etParts(new Date()).date,rh=null,rl=null,nyO=null,last=null;
+    mins.forEach(function(b){var e=etOf(b.t);if(e.date!==today)return;last=b.c;
+      if(e.min>=420&&e.min<540){rh=(rh==null?b.h:Math.max(rh,b.h));rl=(rl==null?b.l:Math.min(rl,b.l));}
+      if(nyO==null&&e.min>=570)nyO=b.o;});
+    o.rangeHi=rh;o.rangeLo=rl;o.nyOpen=nyO;
+    o.last=(last!=null?last:(day.length?day[day.length-1].c:null));
+    return o;
+  }
+
+  /* ---- SMT (NQ vs ES, M15 heuristic) ---- */
+  function leg(b,k){if(b.length<k+1)return null;var r=b[b.length-1],p=b.slice(-1-k,-1);var ph=Math.max.apply(null,p.map(function(x){return x.h;})),pl=Math.min.apply(null,p.map(function(x){return x.l;}));return {hh:r.h>ph,ll:r.l<pl};}
+  async function smt(){
+    try{
+      var cn=await contractId('NQ'),ce=await contractId('ES');if(!cn||!ce)return {cls:'none',txt:'Contracts unavailable.'};
+      var start=new Date(Date.now()-2*24*3600*1000).toISOString();
+      var nb=await bars(cn,2,15,start,null,60),eb=await bars(ce,2,15,start,null,60);
+      var ns=leg(nb,6),es=leg(eb,6);if(!ns||!es)return {cls:'none',txt:'Not enough M15 data yet.'};
+      if(ns.hh&&!es.hh)return {cls:'div',txt:'Bearish SMT — NQ printed a higher high, ES failed to confirm (ES lagging).'};
+      if(es.hh&&!ns.hh)return {cls:'div',txt:'Bearish SMT — ES printed a higher high, NQ failed to confirm (NQ lagging).'};
+      if(ns.ll&&!es.ll)return {cls:'div',txt:'Bullish SMT — NQ printed a lower low, ES held (ES leading).'};
+      if(es.ll&&!ns.ll)return {cls:'div',txt:'Bullish SMT — ES printed a lower low, NQ held (NQ leading).'};
+      if(ns.hh&&es.hh)return {cls:'align',txt:'Aligned — both making higher highs. No divergence.'};
+      if(ns.ll&&es.ll)return {cls:'align',txt:'Aligned — both making lower lows. No divergence.'};
+      return {cls:'none',txt:'No clean read — both inside the prior M15 range.'};
+    }catch(e){return {cls:'none',txt:'SMT unavailable — '+e.message};}
+  }
+
+  /* ---- governor ---- */
+  async function governor(id){
+    var accs=await accounts(),acc=null;
+    for(var i=0;i<accs.length;i++){if(String(accs[i].id)===String(id)){acc=accs[i];break;}}
+    if(!acc&&accs.length)acc=accs[0];
+    var bal=acc?(acc.balance!=null?acc.balance:(acc.cashBalance!=null?acc.cashBalance:acc.equity)):null;
+    var real=0,tc=0;
+    try{(await trades(id,etMidnightISO(),new Date().toISOString())).forEach(function(x){var p=(x.profitAndLoss!=null?x.profitAndLoss:(x.pnl!=null?x.pnl:x.realizedPnl));if(p!=null){real+=+p;tc++;}});}catch(e){}
+    var un=0,pc=0;
+    try{(await positions(id)).forEach(function(p){var u=(p.unrealizedPnl!=null?p.unrealizedPnl:(p.openPnl!=null?p.openPnl:(p.profitAndLoss!=null?p.profitAndLoss:null)));if(u!=null)un+=+u;pc++;});}catch(e){}
+    return {acc:acc,bal:bal,real:real,tc:tc,un:un,pc:pc};
+  }
+
+  /* ---- sessions / windows ---- */
+  var WINDOWS=[
+    {n:'Card window 09:30–10:30',a:570,b:630},
+    {n:'Prime AM 09:40–10:15',a:580,b:615},
+    {n:'Silver Bullet 10:25–10:35',a:625,b:635},
+    {n:'Late AM 10:45–11:15',a:645,b:675},
+    {n:'Early PM 12:45–13:15',a:765,b:795},
+    {n:'Afternoon 13:45–14:15',a:825,b:855}];
+  function sessionName(min){
+    if(min>=1080||min<120)return 'Asia';
+    if(min<480)return 'London';
+    if(min<570)return 'NY Pre-Market';
+    if(min<720)return 'NY AM';
+    if(min<960)return 'NY PM';
+    return 'Post-Close';
+  }
+
+  /* ---- red-folder (best effort, reuses page econ engine if present) ---- */
+  async function redFolder(){try{if(typeof calEventsFor!=='function')return null;var d=etParts(new Date()).date;var ev=await calEventsFor(d,d);return (ev||[]).filter(function(e){return e&&e.impact==='High';});}catch(e){return null;}}
+
+  /* ==================== RENDER ==================== */
+  function box(title,inner,tip){return '<div class="panel" style="margin-bottom:12px"><div class="lvhead"><h2 class="lvh4">'+title+'</h2>'+(tip?'<span class="subtle" style="font-size:10px">'+tip+'</span>':'')+'</div>'+inner+'</div>';}
+
+  function quoteCard(root,lv){
+    if(!lv)return '<div class="qcard"><div class="sym">'+root+'</div><div class="lverr">unavailable</div></div>';
+    var chg=(lv.last!=null&&lv.pClose!=null)?(lv.last-lv.pClose):null;
+    var pct=(chg!=null&&lv.pClose)?(chg/lv.pClose*100):null;
+    var pos=(lv.last!=null&&lv.dHigh!=null&&lv.dLow!=null&&lv.dHigh>lv.dLow)?((lv.last-lv.dLow)/(lv.dHigh-lv.dLow)*100):50;
+    return '<div class="qcard"><div class="sym">'+esc(RLABEL[root]||root)+'</div>'+
+      '<div class="px '+cls(chg)+'">'+fx(lv.last)+'</div>'+
+      '<div class="'+cls(chg)+'" style="font-size:12px;font-family:var(--num)">'+(chg==null?'—':((chg>0?'+':'')+fx(chg)+'  ('+(pct>0?'+':'')+fx(pct)+'%)'))+'</div>'+
+      '<div class="qrange"><i style="left:'+Math.max(0,Math.min(100,pos))+'%"></i></div>'+
+      '<div class="subtle" style="display:flex;justify-content:space-between;font-family:var(--num);font-size:10px;margin-top:3px"><span>L '+fx(lv.dLow)+'</span><span>H '+fx(lv.dHigh)+'</span></div></div>';
+  }
+
+  function levelsTable(LV){
+    var rows=[['PDH','pdh'],['PDL','pdl'],['Prev Close','pClose'],['NY Open 09:30','nyOpen'],['7–9AM High','rangeHi'],['7–9AM Low','rangeLo'],['NDOG top','ndogTop'],['NDOG bot','ndogBot'],['NWOG top','nwogTop'],['NWOG bot','nwogBot']];
+    var h='<table class="lvtable"><tr><th class="lbl">Level</th>'+ROOTS.map(function(r){return '<th>'+r+'</th>';}).join('')+'</tr>';
+    rows.forEach(function(rw){h+='<tr><td class="lbl">'+rw[0]+'</td>'+ROOTS.map(function(r){var v=LV[r]&&LV[r][rw[1]];return '<td>'+fx(v)+'</td>';}).join('')+'</tr>';});
+    h+='</table>';return h;
+  }
+
+  function governorBox(g){
+    var A=(typeof loadAcct==='function')?loadAcct():{};
+    var net=(g.real||0)+(g.un||0);
+    var dayLoss=+A.dayLoss||0, maxDD=+A.maxDD||0, target=+A.target||0;
+    var used=net<0?Math.abs(net):0;
+    var frac=dayLoss?Math.min(1,used/dayLoss):0;
+    var col=frac>=0.8?'var(--red)':(frac>=0.5?'var(--amber)':'var(--grn)');
+    var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-family:var(--num);font-size:13px">';
+    h+='<div><div class="subtle" style="font-size:10px">Balance</div>'+money(g.bal)+'</div>';
+    h+='<div><div class="subtle" style="font-size:10px">Open P&L</div><span class="'+cls(g.un)+'">'+money(g.un)+'</span></div>';
+    h+='<div><div class="subtle" style="font-size:10px">Realized today ('+(g.tc||0)+')</div><span class="'+cls(g.real)+'">'+money(g.real)+'</span></div>';
+    h+='<div><div class="subtle" style="font-size:10px">Net today</div><span class="'+cls(net)+'">'+money(net)+'</span></div>';
+    h+='</div>';
+    if(dayLoss){
+      h+='<div style="margin-top:10px"><div class="subtle" style="font-size:10px;display:flex;justify-content:space-between"><span>Daily-loss headroom</span><span>'+money(dayLoss-used)+' left of '+money(dayLoss)+'</span></div><div class="lvmeter"><i style="width:'+(frac*100)+'%;background:'+col+'"></i></div></div>';
+    } else {
+      h+='<div class="subtle" style="margin-top:8px;font-size:11px">Set a <b>Daily loss limit</b> under Settings → Funded Account to arm the governor meter.</div>';
+    }
+    if(maxDD){var ddFrac=Math.min(1,used/maxDD);h+='<div style="margin-top:8px"><div class="subtle" style="font-size:10px;display:flex;justify-content:space-between"><span>Max-drawdown usage (today)</span><span>'+money(used)+' / '+money(maxDD)+'</span></div><div class="lvmeter"><i style="width:'+(ddFrac*100)+'%;background:'+(ddFrac>=0.8?'var(--red)':(ddFrac>=0.5?'var(--amber)':'var(--grn-dim)'))+'"></i></div></div>';}
+    if(target&&g.bal!=null){h+='<div class="subtle" style="margin-top:8px;font-size:11px">Profit target: '+money(target)+' · '+money(target-g.bal)+' to go</div>';}
+    return h;
+  }
+
+  function positionsBox(ps){
+    if(!ps||!ps.length)return '<div class="subtle" style="font-size:12px">Flat — no open positions.</div>';
+    var h='<table class="lvtable"><tr><th class="lbl">Contract</th><th>Side</th><th>Size</th><th>Avg</th><th>Open P&L</th></tr>';
+    ps.forEach(function(p){
+      var sym=p.contractId||p.symbol||p.contractName||p.contract||'—';
+      var sz=(p.size!=null?p.size:(p.quantity!=null?p.quantity:p.netPos));
+      var side=(p.type===1||p.side===0||(sz>0))?'LONG':((p.type===2||p.side===1||sz<0)?'SHORT':'—');
+      var avg=(p.averagePrice!=null?p.averagePrice:(p.avgPrice!=null?p.avgPrice:p.price));
+      var u=(p.unrealizedPnl!=null?p.unrealizedPnl:(p.openPnl!=null?p.openPnl:p.profitAndLoss));
+      h+='<tr><td class="lbl" style="font-family:var(--num);font-size:11px">'+esc(String(sym).split('.').pop())+'</td><td class="'+(side==='LONG'?'up':(side==='SHORT'?'down':'mut'))+'">'+side+'</td><td>'+fx(Math.abs(sz||0),0)+'</td><td>'+fx(avg)+'</td><td class="'+cls(u)+'">'+money(u)+'</td></tr>';
+    });
+    return h+'</table>';
+  }
+
+  function smtBox(s){
+    var c=s.cls==='align'?'smt-align':(s.cls==='div'?'smt-div':'smt-none');
+    var lab=s.cls==='align'?'ALIGNED':(s.cls==='div'?'DIVERGENCE':'NO READ');
+    return '<div class="smtbadge '+c+'">'+lab+'</div><div class="subtle" style="margin-top:8px;font-size:12px;line-height:1.5">'+esc(s.txt)+'</div><div class="subtle" style="font-size:10px;margin-top:6px">NQ vs ES · M15 swing heuristic · confirm against your own read.</div>';
+  }
+
+  function seqCardLive(smtState){
+    var TIER={pm_state:'man',pm_amd:'man',s2_b:'man',s1_a:'man',s3_timed:'assist',s3_m1:'assist',s4_win:'auto',s5_disp:'man',ex_entry:'man',ex_stop:'man'};
+    var min=etParts(new Date()).min;
+    var st=(typeof seqCardLoad==='function')?seqCardLoad():{};
+    var items=(typeof SEQCARD_ITEMS!=='undefined')?SEQCARD_ITEMS:[];
+    var h='<div class="subtle" style="font-size:11px;margin-bottom:8px">🟢 machine-confirmed · 🔵 evidence shown, you confirm · ⚪ your read. Tick the boxes in the <b>Brief</b> tab.</div>';
+    items.forEach(function(gr){
+      h+='<div class="sec" style="margin:8px 0 3px;font-size:11px">'+esc(gr.g)+'</div>';
+      gr.items.forEach(function(it){
+        var tier=TIER[it.id]||'man';
+        var pill='<span class="lvpill '+tier+'">'+(tier==='auto'?'AUTO':(tier==='assist'?'ASSIST':'MANUAL'))+'</span>';
+        var read='';
+        if(it.id==='s4_win'){var on=(min>=570&&min<630);read=' <span class="lvpill '+(on?'on':'off')+'">'+(on?'● WINDOW OPEN':'window closed')+'</span>';}
+        if(it.id==='s3_timed'||it.id==='s3_m1'){var oc=smtState&&smtState.cls;read=' <span class="lvpill '+(oc==='div'?'assist':(oc==='align'?'on':'off'))+'">SMT: '+(oc==='div'?'divergence':(oc==='align'?'aligned':'no read'))+'</span>';}
+        var manual=st[it.id]?' <span class="up" style="font-size:11px">✓ you</span>':'';
+        h+='<div style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:12px;line-height:1.35"><div style="flex:1">'+esc(it.t)+read+manual+'</div>'+pill+'</div>';
+      });
+    });
+    return h;
+  }
+
+  function renderClock(){
+    var boxEl=document.getElementById('lvClockBox');if(!boxEl)return;
+    var p=etParts(new Date());var min=p.min;
+    var hh=String(Math.floor(min/60)).padStart(2,'0'),mm=String(p.m).padStart(2,'0'),ss=String(p.s).padStart(2,'0');
+    var h='<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px"><div style="font-family:var(--num);font-size:22px;font-weight:600">'+hh+':'+mm+':'+ss+' <span class="subtle" style="font-size:11px">ET</span></div><span class="badge">'+sessionName(min)+'</span></div>';
+    WINDOWS.forEach(function(w){var live=(min>=w.a&&min<w.b);h+='<div class="winrow'+(live?' live':'')+'"><span>'+(live?'● ':'')+esc(w.n)+'</span><span class="'+(live?'up':'mut')+'">'+(live?'LIVE':(min<w.a?'upcoming':'passed'))+'</span></div>';});
+    boxEl.innerHTML=h;
+  }
+
+  /* ==================== ORCHESTRATION ==================== */
+  var timer=null,secTimer=null,started=false,busy=false;
+  function elLive(){return document.getElementById('liveTab');}
+  function skeleton(){
+    var e=elLive();if(!e)return;
+    e.innerHTML='<div id="lvStatus" class="panel" style="margin-bottom:12px"><span class="subtle">Connecting to TopstepX…</span></div>'+
+      '<div class="lvgrid" id="lvQuotes"></div>'+
+      '<div style="height:12px"></div>'+
+      '<div class="lvgrid2"><div>'+
+        box('Key Levels — auto-computed','<div id="lvLevels" class="subtle">Loading…</div>','PDH/PDL · NY open · 7–9AM · NDOG/NWOG')+
+        box('SMT — NQ vs ES','<div id="lvSmt" class="subtle">Loading…</div>')+
+        box('Open Positions','<div id="lvPos" class="subtle">Loading…</div>')+
+      '</div><div>'+
+        box('Account Governor','<div id="lvGov" class="subtle">Loading…</div>','SEQ 1 · money management')+
+        box('Session &amp; Protocol Clock','<div id="lvClockBox" class="subtle">…</div>')+
+        box('Red-Folder Today','<div id="lvNews" class="subtle">—</div>')+
+      '</div></div>'+
+      box('Master Sequence Card — live reads','<div id="lvSeq" class="subtle">Loading…</div>');
+    renderClock();
+  }
+  function setStatus(html){var s=document.getElementById('lvStatus');if(s)s.innerHTML=html;}
+  function put(id,html){var e=document.getElementById(id);if(e)e.innerHTML=html;}
+
+  async function tick(){
+    if(busy)return;busy=true;
+    try{
+      if(!uname()||!akey()){setStatus('<span class="down">No TopstepX credentials.</span> Add your username + key in <b>Settings → Live Account</b>.');busy=false;return;}
+      // account selection
+      var id=acctId();
+      try{ if(!id){var accs=await accounts();if(accs.length){id=accs[0].id;lsSet('ct_tsx_acct',String(id));}} }catch(e){}
+      // quotes + levels (parallel)
+      var LV={};
+      await Promise.all(ROOTS.map(async function(r){try{LV[r]=await levelsFor(r);}catch(e){LV[r]=null;}}));
+      put('lvQuotes',ROOTS.map(function(r){return quoteCard(r,LV[r]);}).join(''));
+      put('lvLevels',levelsTable(LV));
+      // smt
+      var s=await smt();put('lvSmt',smtBox(s));
+      // governor + positions
+      try{put('lvGov',governorBox(await governor(id)));}catch(e){put('lvGov','<span class="lverr">Governor unavailable — '+esc(e.message)+'</span>');}
+      try{put('lvPos',positionsBox(await positions(id)));}catch(e){put('lvPos','<span class="lverr">Positions unavailable — '+esc(e.message)+'</span>');}
+      // seq card
+      put('lvSeq',seqCardLive(s));
+      // news
+      try{var rf=await redFolder();if(rf==null)put('lvNews','<span class="subtle" style="font-size:11px">Open the Brief once to load the calendar, then it appears here.</span>');else if(!rf.length)put('lvNews','<span class="subtle" style="font-size:12px">No high-impact releases scheduled today.</span>');else put('lvNews',rf.map(function(e){return '<div class="winrow"><span>'+esc(e.event||e.name||'—')+'</span><span class="down">'+esc((e.date||'').slice(11,16))+'</span></div>';}).join(''));}catch(e){}
+      // status
+      var accName=(function(){try{return id?('Account '+id):'—';}catch(e){return '—';}})();
+      var when=new Intl.DateTimeFormat('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());
+      setStatus('<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><span><span class="livedotmini"></span> <b class="up">LIVE</b> · '+esc(accName)+' · updated '+when+'</span><span class="subtle" style="font-size:11px">read-only · refresh '+(refMs()?(refMs()/1000)+'s':'manual')+' · <a href="#" id="lvRefresh" style="color:var(--blue)">refresh now</a></span></div>');
+      var rb=document.getElementById('lvRefresh');if(rb)rb.addEventListener('click',function(ev){ev.preventDefault();tick();});
+    }catch(e){
+      setStatus('<span class="down">Live feed error:</span> '+esc(e.message)+' <span class="subtle">— check Settings → Live Account. Open the browser console for the raw response.</span>');
+      console.error('[TSX]',e);
+    }
+    busy=false;
+  }
+
+  function start(){
+    if(started){tick();return;}
+    started=true;skeleton();tick();
+    if(secTimer)clearInterval(secTimer);secTimer=setInterval(renderClock,1000);
+    applyTimer();
+  }
+  function applyTimer(){if(timer){clearInterval(timer);timer=null;}var ms=refMs();if(ms>0)timer=setInterval(tick,ms);}
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
+
+  /* ---- sub-tab toggle ---- */
+  document.querySelectorAll('#briefSubtabs .subtab').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('#briefSubtabs .subtab').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      var live=btn.dataset.sub==='live';
+      var bb=document.getElementById('briefBody'),lt=document.getElementById('liveTab');
+      if(bb)bb.style.display=live?'none':'';
+      if(lt)lt.style.display=live?'':'none';
+      if(live)start();else stop();
+    });
+  });
+
+  /* ---- Settings wiring (independent of the FMP Save) ---- */
+  function fillTsx(){
+    var g=function(id){return document.getElementById(id);};
+    if(g('setTsxUser'))g('setTsxUser').value=uname();
+    if(g('setTsxKey'))g('setTsxKey').value=akey();
+    if(g('setTsxBase'))g('setTsxBase').value=(L('ct_tsx_base')||'');
+    if(g('setTsxMs'))g('setTsxMs').value=String(refMs());
+    var sel=g('setTsxAcct');if(sel&&sel.options.length<=1&&acctId()){var o=document.createElement('option');o.value=acctId();o.textContent='Account '+acctId();o.selected=true;sel.appendChild(o);}
+  }
+  var sb=document.getElementById('settingsBtn');if(sb)sb.addEventListener('click',fillTsx);
+  var tState=function(h){var e=document.getElementById('setTsxStatus');if(e)e.innerHTML=h;};
+  var tTest=document.getElementById('setTsxTest');
+  if(tTest)tTest.addEventListener('click',async function(){
+    try{
+      // stage typed values first so auth uses them
+      var u=document.getElementById('setTsxUser').value.trim(),k=document.getElementById('setTsxKey').value.trim(),b=document.getElementById('setTsxBase').value.trim();
+      if(u)lsSet('ct_tsx_user',u);if(k)lsSet('ct_tsx_key',k);lsSet('ct_tsx_base',b);_tok=null;
+      tState('<span class="mut">Connecting…</span>');
+      var accs=await accounts();
+      var sel=document.getElementById('setTsxAcct');sel.innerHTML='';
+      accs.forEach(function(a){var o=document.createElement('option');o.value=a.id;o.textContent=(a.name||('Account '+a.id))+' · '+money(a.balance!=null?a.balance:a.cashBalance);if(String(a.id)===String(acctId()))o.selected=true;sel.appendChild(o);});
+      if(!acctId()&&accs.length){sel.value=accs[0].id;lsSet('ct_tsx_acct',String(accs[0].id));}
+      tState('<span class="up">Connected — '+accs.length+' account'+(accs.length!==1?'s':'')+' loaded.</span>');
+    }catch(e){tState('<span class="down">'+esc(e.message)+'</span>');}
+  });
+  var tSave=document.getElementById('setTsxSave');
+  if(tSave)tSave.addEventListener('click',function(){
+    var g=function(id){return document.getElementById(id);};
+    if(g('setTsxUser').value.trim())lsSet('ct_tsx_user',g('setTsxUser').value.trim());
+    if(g('setTsxKey').value.trim())lsSet('ct_tsx_key',g('setTsxKey').value.trim());
+    lsSet('ct_tsx_base',g('setTsxBase').value.trim());
+    lsSet('ct_tsx_ms',g('setTsxMs').value);
+    if(g('setTsxAcct').value)lsSet('ct_tsx_acct',g('setTsxAcct').value);
+    _tok=null;applyTimer();
+    tState('<span class="up">Saved.</span>');
+    if(started)tick();
+  });
+
+  // expose a tiny hook for debugging in console
+  window.TSX_LIVE={tick:tick,auth:auth,accounts:accounts};
 })();
 </script>
 </body>
