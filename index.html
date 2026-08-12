@@ -865,7 +865,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2j · 2026-08-12 · full-year red-folder schedule';
+const BUILD='v2k · 2026-08-12 · HD chart write-up PDFs';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -5123,7 +5123,25 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
       t.querySelectorAll('.wu-rm').forEach(function(b){b.addEventListener('click',function(){WU.sections[+b.dataset.i].shots.splice(+b.dataset.k,1);renderThumbs();});});
     });
   }
-  function addShot(i,file){if(!file)return;var rd=new FileReader();rd.onload=function(){if(typeof shrinkImg==='function')shrinkImg(rd.result,function(u){WU.sections[i].shots.push(u);renderThumbs();});else{WU.sections[i].shots.push(rd.result);renderThumbs();}};rd.readAsDataURL(file);}
+  /* Keep chart screenshots at FULL resolution for a razor-sharp PDF. Originals are stored
+     untouched (max fidelity); only a genuinely huge file (>~5MB) gets a light, high-quality
+     downscale to a 3200px long edge so storage stays sane. Never the old 1568px/JPEG-0.9 shrink. */
+  function hiresImg(dataUrl,cb){
+    try{
+      if(!dataUrl||dataUrl.length<7*1024*1024){cb(dataUrl);return;}   // already a sane size → keep exact original
+      var img=new Image();
+      img.onload=function(){
+        var MX=3200,w=img.width,h=img.height,long=Math.max(w,h);
+        if(long>MX){var r=MX/long;w=Math.round(w*r);h=Math.round(h*r);}
+        var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+        var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,h);
+        try{cb(cv.toDataURL('image/jpeg',0.95));}catch(e){cb(dataUrl);}
+      };
+      img.onerror=function(){cb(dataUrl);};
+      img.src=dataUrl;
+    }catch(e){cb(dataUrl);}
+  }
+  function addShot(i,file){if(!file)return;var rd=new FileReader();rd.onload=function(){hiresImg(rd.result,function(u){WU.sections[i].shots.push(u);renderThumbs();});};rd.readAsDataURL(file);}
   function renderSections(){
     var host=el('wuSections');if(!host)return;
     host.innerHTML=WU.sections.map(function(s,i){
@@ -5154,15 +5172,17 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   function closeModal(){el('writeupsModal').classList.remove('open');}
   function doSave(){persist(WU);summary();var st=el('wuStatus');if(st)st.innerHTML='<span class="up">Saved — kept on this dashboard until local midnight.</span>';}
   function toPdf(){
-    var body='';
+    /* Landscape + full-width so wide trading charts print big; full-res source keeps them crisp. */
+    var body='<style>@page{size:landscape;margin:11mm} .wu-shot{page-break-inside:avoid;margin:10px 0} .wu-shot img{width:100%;max-width:100%;height:auto;border:1px solid #bbb;border-radius:4px;display:block;image-rendering:auto} .wu-sec{page-break-inside:avoid} h2{margin-top:14px}</style>';
+    var any=false;
     WU.sections.forEach(function(s,i){
-      if(!filled(s))return;
+      if(!filled(s))return;any=true;
       var title=(s.title&&s.title.trim())?s.title:TITLES[i];
       var notes=(s.notes&&s.notes.trim())?(typeof nl2p==='function'?nl2p(s.notes):('<p>'+escH(s.notes)+'</p>')):'';
-      var imgs=s.shots.map(function(u){return '<img src="'+u+'" style="max-width:100%;border:1px solid #ccc;border-radius:6px;margin:6px 0;display:block">';}).join('');
+      var imgs=s.shots.map(function(u){return '<div class="wu-shot"><img src="'+u+'"></div>';}).join('');
       body+='<div class="briefsec"><h2>'+escH(title)+'</h2>'+notes+imgs+'</div>';
     });
-    if(!body){var st=el('wuStatus');if(st)st.innerHTML='<span class="down">Nothing to export — fill at least one section.</span>';return;}
+    if(!any){var st=el('wuStatus');if(st)st.innerHTML='<span class="down">Nothing to export — fill at least one section.</span>';return;}
     if(typeof printDoc==='function')printDoc('Chart Write-Ups — '+localYmd(),body);
   }
   var ob=el('openWriteups');if(ob)ob.addEventListener('click',openModal);
