@@ -859,7 +859,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2e · 2026-08-12 · rate-limit fix + reorg';
+const BUILD='v2f · 2026-08-12 · -openPnL -SMT · news ET';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -4673,14 +4673,13 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
 
   function positionsBox(ps){
     if(!ps||!ps.length)return '<div class="subtle" style="font-size:12px">Flat — no open positions.</div>';
-    var h='<table class="lvtable"><tr><th class="lbl">Contract</th><th>Side</th><th>Size</th><th>Avg</th><th>Open P&L</th></tr>';
+    var h='<table class="lvtable"><tr><th class="lbl">Contract</th><th>Side</th><th>Size</th><th>Avg</th></tr>';
     ps.forEach(function(p){
       var sym=p.contractId||p.symbol||p.contractName||p.contract||'—';
       var sz=(p.size!=null?p.size:(p.quantity!=null?p.quantity:p.netPos));
       var side=(p.type===1||p.side===0||(sz>0))?'LONG':((p.type===2||p.side===1||sz<0)?'SHORT':'—');
       var avg=(p.averagePrice!=null?p.averagePrice:(p.avgPrice!=null?p.avgPrice:p.price));
-      var u=(p.unrealizedPnl!=null?p.unrealizedPnl:(p.openPnl!=null?p.openPnl:p.profitAndLoss));
-      h+='<tr><td class="lbl" style="font-family:var(--num);font-size:11px">'+esc(String(sym).split('.').pop())+'</td><td class="'+(side==='LONG'?'up':(side==='SHORT'?'down':'mut'))+'">'+side+'</td><td>'+fx(Math.abs(sz||0),0)+'</td><td>'+fx(avg)+'</td><td class="'+cls(u)+'">'+money(u)+'</td></tr>';
+      h+='<tr><td class="lbl" style="font-family:var(--num);font-size:11px">'+esc(String(sym).split('.').pop())+'</td><td class="'+(side==='LONG'?'up':(side==='SHORT'?'down':'mut'))+'">'+side+'</td><td>'+fx(Math.abs(sz||0),0)+'</td><td>'+fx(avg)+'</td></tr>';
     });
     return h+'</table>';
   }
@@ -4691,20 +4690,19 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     return '<div class="smtbadge '+c+'">'+lab+'</div><div class="subtle" style="margin-top:8px;font-size:12px;line-height:1.5">'+esc(s.txt)+'</div><div class="subtle" style="font-size:10px;margin-top:6px">NQ vs ES · M15 swing heuristic · confirm against your own read.</div>';
   }
 
-  function seqCardLive(smtState){
-    var TIER={pm_state:'man',pm_amd:'man',s2_b:'man',s1_a:'man',s3_timed:'assist',s3_m1:'assist',s4_win:'auto',s5_disp:'man',ex_entry:'man',ex_stop:'man'};
+  function seqCardLive(){
+    var TIER={pm_state:'man',pm_amd:'man',s2_b:'man',s1_a:'man',s3_timed:'man',s3_m1:'man',s4_win:'auto',s5_disp:'man',ex_entry:'man',ex_stop:'man'};
     var min=etParts(new Date()).min;
     var st=(typeof seqCardLoad==='function')?seqCardLoad():{};
     var items=(typeof SEQCARD_ITEMS!=='undefined')?SEQCARD_ITEMS:[];
-    var h='<div class="subtle" style="font-size:11px;margin-bottom:8px">🟢 machine-confirmed · 🔵 evidence shown, you confirm · ⚪ your read. Tick the boxes in the <b>Brief</b> tab.</div>';
+    var h='<div class="subtle" style="font-size:11px;margin-bottom:8px">🟢 machine-confirmed · ⚪ your read. Tick the boxes in the <b>Brief</b> tab.</div>';
     items.forEach(function(gr){
       h+='<div class="sec" style="margin:8px 0 3px;font-size:11px">'+esc(gr.g)+'</div>';
       gr.items.forEach(function(it){
         var tier=TIER[it.id]||'man';
-        var pill='<span class="lvpill '+tier+'">'+(tier==='auto'?'AUTO':(tier==='assist'?'ASSIST':'MANUAL'))+'</span>';
+        var pill='<span class="lvpill '+tier+'">'+(tier==='auto'?'AUTO':'MANUAL')+'</span>';
         var read='';
         if(it.id==='s4_win'){var on=(min>=570&&min<630);read=' <span class="lvpill '+(on?'on':'off')+'">'+(on?'● WINDOW OPEN':'window closed')+'</span>';}
-        if(it.id==='s3_timed'||it.id==='s3_m1'){var oc=smtState&&smtState.cls;read=' <span class="lvpill '+(oc==='div'?'assist':(oc==='align'?'on':'off'))+'">SMT: '+(oc==='div'?'divergence':(oc==='align'?'aligned':'no read'))+'</span>';}
         var manual=st[it.id]?' <span class="up" style="font-size:11px">✓ you</span>':'';
         h+='<div style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:12px;line-height:1.35"><div style="flex:1">'+esc(it.t)+read+manual+'</div>'+pill+'</div>';
       });
@@ -4742,9 +4740,8 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     var tradable=(acc.canTrade!==false);
     var h='<div class="qcard">';
     h+='<div class="lvhead" style="margin-bottom:4px"><div><b style="font-family:var(--title);letter-spacing:.04em;font-size:13px">'+esc(acc.name||('Account '+acc.id))+'</b> <span class="subtle" style="font-size:10px">#'+esc(acc.id)+'</span></div>'+(tradable?'<span class="lvpill on">tradable</span>':'<span class="lvpill off">locked</span>')+'</div>';
-    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;font-family:var(--num);font-size:13px;margin-top:2px">';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 12px;font-family:var(--num);font-size:13px;margin-top:2px">';
     h+='<div><div class="subtle" style="font-size:10px">Balance</div>'+money(bal)+'</div>';
-    h+='<div><div class="subtle" style="font-size:10px">Open P&L</div><span class="'+cls(d.un)+'">'+money(d.un)+'</span></div>';
     h+='<div><div class="subtle" style="font-size:10px">Realized ('+(d.tc||0)+')</div><span class="'+cls(d.real)+'">'+money(d.real)+'</span></div>';
     h+='<div><div class="subtle" style="font-size:10px">Net today</div><span class="'+cls(net)+'">'+money(net)+'</span></div>';
     h+='</div>';
@@ -4853,14 +4850,12 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     if(!lastLV||!Object.keys(lastLV).length)return '';
     var lines=['LIVE TOPSTEPX LEVELS (machine-computed from bars — anchor which PD arrays are in play):'];
     ROOTS.forEach(function(r){lines.push(lvLine(r));});
-    lines.push('MACHINE M15 SMT (NQ vs ES): '+((lastSMT&&lastSMT.txt)||'n/a')+((lastSMT&&lastSMT.cls==='div')?' [DIVERGENCE]':((lastSMT&&lastSMT.cls==='align')?' [ALIGNED]':'')));
     return lines.join('\n');
   }
   async function ensureContext(){
     try{
       var LV={};for(var i=0;i<ROOTS.length;i++){try{LV[ROOTS[i]]=await levelsFor(ROOTS[i]);}catch(e){}}
       if(Object.keys(LV).length){lastLV=LV;try{window.TSX_LIVE.levels=LV;}catch(e){}}
-      var s=await smt();lastSMT=s;try{window.TSX_LIVE.smt=s;}catch(e){}
     }catch(e){}
     return contextText();
   }
@@ -4935,7 +4930,6 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
       box('Account Overview','<div id="lvAccts" class="subtle">Loading…</div>','tradable accounts · separated · SEQ 1 governor')+
       '<div class="lvgrid2"><div>'+
         box('Key Levels — auto-computed','<div id="lvLevels" class="subtle">Loading…</div>','PDH/PDL · NY open · 7–9AM · NDOG/NWOG')+
-        box('SMT — NQ vs ES','<div id="lvSmt" class="subtle">Loading…</div>')+
       '</div><div>'+
         box('Session &amp; Protocol Clock','<div id="lvClockBox" class="subtle">…</div>')+
         box('Red-Folder Today','<div id="lvNews" class="subtle">—</div>')+
@@ -4959,16 +4953,13 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
       put('lvQuotes',ROOTS.map(function(r){return quoteCard(r,LV[r]);}).join(''));
       put('lvLevels',levelsTable(LV));
       lastLV=LV;try{window.TSX_LIVE.levels=LV;}catch(e){}
-      // smt
-      var s=await smt();put('lvSmt',smtBox(s));
-      lastSMT=s;try{window.TSX_LIVE.smt=s;}catch(e){}
       // accounts (both, separated)
       var acctN=0;
       try{acctN=await renderAccounts();}catch(e){put('lvAccts','<span class="lverr">Accounts unavailable — '+esc(e.message)+'</span>');}
       // seq card
-      put('lvSeq',seqCardLive(s));
+      put('lvSeq',seqCardLive());
       // news
-      try{var rf=await redFolder();if(rf==null)put('lvNews','<span class="subtle" style="font-size:11px">Open the Brief once to load the calendar, then it appears here.</span>');else if(!rf.length)put('lvNews','<span class="subtle" style="font-size:12px">No high-impact releases scheduled today.</span>');else put('lvNews',rf.map(function(e){return '<div class="winrow"><span>'+esc(e.event||e.name||'—')+'</span><span class="down">'+esc((e.date||'').slice(11,16))+'</span></div>';}).join(''));}catch(e){}
+      try{var rf=await redFolder();if(rf==null)put('lvNews','<span class="subtle" style="font-size:11px">Open the Brief once to load the calendar, then it appears here.</span>');else if(!rf.length)put('lvNews','<span class="subtle" style="font-size:12px">No high-impact releases scheduled today.</span>');else put('lvNews',rf.map(function(e){var tm='';try{tm=fmtEtTime(utcToEt(e.date))+' ET';}catch(x){tm=esc((e.date||'').slice(11,16));}return '<div class="winrow"><span>'+esc(e.event||e.name||'—')+'</span><span class="down">'+tm+'</span></div>';}).join(''));}catch(e){}
       // status
       var accName=(acctN?(acctN+' account'+(acctN!==1?'s':'')+' live'):'—');
       var when=new Intl.DateTimeFormat('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());
