@@ -508,6 +508,11 @@ ul.tight li::marker{color:var(--org)}
           <button class="btn grn" id="openLogBtn" style="width:100%;padding:11px">＋ Log a Trade</button>
           <div class="subtle" style="margin-top:6px">Pops out an entry form — fill the details and drop in your annotated charts (1080p). Saves to the calendar for review &amp; PDF.</div>
           <hr class="d">
+          <h2 class="sec grn" style="margin:0 0 6px">TopstepX Auto-Import</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn grn" id="jrnlSyncGo" style="padding:8px 12px">⤓ Sync fills from TopstepX</button><select id="jrnlSyncRange" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:7px;font-family:var(--mono);font-size:12px"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></div>
+          <div class="subtle" id="jrnlSyncStatus" style="margin-top:6px"></div>
+          <div class="subtle" style="margin-top:6px">Imports executed fills as round-trip trades — additive &amp; de-duplicated, your manual trades untouched. Also updates the PMR, Protocol Calendar &amp; Proof Library.</div>
+          <hr class="d">
           <div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec">Trade Log <span class="mut" id="tlCount"></span></h2>
             <div style="display:flex;gap:6px"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button></div></div>
           <input type="file" id="impFile" accept="application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
@@ -854,7 +859,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2d · 2026-08-12 · Live + coach + journal sync';
+const BUILD='v2e · 2026-08-12 · rate-limit fix + reorg';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -4273,7 +4278,8 @@ async function cbCoachRead(){
     '· Optimal entry: '+ex.optimal+' (windows 09:40–10:15 · 10:40–11:15).',
     '· Flat by '+ex.outBy+'. Execution only inside 07:00–11:30 (the 270M Manipulation), and only in the 08:30–10:00 / 10:00–11:30 90M cycles.',
     'Filter POI, Target and entry through all three tiers: 270M context → 90M execution cycle → 30M focus AMD → optimal window → the complete protocol stack (sweep → SMT → CSD → displacement → continuation). HTF cycles are bias only.'].join('\n');
-  content.push({type:'text',text:COACH_CHART_PROMPT+'\n\nCONTEXT\n'+ctx});
+  let __live='';try{if(window.TSX_LIVE&&window.TSX_LIVE.ensureContext)__live=await window.TSX_LIVE.ensureContext();}catch(e){}
+  content.push({type:'text',text:COACH_CHART_PROMPT+'\n\nCONTEXT\n'+ctx+(__live?('\n\nLIVE MACHINE DATA (TopstepX)\n'+__live+'\nFold these live levels + the M15 SMT into the read — name which array price is at and whether the SMT supports the draw. Keep OUTPUT in structural language per the rules.'):'')});
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:visionModel(),max_tokens:8000,messages:[{role:'user',content}]})});
     if(!r.ok){let d='';try{const j=await r.json();d=(j&&j.error&&j.error.message)||'';}catch(e){}throw new Error('HTTP '+r.status+(d?' — '+d:''));}
@@ -4448,7 +4454,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   function uname(){return (L('ct_tsx_user')||'').trim();}
   function akey(){return (L('ct_tsx_key')||'').trim();}
   function acctId(){return L('ct_tsx_acct')||'';}
-  function refMs(){var v=L('ct_tsx_ms');return (v==null)?30000:(+v||0);}
+  function refMs(){var v=L('ct_tsx_ms');var n=(v==null)?45000:(+v||0);return n>0?Math.max(30000,n):0;}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function money(n){if(n==null||n===''||isNaN(n))return '—';var a=Math.abs(+n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});return (n<0?'-$':'$')+a;}
   function fx(n,d){if(n==null||n===''||isNaN(n))return '—';d=(d==null?2:d);return (+n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});}
@@ -4467,30 +4473,62 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   function etWkday(t){try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short'}).format(new Date(t));}catch(e){return '';}}
   function etMidnightISO(){var p=etParts(new Date());return new Date(Date.now()-(p.min*60+p.s)*1000).toISOString();}
 
-  /* ---- auth + api ---- */
+  /* ---- request GATE: serialize + space out calls so we never trip TopstepX rate limits (429) ---- */
+  var _q=[],_active=0,_lastAt=0;
+  var MAXC=1;        // one request in flight at a time
+  var MINGAP=350;    // ms minimum spacing between requests
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  function gate(fn){return new Promise(function(res,rej){_q.push({fn:fn,res:res,rej:rej});pump();});}
+  function pump(){
+    if(_active>=MAXC||!_q.length)return;
+    var wait=Math.max(0,MINGAP-(Date.now()-_lastAt));
+    if(wait>0){setTimeout(pump,wait);return;}
+    var job=_q.shift();_active++;_lastAt=Date.now();
+    Promise.resolve().then(job.fn).then(function(v){_active--;job.res(v);pump();},function(e){_active--;job.rej(e);pump();});
+  }
+  /* ---- promise cache with TTL (dedupes concurrent callers + throttles repeat pulls) ---- */
+  var _cache={};
+  function cached(key,ttl,fn){
+    var e=_cache[key],now=Date.now();
+    if(e&&(now-e.t)<ttl)return e.p;
+    var p=Promise.resolve().then(fn);
+    _cache[key]={t:now,p:p};
+    p.catch(function(){if(_cache[key]&&_cache[key].p===p)delete _cache[key];});
+    return p;
+  }
+
+  /* ---- auth + api (gated, with 429 backoff) ---- */
   var _tok=null,_tokAt=0;
   async function auth(force){
     if(_tok && !force && (Date.now()-_tokAt)<18*60*1000)return _tok;
     var u=uname(),k=akey();
     if(!u||!k)throw new Error('Add your TopstepX username + key in Settings.');
-    var r=await fetch(base()+'/api/Auth/loginKey',{method:'POST',headers:{'accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({userName:u,apiKey:k})});
+    var r=await gate(function(){return fetch(base()+'/api/Auth/loginKey',{method:'POST',headers:{'accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({userName:u,apiKey:k})});});
     var t=await r.text(),j=null;try{j=JSON.parse(t);}catch(e){}
     if(!r.ok||!j||!j.token)throw new Error('Auth failed (HTTP '+r.status+')'+(j&&j.errorMessage?' — '+j.errorMessage:''));
     _tok=j.token;_tokAt=Date.now();return _tok;
   }
-  async function api(path,body,_retry){
+  async function api(path,body,_tries){
+    _tries=_tries||0;
     var tk=await auth(false);
-    var r=await fetch(base()+path,{method:'POST',headers:{'accept':'application/json','Content-Type':'application/json','Authorization':'Bearer '+tk},body:JSON.stringify(body||{})});
-    if(r.status===401 && !_retry){_tok=null;return api(path,body,true);}
+    var r=await gate(function(){return fetch(base()+path,{method:'POST',headers:{'accept':'application/json','Content-Type':'application/json','Authorization':'Bearer '+tk},body:JSON.stringify(body||{})});});
+    if(r.status===401 && _tries<1){_tok=null;return api(path,body,_tries+1);}
+    if(r.status===429 && _tries<4){
+      var ra=parseFloat(r.headers.get('retry-after'));
+      var backoff=(isFinite(ra)&&ra>0)?ra*1000:Math.min(8000,800*Math.pow(2,_tries));
+      await sleep(backoff+150);
+      return api(path,body,_tries+1);
+    }
     var t=await r.text(),j=null;try{j=JSON.parse(t);}catch(e){}
     if(!r.ok)throw new Error('HTTP '+r.status+' '+path+(j&&j.errorMessage?' — '+j.errorMessage:''));
     return j;
   }
   function arr(j,keys){if(!j)return [];for(var i=0;i<keys.length;i++){if(Array.isArray(j[keys[i]]))return j[keys[i]];}return Array.isArray(j)?j:[];}
 
-  async function accounts(){return arr(await api('/api/Account/search',{onlyActiveAccounts:false}),['accounts','data']);}
-  async function positions(id){return arr(await api('/api/Position/searchOpen',{accountId:id}),['positions','data']);}
+  function accounts(){return cached('accounts',15000,function(){return api('/api/Account/search',{onlyActiveAccounts:false}).then(function(j){return arr(j,['accounts','data']);});});}
+  function positions(id){return cached('pos:'+id,12000,function(){return api('/api/Position/searchOpen',{accountId:id}).then(function(j){return arr(j,['positions','data']);});});}
   async function trades(id,a,b){return arr(await api('/api/Trade/search',{accountId:id,startTimestamp:a,endTimestamp:b}),['trades','data']);}
+  function tradesToday(id){return cached('trToday:'+id,12000,function(){return trades(id,etMidnightISO(),new Date().toISOString());});}
 
   var _con={};
   async function contractId(root){
@@ -4511,11 +4549,15 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     b.sort(function(a,c){return new Date(a.t)-new Date(c.t);});
     return b;
   }
+  /* cached bar pulls — daily changes slowly (5 min), intraday every ~25s, M15 every 60s */
+  function dayBars(cid){return cached('day:'+cid,300000,function(){return bars(cid,4,1,null,null,14);});}
+  function minBars(cid){return cached('min:'+cid,25000,function(){return bars(cid,2,1,new Date(Date.now()-15*3600*1000).toISOString(),null,900);});}
+  function m15Bars(cid){return cached('m15:'+cid,60000,function(){return bars(cid,2,15,new Date(Date.now()-2*24*3600*1000).toISOString(),null,60);});}
 
   /* ---- levels ---- */
   async function levelsFor(root){
     var cid=await contractId(root);if(!cid)throw new Error('no contract');
-    var day=await bars(cid,4,1,null,null,14);
+    var day=await dayBars(cid);
     var o={cid:cid};
     if(day.length>=2){
       var prev=day[day.length-2],cur=day[day.length-1];
@@ -4523,7 +4565,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
       o.ndogTop=Math.max(prev.c,cur.o);o.ndogBot=Math.min(prev.c,cur.o);
       for(var i=day.length-1;i>0;i--){if(etWkday(day[i-1].t)==='Fri'){o.nwogTop=Math.max(day[i-1].c,day[i].o);o.nwogBot=Math.min(day[i-1].c,day[i].o);break;}}
     }
-    var mins=await bars(cid,2,1,new Date(Date.now()-15*3600*1000).toISOString(),null,900);
+    var mins=await minBars(cid);
     var today=etParts(new Date()).date,rh=null,rl=null,nyO=null,last=null;
     mins.forEach(function(b){var e=etOf(b.t);if(e.date!==today)return;last=b.c;
       if(e.min>=420&&e.min<540){rh=(rh==null?b.h:Math.max(rh,b.h));rl=(rl==null?b.l:Math.min(rl,b.l));}
@@ -4535,11 +4577,11 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
 
   /* ---- SMT (NQ vs ES, M15 heuristic) ---- */
   function leg(b,k){if(b.length<k+1)return null;var r=b[b.length-1],p=b.slice(-1-k,-1);var ph=Math.max.apply(null,p.map(function(x){return x.h;})),pl=Math.min.apply(null,p.map(function(x){return x.l;}));return {hh:r.h>ph,ll:r.l<pl};}
-  async function smt(){
+  function smt(){return cached('smt',60000,_smt);}
+  async function _smt(){
     try{
       var cn=await contractId('NQ'),ce=await contractId('ES');if(!cn||!ce)return {cls:'none',txt:'Contracts unavailable.'};
-      var start=new Date(Date.now()-2*24*3600*1000).toISOString();
-      var nb=await bars(cn,2,15,start,null,60),eb=await bars(ce,2,15,start,null,60);
+      var nb=await m15Bars(cn),eb=await m15Bars(ce);
       var ns=leg(nb,6),es=leg(eb,6);if(!ns||!es)return {cls:'none',txt:'Not enough M15 data yet.'};
       if(ns.hh&&!es.hh)return {cls:'div',txt:'Bearish SMT — NQ printed a higher high, ES failed to confirm (ES lagging).'};
       if(es.hh&&!ns.hh)return {cls:'div',txt:'Bearish SMT — ES printed a higher high, NQ failed to confirm (NQ lagging).'};
@@ -4682,9 +4724,14 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
   /* ---- multi-account overview (both accounts, separated) ---- */
   async function acctData(id){
     var real=0,tc=0,un=0,ps=[];
-    try{(await trades(id,etMidnightISO(),new Date().toISOString())).forEach(function(x){var p=(x.profitAndLoss!=null?x.profitAndLoss:(x.pnl!=null?x.pnl:x.realizedPnl));if(p!=null){real+=+p;tc++;}});}catch(e){}
+    try{(await tradesToday(id)).forEach(function(x){var p=(x.profitAndLoss!=null?x.profitAndLoss:(x.pnl!=null?x.pnl:x.realizedPnl));if(p!=null){real+=+p;tc++;}});}catch(e){}
     try{ps=await positions(id);ps.forEach(function(p){var u=(p.unrealizedPnl!=null?p.unrealizedPnl:(p.openPnl!=null?p.openPnl:(p.profitAndLoss!=null?p.profitAndLoss:null)));if(u!=null)un+=+u;});}catch(e){}
     return {real:real,tc:tc,un:un,ps:ps};
+  }
+  function tradableOnly(accs){
+    var t=accs.filter(function(a){return a.canTrade===true;});
+    if(!t.length)t=accs.filter(function(a){return a.canTrade!==false&&a.isVisible!==false;});
+    return t;
   }
   function acctCard(acc,d){
     var A=(typeof loadAcct==='function')?loadAcct():{};
@@ -4707,12 +4754,12 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     return h;
   }
   async function renderAccounts(){
-    var accs=await accounts();
-    if(!accs.length){put('lvAccts','<span class="subtle">No accounts returned by this key.</span>');return 0;}
-    var data=await Promise.all(accs.map(function(a){return acctData(a.id);}));
+    var accs=tradableOnly(await accounts());
+    if(!accs.length){put('lvAccts','<span class="subtle">No tradable accounts on this key right now.</span>');return 0;}
+    var data=[];for(var i=0;i<accs.length;i++){data.push(await acctData(accs[i].id));}   // sequential — kinder to the rate limit
     var A=(typeof loadAcct==='function')?loadAcct():{};
     var note=(+A.dayLoss)?'daily-loss limit from Settings applied to each':'set a daily-loss limit in Settings → Funded Account to arm the meters';
-    var h='<div class="subtle" style="font-size:10px;margin-bottom:8px">'+accs.length+' account'+(accs.length!==1?'s':'')+' · '+note+'</div>';
+    var h='<div class="subtle" style="font-size:10px;margin-bottom:8px">'+accs.length+' tradable account'+(accs.length!==1?'s':'')+' · '+note+'</div>';
     h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">';
     accs.forEach(function(a,i){h+=acctCard(a,data[i]);});
     h+='</div>';
@@ -4794,12 +4841,29 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     return {added:added,accounts:accs.length};
   }
   async function doSync(days){
-    var st=document.getElementById('lvSyncStatus');var say=function(c,m){if(st)st.innerHTML='<span class="'+c+'">'+m+'</span>';};
+    var st=document.getElementById('jrnlSyncStatus');var say=function(c,m){if(st)st.innerHTML='<span class="'+c+'">'+m+'</span>';};
     say('mut','Syncing fills from TopstepX…');
     try{var r=await syncTrades(days);say(r.added?'up':'mut',(r.added?'✓ ':'')+r.added+' new trade'+(r.added!==1?'s':'')+' imported from '+r.accounts+' account'+(r.accounts!==1?'s':'')+'.'+(r.added?' Journal · PMR · Calendar · Proof Library updated.':' Nothing new — already in sync.'));}
     catch(e){say('down','Sync failed: '+esc(e.message)+' — check Settings → Live Account.');}
   }
-  function wireSync(){var go=document.getElementById('lvSyncGo');if(go)go.addEventListener('click',function(){doSync(+((document.getElementById('lvSyncRange')||{}).value||30));});}
+  function wireSync(){var go=document.getElementById('jrnlSyncGo');if(go)go.addEventListener('click',function(){go.disabled=true;doSync(+((document.getElementById('jrnlSyncRange')||{}).value||30)).then(function(){go.disabled=false;},function(){go.disabled=false;});});}
+
+  /* ---- live context for the Brief's coach read (levels + M15 SMT) ---- */
+  function contextText(){
+    if(!lastLV||!Object.keys(lastLV).length)return '';
+    var lines=['LIVE TOPSTEPX LEVELS (machine-computed from bars — anchor which PD arrays are in play):'];
+    ROOTS.forEach(function(r){lines.push(lvLine(r));});
+    lines.push('MACHINE M15 SMT (NQ vs ES): '+((lastSMT&&lastSMT.txt)||'n/a')+((lastSMT&&lastSMT.cls==='div')?' [DIVERGENCE]':((lastSMT&&lastSMT.cls==='align')?' [ALIGNED]':'')));
+    return lines.join('\n');
+  }
+  async function ensureContext(){
+    try{
+      var LV={};for(var i=0;i<ROOTS.length;i++){try{LV[ROOTS[i]]=await levelsFor(ROOTS[i]);}catch(e){}}
+      if(Object.keys(LV).length){lastLV=LV;try{window.TSX_LIVE.levels=LV;}catch(e){}}
+      var s=await smt();lastSMT=s;try{window.TSX_LIVE.smt=s;}catch(e){}
+    }catch(e){}
+    return contextText();
+  }
 
   /* ---- Technical Coach: uploaded charts × live levels × M15 SMT ---- */
   function renderThumbs(){
@@ -4868,11 +4932,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     e.innerHTML='<div id="lvStatus" class="panel" style="margin-bottom:12px"><span class="subtle">Connecting to TopstepX…</span></div>'+
       '<div class="lvgrid" id="lvQuotes"></div>'+
       '<div style="height:12px"></div>'+
-      box('Account Overview','<div id="lvAccts" class="subtle">Loading…</div>','both accounts · separated · SEQ 1 governor')+
-      box('Journal Auto-Sync',
-        '<div class="subtle" style="font-size:11px;margin-bottom:8px">Pulls your executed fills, rebuilds round-trip trades, and imports any new ones into the <b>Trade Journal</b> — which auto-updates the PMR, Protocol Calendar and Proof Library. Additive &amp; de-duplicated: trades you logged by hand are never touched.</div>'+
-        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn grn" id="lvSyncGo">Sync trades now</button><select id="lvSyncRange" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:6px;font-family:var(--mono)"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select><span class="subtle" id="lvSyncStatus"></span></div>',
-        'fills → journal → PMR / calendar')+
+      box('Account Overview','<div id="lvAccts" class="subtle">Loading…</div>','tradable accounts · separated · SEQ 1 governor')+
       '<div class="lvgrid2"><div>'+
         box('Key Levels — auto-computed','<div id="lvLevels" class="subtle">Loading…</div>','PDH/PDL · NY open · 7–9AM · NDOG/NWOG')+
         box('SMT — NQ vs ES','<div id="lvSmt" class="subtle">Loading…</div>')+
@@ -4880,14 +4940,6 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
         box('Session &amp; Protocol Clock','<div id="lvClockBox" class="subtle">…</div>')+
         box('Red-Folder Today','<div id="lvNews" class="subtle">—</div>')+
       '</div></div>'+
-      box('Technical Coach — Live Read',
-        '<div class="subtle" style="font-size:11px;margin-bottom:8px">Upload your chart screenshots — the coach produces his own read against the live levels and the M15 SMT. PNG / JPG.</div>'+
-        '<div id="lvTcDrop" style="border:1px dashed var(--line2);border-radius:8px;padding:14px;text-align:center;color:var(--mut);cursor:pointer;font-size:12px">＋ Drag charts here, or click to add</div>'+
-        '<input type="file" id="lvTcFile" accept="image/png,image/jpeg,image/gif,image/webp" multiple style="display:none">'+
-        '<div id="lvTcThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>'+
-        '<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap"><button class="btn grn" id="lvTcGo">Produce coach read</button><button class="btn" id="lvTcClear" style="padding:6px 10px">Clear</button><span class="subtle" id="lvTcStatus"></span></div>'+
-        '<div id="lvTcOut" style="margin-top:12px"></div>',
-        'your charts × live levels × M15 SMT')+
       box('Master Sequence Card — live reads','<div id="lvSeq" class="subtle">Loading…</div>');
     renderClock();
   }
@@ -4931,8 +4983,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
 
   function start(){
     if(started){tick();return;}
-    started=true;skeleton();wireCoach();wireSync();renderThumbs();tick();
-    if(!syncedOnce){syncedOnce=true;setTimeout(function(){doSync(30);},1200);}
+    started=true;skeleton();tick();
     if(secTimer)clearInterval(secTimer);secTimer=setInterval(renderClock,1000);
     applyTimer();
   }
@@ -4990,8 +5041,11 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     if(started)tick();
   });
 
-  // expose a tiny hook for debugging in console
-  window.TSX_LIVE={tick:tick,auth:auth,accounts:accounts};
+  // wire the Trade Journal sync button (present in the DOM at load)
+  wireSync();
+
+  // expose hooks (debug + brief coach-read context + on-demand sync)
+  window.TSX_LIVE={tick:tick,auth:auth,accounts:accounts,sync:doSync,ensureContext:ensureContext,contextText:contextText};
 })();
 </script>
 </body>
