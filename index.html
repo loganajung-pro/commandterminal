@@ -859,7 +859,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2f · 2026-08-12 · -openPnL -SMT · news ET';
+const BUILD='v2g · 2026-08-12 · bars time-window fix';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -4549,10 +4549,12 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     b.sort(function(a,c){return new Date(a.t)-new Date(c.t);});
     return b;
   }
-  /* cached bar pulls — daily changes slowly (5 min), intraday every ~25s, M15 every 60s */
-  function dayBars(cid){return cached('day:'+cid,300000,function(){return bars(cid,4,1,null,null,14);});}
-  function minBars(cid){return cached('min:'+cid,25000,function(){return bars(cid,2,1,new Date(Date.now()-15*3600*1000).toISOString(),null,900);});}
-  function m15Bars(cid){return cached('m15:'+cid,60000,function(){return bars(cid,2,15,new Date(Date.now()-2*24*3600*1000).toISOString(),null,60);});}
+  /* cached bar pulls — retrieveBars REQUIRES startTime AND endTime, so always send a window */
+  function nowISO(){return new Date().toISOString();}
+  function agoISO(ms){return new Date(Date.now()-ms).toISOString();}
+  function dayBars(cid){return cached('day:'+cid,300000,function(){return bars(cid,4,1,agoISO(30*864e5),nowISO(),40);});}
+  function minBars(cid){return cached('min:'+cid,25000,function(){return bars(cid,2,1,agoISO(15*3600*1000),nowISO(),1000);});}
+  function m15Bars(cid){return cached('m15:'+cid,60000,function(){return bars(cid,2,15,agoISO(2*864e5),nowISO(),100);});}
 
   /* ---- levels ---- */
   async function levelsFor(root){
@@ -4948,10 +4950,11 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
       var id=acctId();
       try{ if(!id){var accs=await accounts();if(accs.length){id=accs[0].id;lsSet('ct_tsx_acct',String(id));}} }catch(e){}
       // quotes + levels (parallel)
-      var LV={};
-      await Promise.all(ROOTS.map(async function(r){try{LV[r]=await levelsFor(r);}catch(e){LV[r]=null;}}));
+      var LV={},lvErr='';
+      await Promise.all(ROOTS.map(async function(r){try{LV[r]=await levelsFor(r);}catch(e){LV[r]=null;lvErr=e.message;}}));
       put('lvQuotes',ROOTS.map(function(r){return quoteCard(r,LV[r]);}).join(''));
-      put('lvLevels',levelsTable(LV));
+      var anyLv=ROOTS.some(function(r){return LV[r];});
+      put('lvLevels',anyLv?levelsTable(LV):'<span class="lverr">Levels unavailable — '+esc(lvErr||'no bars returned')+'</span>');
       lastLV=LV;try{window.TSX_LIVE.levels=LV;}catch(e){}
       // accounts (both, separated)
       var acctN=0;
