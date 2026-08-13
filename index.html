@@ -500,7 +500,7 @@ ul.tight li::marker{color:var(--org)}
     <section class="view" id="view-journal">
       <div class="crumb">Matrix / <b>Trade Journal</b></div>
       <h1 class="h1">Trade Journal</h1>
-      <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
         <div class="panel">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button class="btn grn" id="openLogBtn" style="flex:1;min-width:150px;padding:11px">＋ Log a Trade</button>
@@ -511,15 +511,19 @@ ul.tight li::marker{color:var(--org)}
           <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">Import JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button></div>
           <input type="file" id="impFile" accept="application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
         </div>
+        <div class="subtabs" id="jSubtabs" style="align-self:flex-start">
+          <button class="subtab active" data-jsub="cal">Calendar</button>
+          <button class="subtab" data-jsub="perf">Performance</button>
+          <button class="subtab" data-jsub="analytics">Analytics</button>
+        </div>
+        <div class="jsub" data-jsub="cal" style="display:flex;flex-direction:column;gap:14px">
         <div class="panel"><h2 class="sec grn" style="margin:0 0 8px">Calendar</h2>
           <div class="ph" style="border:0;padding:0 0 8px"><span id="jCalTitle" style="font-size:14px;font-weight:600;color:var(--ink)"></span>
             <div class="navbtns"><button class="btn" id="prevMJ">◄</button><button class="btn" id="nextMJ">►</button></div></div>
           <div class="calgrid" id="jCalHead"></div><div class="calgrid" id="jCalBody"></div>
         </div>
-        <div class="panel" id="jDayPanel" style="display:none">
-          <div class="ph" style="border:0;padding:0 0 8px"><h2 class="sec grn" id="jDayTitle" style="margin:0"></h2><button class="btn" id="jDayClose" style="padding:4px 10px">✕</button></div>
-          <div class="tlog" id="jDayTrades"></div>
-        </div>
+        </div><!-- /jsub cal -->
+        <div class="jsub" data-jsub="perf" style="display:none;flex-direction:column;gap:14px">
         <div class="panel"><h2 class="sec">Performance</h2>
           <div id="jEV" style="margin-bottom:10px"></div>
           <div class="stat" id="jStat"></div>
@@ -530,6 +534,8 @@ ul.tight li::marker{color:var(--org)}
         <div class="panel"><h2 class="sec grn">Protocol Score</h2>
           <div class="pscore"><div id="jRadar"></div><div id="jScoreList"></div></div>
           <div id="jScoreBar" style="margin-top:10px"></div></div>
+        </div><!-- /jsub perf -->
+        <div class="jsub" data-jsub="analytics" style="display:none;flex-direction:column;gap:14px">
         <div class="panel"><h2 class="sec">Charts</h2>
           <div class="sec" style="margin:2px 0 6px">Daily R</div><div id="jDaily"></div>
           <div class="sec" style="margin:14px 0 6px">R Distribution</div><div id="jDist"></div>
@@ -549,6 +555,7 @@ ul.tight li::marker{color:var(--org)}
           <div class="sec" style="margin:14px 0 6px">By Distraction</div><div id="jByDistract"></div>
           <div class="sec" style="margin:14px 0 6px">By Routine &amp; Prep</div><div id="jByRoutine"></div>
         </div>
+        </div><!-- /jsub analytics -->
       </div>
     </section>
 
@@ -862,7 +869,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2p · 2026-08-12 · EV + grade EV drill-down';
+const BUILD='v2q · 2026-08-12 · journal sub-tabs + HD PMR pdf';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2443,6 +2450,17 @@ function shrinkImg(dataUrl,cb){
     img.src=dataUrl;
   }catch(e){cb(dataUrl);}
 }
+/* Full-resolution keep for crystal-clear PDFs (Post Market Review, Chart Write-Ups).
+   Stores the original untouched unless it is genuinely huge (>~5MB), then a light 3200px/0.95 downscale. */
+function hiresImgG(dataUrl,cb){
+  try{
+    if(!dataUrl||dataUrl.length<7*1024*1024){cb(dataUrl);return;}
+    const img=new Image();
+    img.onload=()=>{const MX=3200;let w=img.width,h=img.height;const long=Math.max(w,h);if(long>MX){const r=MX/long;w=Math.round(w*r);h=Math.round(h*r);}const cv=document.createElement('canvas');cv.width=w;cv.height=h;const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,h);try{cb(cv.toDataURL('image/jpeg',0.95));}catch(e){cb(dataUrl);}};
+    img.onerror=()=>cb(dataUrl);
+    img.src=dataUrl;
+  }catch(e){cb(dataUrl);}
+}
 /* The vision API accepts JPEG, PNG, GIF and WebP only. HEIC screenshots —
    common on macOS via iPhone/Continuity — silently reached the API before
    this and were rejected, which looked like "the coach can't read my charts". */
@@ -2677,6 +2695,7 @@ function renderGradeEV(t){
 }
 function gradeTradesHtml(grade,editable){const list=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).slice().sort((a,b)=>b.date.localeCompare(a.date));if(!list.length)return '<div class="subtle">No trades with this grade.</div>';return list.map(tr=>(editable?`<div style="text-align:right;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit trade</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
 function openGradeTrades(grade){curTradeId=null;const n=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).length;document.getElementById('tradeModalTitle').textContent='Setup grade · '+grade;document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below';document.getElementById('tradeModalBody').innerHTML=gradeTradesHtml(grade,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const tt=loadTrades().find(x=>x.id===id);if(tt){closeTradeModal();openLogModal(tt);}}));curPrint={title:'Setup grade '+grade,body:gradeTradesHtml(grade,false)};document.getElementById('tradeModal').classList.add('open');}
+document.querySelectorAll('#jSubtabs .subtab').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('#jSubtabs .subtab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');var v=btn.dataset.jsub;document.querySelectorAll('#view-journal .jsub').forEach(function(s){s.style.display=(s.dataset.jsub===v)?'flex':'none';});});});
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
 document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);});
@@ -3815,7 +3834,7 @@ if(document.getElementById('pvPrevY'))document.getElementById('pvPrevY').addEven
 if(document.getElementById('pvNextY'))document.getElementById('pvNextY').addEventListener('click',()=>pvGo(1,0));
 if(document.getElementById('pvToday'))document.getElementById('pvToday').addEventListener('click',()=>{PV=curMonth();selPmrDay=etParts().date;selWeek=null;renderPmr();});
 function pmrRenderShots(){renderShotStrip('pmr-shots',pmrShots,pmrRenderShots);}
-function pmrAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{pmrShots.push(u);pmrRenderShots();});rd.readAsDataURL(file);}
+function pmrAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>hiresImgG(rd.result,u=>{pmrShots.push(u);pmrRenderShots();});rd.readAsDataURL(file);}
 function openPmrModal(){
   if(!selPmrDay){alert('Pick a day on the calendar first.');return;}
   cbEl('pmrDayLbl').textContent='· '+fmtDayLong(selPmrDay);
@@ -3864,7 +3883,7 @@ if(cbEl('pmrOpen')){
 
 /* ===== PDF export (print-to-PDF; embeds screenshots natively) + Trade review pop-out ===== */
 let curPrint={title:'',body:''},tradeShots=[],curTradeId=null,teShots=[],teSeq=[],editingTradeId=null;
-const PRINT_CSS=`*{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;margin:30px;line-height:1.5}h1{font-size:22px;margin:0 0 6px}h2,.sec{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px;font-weight:700}h3,h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px}.subtle,.sub,.mut,.faint{color:#666;font-size:12px}.narr p{margin:0 0 8px}ul{margin:6px 0;padding-left:18px}li{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}th:first-child,td:first-child{text-align:left}.tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#eee;color:#333;margin:0 2px}.kv{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:3px 0;font-size:13px}img{max-width:100%;height:auto;border:1px solid #ddd;border-radius:6px;margin:8px 0;display:block}.fwshot{margin:8px 0}hr{border:0;border-top:1px solid #ddd;margin:12px 0}.briefsec{margin:12px 0}.evrow{display:flex;gap:10px;font-size:12px;padding:2px 0}.panel{border:1px solid #eee;border-radius:8px;padding:12px;margin:10px 0}@media print{a{color:#111;text-decoration:none}}`;
+const PRINT_CSS=`*{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;margin:30px;line-height:1.5}h1{font-size:22px;margin:0 0 6px}h2,.sec{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px;font-weight:700}h3,h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#b45309;margin:16px 0 6px}.subtle,.sub,.mut,.faint{color:#666;font-size:12px}.narr p{margin:0 0 8px}ul{margin:6px 0;padding-left:18px}li{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}th:first-child,td:first-child{text-align:left}.tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#eee;color:#333;margin:0 2px}.kv{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:3px 0;font-size:13px}img{max-width:100%;height:auto;border:1px solid #ddd;border-radius:6px;margin:8px 0;display:block}.fwshot{margin:8px 0;page-break-inside:avoid}.fwshot img{width:100%;max-width:100%;height:auto}hr{border:0;border-top:1px solid #ddd;margin:12px 0}.briefsec{margin:12px 0}.evrow{display:flex;gap:10px;font-size:12px;padding:2px 0}.panel{border:1px solid #eee;border-radius:8px;padding:12px;margin:10px 0}@media print{a{color:#111;text-decoration:none}}`;
 function printDoc(title,innerHtml){
   const w=window.open('','_blank');
   if(!w){alert('Allow pop-ups for this page to download the PDF (then use “Save as PDF” in the print dialog).');return;}
@@ -3890,7 +3909,7 @@ function tradeFieldsHtml(tr){
     <div class="kv"><span class="k">Trade Management</span><span class="v">${escH(tr.mgrade||'—')}</span></div></div>
     ${tr.notes?`<div class="briefsec"><h4>Setup / Notes</h4><div class="narr">${nl2p(tr.notes)}</div></div>`:''}${tagsHtml(tr)}${tr.review?tradeReviewHtml(tr.review):''}`;
 }
-function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px"><img src="${s}"></div>`).join('')}</div>`:'';}
+function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px;page-break-inside:avoid"><img src="${s}" style="width:100%;max-width:100%;height:auto;display:block"></div>`).join('')}</div>`:'';}
 function tradeDetailHtml(tr){return tradeFieldsHtml(tr)+shotsArrHtml(tr.shots);}
 function dayTradesHtml(ds,editable){const list=loadTrades().filter(t=>t.date===ds);if(!list.length)return '<div class="subtle">No trades this day.</div>';return list.map(tr=>(editable?`<div style="text-align:right;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit trade</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
 function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)return;
