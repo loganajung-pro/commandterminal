@@ -500,57 +500,49 @@ ul.tight li::marker{color:var(--org)}
     <section class="view" id="view-journal">
       <div class="crumb">Matrix / <b>Trade Journal</b></div>
       <h1 class="h1">Trade Journal</h1>
-      <div class="jgrid">
-        <div class="panel"><h2 class="sec grn">Trade Journal</h2>
-          <button class="btn grn" id="openLogBtn" style="width:100%;padding:11px">＋ Log a Trade</button>
-          <div class="subtle" style="margin-top:6px">Pops out an entry form — fill the details and drop in your annotated charts (1080p). Saves to the calendar for review &amp; PDF.</div>
-          <hr class="d">
-          <h2 class="sec grn" style="margin:0 0 6px">TopstepX Auto-Import</h2>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn grn" id="jrnlSyncGo" style="padding:8px 12px">⤓ Sync fills from TopstepX</button><select id="jrnlSyncRange" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:7px;font-family:var(--mono);font-size:12px"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="panel">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn grn" id="openLogBtn" style="flex:1;min-width:150px;padding:11px">＋ Log a Trade</button>
+            <button class="btn grn" id="jrnlSyncGo" style="flex:1;min-width:150px;padding:11px">⤓ Sync fills from TopstepX</button>
+            <select id="jrnlSyncRange" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:9px;font-family:var(--mono);font-size:12px"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option></select>
+          </div>
           <div class="subtle" id="jrnlSyncStatus" style="margin-top:6px"></div>
-          <div class="subtle" style="margin-top:6px">Imports executed fills as round-trip trades — additive &amp; de-duplicated, your manual trades untouched. Also updates the PMR, Protocol Calendar &amp; Proof Library.</div>
-          <hr class="d">
-          <div style="display:flex;justify-content:space-between;align-items:center"><h2 class="sec">Trade Log <span class="mut" id="tlCount"></span></h2>
-            <div style="display:flex;gap:6px"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button></div></div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">Import JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button></div>
           <input type="file" id="impFile" accept="application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
-          <div class="tlog" id="tradeLog"></div>
         </div>
-        <div>
-          <div class="panel"><h2 class="sec grn">Protocol Score</h2>
-            <div class="subtle" style="margin-bottom:6px">Six dimensions of edge quality, each scored 0–100. Hover a point for the raw number.</div>
-            <div class="pscore"><div id="jRadar"></div><div id="jScoreList"></div></div>
-            <div id="jScoreBar" style="margin-top:10px"></div>
-          </div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec">Performance</h2><div class="stat" id="jStat"></div>
-            <div class="sec" style="margin:12px 0 6px">Edge Quality</div><div class="stat" id="jStat2"></div>
-            <div class="sec" style="margin:12px 0 6px">Discipline &amp; Behaviour</div><div class="stat" id="jStat3"></div>
-          </div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec">Equity Curve (R)</h2><div id="jEquity"></div></div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec">Calendar</h2>
-            <div class="ph" style="border:0;padding:0 0 8px"><span class="subtle" id="jCalTitle"></span>
-              <div class="navbtns"><button class="btn" id="prevMJ">◄</button><button class="btn" id="nextMJ">►</button></div></div>
-            <div class="calgrid" id="jCalHead"></div><div class="calgrid" id="jCalBody"></div></div>
-          <hr class="d">
-          <div class="panel"><h2 class="sec">Charts</h2>
-            <div class="sec" style="margin:2px 0 6px">Daily R <span class="subtle">— last 30 trading days</span></div><div id="jDaily"></div>
-            <div class="sec" style="margin:14px 0 6px">R Distribution</div><div id="jDist"></div>
-            <div class="sec" style="margin:14px 0 6px">By Session</div><div id="jBySess"></div>
-            <div class="sec" style="margin:14px 0 6px">By Protocol Sequence</div><div id="jBySeq"></div>
-            <div class="sec" style="margin:14px 0 6px">By Setup Grade <span class="subtle">— is your entry grading predictive?</span></div><div id="jBySetup"></div>
-            <div class="sec" style="margin:14px 0 6px">By Exit Behaviour</div><div id="jByExit"></div>
-            <div class="sec" style="margin:14px 0 6px">By Emotional State <span class="subtle">— what psychology costs you</span></div><div id="jByState"></div>
-            <div class="sec" style="margin:14px 0 6px">By Mistake Tag <span class="subtle">— what each error actually costs</span></div><div id="jByMistake"></div>
-            <div class="sec" style="margin:14px 0 6px">By Market Condition</div><div id="jByMarket"></div>
-            <div class="sec" style="margin:14px 0 6px">By Entry Execution</div><div id="jByEntry"></div>
-            <div class="sec" style="margin:14px 0 6px">By Area of Interest</div><div id="jByAoi"></div>
-            <div class="sec" style="margin:14px 0 6px">By Entry Timeframe</div><div id="jByTf"></div>
-            <div class="sec" style="margin:14px 0 6px">By Sleep / Health</div><div id="jBySleep"></div>
-            <div class="sec" style="margin:14px 0 6px">By Distraction</div><div id="jByDistract"></div>
-            <div class="sec" style="margin:14px 0 6px">By Routine &amp; Prep</div><div id="jByRoutine"></div>
-          </div>
+        <div class="panel"><h2 class="sec grn" style="margin:0 0 8px">Calendar</h2>
+          <div class="ph" style="border:0;padding:0 0 8px"><span id="jCalTitle" style="font-size:14px;font-weight:600;color:var(--ink)"></span>
+            <div class="navbtns"><button class="btn" id="prevMJ">◄</button><button class="btn" id="nextMJ">►</button></div></div>
+          <div class="calgrid" id="jCalHead"></div><div class="calgrid" id="jCalBody"></div>
+        </div>
+        <div class="panel" id="jDayPanel" style="display:none">
+          <div class="ph" style="border:0;padding:0 0 8px"><h2 class="sec grn" id="jDayTitle" style="margin:0"></h2><button class="btn" id="jDayClose" style="padding:4px 10px">✕</button></div>
+          <div class="tlog" id="jDayTrades"></div>
+        </div>
+        <div class="panel"><h2 class="sec">Performance</h2><div class="stat" id="jStat"></div>
+          <div class="sec" style="margin:12px 0 6px">Edge Quality</div><div class="stat" id="jStat2"></div>
+          <div class="sec" style="margin:12px 0 6px">Discipline &amp; Behaviour</div><div class="stat" id="jStat3"></div></div>
+        <div class="panel"><h2 class="sec">Equity Curve (R)</h2><div id="jEquity"></div></div>
+        <div class="panel"><h2 class="sec grn">Protocol Score</h2>
+          <div class="pscore"><div id="jRadar"></div><div id="jScoreList"></div></div>
+          <div id="jScoreBar" style="margin-top:10px"></div></div>
+        <div class="panel"><h2 class="sec">Charts</h2>
+          <div class="sec" style="margin:2px 0 6px">Daily R</div><div id="jDaily"></div>
+          <div class="sec" style="margin:14px 0 6px">R Distribution</div><div id="jDist"></div>
+          <div class="sec" style="margin:14px 0 6px">By Session</div><div id="jBySess"></div>
+          <div class="sec" style="margin:14px 0 6px">By Protocol Sequence</div><div id="jBySeq"></div>
+          <div class="sec" style="margin:14px 0 6px">By Setup Grade</div><div id="jBySetup"></div>
+          <div class="sec" style="margin:14px 0 6px">By Exit Behaviour</div><div id="jByExit"></div>
+          <div class="sec" style="margin:14px 0 6px">By Emotional State</div><div id="jByState"></div>
+          <div class="sec" style="margin:14px 0 6px">By Mistake Tag</div><div id="jByMistake"></div>
+          <div class="sec" style="margin:14px 0 6px">By Market Condition</div><div id="jByMarket"></div>
+          <div class="sec" style="margin:14px 0 6px">By Entry Execution</div><div id="jByEntry"></div>
+          <div class="sec" style="margin:14px 0 6px">By Area of Interest</div><div id="jByAoi"></div>
+          <div class="sec" style="margin:14px 0 6px">By Entry Timeframe</div><div id="jByTf"></div>
+          <div class="sec" style="margin:14px 0 6px">By Sleep / Health</div><div id="jBySleep"></div>
+          <div class="sec" style="margin:14px 0 6px">By Distraction</div><div id="jByDistract"></div>
+          <div class="sec" style="margin:14px 0 6px">By Routine &amp; Prep</div><div id="jByRoutine"></div>
         </div>
       </div>
     </section>
@@ -865,7 +857,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2k · 2026-08-12 · HD chart write-up PDFs';
+const BUILD='v2l · 2026-08-12 · journal calendar revamp';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2403,7 +2395,7 @@ function fmtDay(ds){try{return new Intl.DateTimeFormat('en-US',{weekday:'short',
 function computeStats(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE');const wins=closed.filter(t=>t.res==='Win').length,loss=closed.filter(t=>t.res==='Loss').length;const totR=closed.reduce((a,t)=>a+(+t.r||0),0);const wr=closed.length?Math.round(wins/closed.length*100):0;const avg=closed.length?(totR/closed.length):0;return{n:trades.length,closed:closed.length,wins,loss,wr,totR,avg};}
 function equitySvg(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE').slice().sort((a,b)=>a.date.localeCompare(b.date));if(!closed.length)return '<div class="subtle">No closed trades yet.</div>';let cum=0;const pts=[0];closed.forEach(t=>{cum+=(+t.r||0);pts.push(cum);});const W=100,H=40,mn=Math.min(...pts,0),mx=Math.max(...pts,1);const X=i=>i/(pts.length-1)*W,Y=v=>H-(v-mn)/(mx-mn||1)*H;const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p).toFixed(1)).join(' ');const z=Y(0).toFixed(1);return `<svg viewBox="0 0 100 44" style="width:100%;height:110px"><line x1="0" y1="${z}" x2="100" y2="${z}" stroke="var(--line2)" stroke-width="0.5"/><path d="${d}" fill="none" stroke="var(--grn)" stroke-width="1.3"/></svg><div class="subtle">Cumulative: ${cum>=0?'+':''}${cum.toFixed(1)}R over ${closed.length} closed</div>`;}
 function dayDots(trades,ds){const dl=trades.filter(t=>t.date===ds);let d='';dl.forEach(t=>{d+=`<span class="sw" style="display:inline-block;margin:1px;background:${t.dir==='Long'?'var(--grn)':'var(--red)'}"></span>`;if(t.res==='Win')d+='<span class="sw" style="display:inline-block;margin:1px;background:#a970ff"></span>';else if(t.res==='Loss')d+='<span class="sw" style="display:inline-block;margin:1px;background:var(--blue)"></span>';});return d;}
-function monthCal(prefix,view,trades){const y=view.y,m=view.m;document.getElementById(prefix+'CalHead').innerHTML=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;cells+=`<div class="cell ${ds===td?'today':''}" data-d="${ds}" style="min-height:52px"><div class="dn">${d}</div><div>${dayDots(trades,ds)}</div></div>`;}document.getElementById(prefix+'CalBody').innerHTML=cells;}
+function monthCal(prefix,view,trades){const y=view.y,m=view.m;document.getElementById(prefix+'CalHead').innerHTML=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const dl=trades.filter(t=>t.date===ds);let nu=0,hu=false,nr=0,hr=false;dl.forEach(t=>{if(t.usd!=null&&t.usd!==''&&!isNaN(+t.usd)){nu+=+t.usd;hu=true;}if(t.r!==''&&t.r!=null&&!isNaN(+t.r)){nr+=+t.r;hr=true;}});const nv=dl.length?(hu?((nu>=0?'+$':'-$')+Math.abs(nu).toFixed(0)):(hr?((nr>=0?'+':'')+nr.toFixed(1)+'R'):dl.length+'t')):'';const nc=dl.length?(((hu?nu:nr)>=0)?'var(--grn)':'var(--red)'):'';const nh=nv?`<div style="font-family:var(--num);font-size:10px;font-weight:600;color:${nc};line-height:1.1">${nv}</div>`:'';cells+=`<div class="cell ${ds===td?'today':''}" data-d="${ds}" style="min-height:52px"><div class="dn">${d}</div>${nh}<div>${dayDots(trades,ds)}</div></div>`;}document.getElementById(prefix+'CalBody').innerHTML=cells;}
 let IV=curMonth(),JV=curMonth();
 const FKEY='ct_frameworks';
 function loadFw(){try{return JSON.parse(lsGet(FKEY)||'{}');}catch(e){return {};}}
@@ -2626,12 +2618,20 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
   safe(renderJournalCharts);
   document.getElementById('jEquity').innerHTML=equitySvg(t);
   document.getElementById('jCalTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(JV.y,JV.m-1,1)));monthCal('j',JV,t);
-  document.querySelectorAll('#jCalBody .cell[data-d]').forEach(c=>{const ds=c.dataset.d;if(t.some(x=>x.date===ds)){c.style.cursor='pointer';c.title='Review this day';c.addEventListener('click',()=>openDayTrades(ds));}});
-  const log=t.slice().sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('tlCount').textContent='('+t.length+')';
-  document.getElementById('tradeLog').innerHTML=log.length?log.map(tr=>{const rt=tr.res==='Open'?'tag blue':tr.res==='Win'?'tag bull':tr.res==='Loss'?'tag bear':'tag neut';return `<div class="tl"><div class="trev" data-id="${tr.id}" style="cursor:pointer;flex:1"><b>${tr.pair}</b> <span class="tag ${tr.dir==='Long'?'bull':'bear'}">${tr.dir}</span> <span class="${rt}">${tr.res}${tr.r?' '+(+tr.r>0?'+':'')+tr.r+'R':''}</span><br><span class="subtle">${tr.date} · ${tr.model||''} · ${tr.sess||''}</span></div><span class="x" data-id="${tr.id}">✕</span></div>`;}).join(''):'<div class="subtle">No trades yet.</div>';
-  document.querySelectorAll('#tradeLog .trev').forEach(x=>x.addEventListener('click',()=>openTradeReview(+x.dataset.id)));
-  document.querySelectorAll('#tradeLog .x').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();const id=+x.dataset.id;saveTrades(loadTrades().filter(t=>t.id!==id));renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);}));
+  document.querySelectorAll('#jCalBody .cell[data-d]').forEach(c=>{const ds=c.dataset.d;if(t.some(x=>x.date===ds)){c.style.cursor='pointer';c.title='View trades';c.addEventListener('click',()=>{selJDay=ds;renderDayTrades(ds);});}});
+  if(selJDay&&t.some(x=>x.date===selJDay))renderDayTrades(selJDay);else{selJDay=null;const _p=document.getElementById('jDayPanel');if(_p)_p.style.display='none';}
 }
+var selJDay=null;
+function renderDayTrades(ds){
+  const panel=document.getElementById('jDayPanel');if(!panel)return;
+  const dl=loadTrades().filter(t=>t.date===ds).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+  const tt=document.getElementById('jDayTitle');if(tt)tt.textContent=fmtDayLong(ds)+' · '+dl.length+' trade'+(dl.length!==1?'s':'');
+  const rows=dl.length?dl.map(tr=>{const rt=tr.res==='Open'?'tag blue':tr.res==='Win'?'tag bull':tr.res==='Loss'?'tag bear':'tag neut';const usd=(tr.usd!=null&&tr.usd!==''&&!isNaN(+tr.usd))?(' <span class="'+((+tr.usd)>=0?'up':'down')+'">'+((+tr.usd)>=0?'+$':'-$')+Math.abs(+tr.usd).toFixed(0)+'</span>'):'';return `<div class="tl"><div class="trev" data-id="${tr.id}" style="cursor:pointer;flex:1"><b>${tr.pair}</b> <span class="tag ${tr.dir==='Long'?'bull':'bear'}">${tr.dir}</span> <span class="${rt}">${tr.res}${tr.r?' '+(+tr.r>0?'+':'')+tr.r+'R':''}</span>${usd}<br><span class="subtle">${escH(tr.time||'')} ${escH(tr.sess||'')} ${escH(tr.model||'')}</span></div><span class="x" data-id="${tr.id}">✕</span></div>`;}).join(''):'<div class="subtle">No trades this day.</div>';
+  document.getElementById('jDayTrades').innerHTML=rows;panel.style.display='';
+  panel.querySelectorAll('.trev').forEach(x=>x.addEventListener('click',()=>openTradeReview(+x.dataset.id)));
+  panel.querySelectorAll('.x').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();const id=+x.dataset.id;saveTrades(loadTrades().filter(t=>t.id!==id));renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);}));
+}
+if(document.getElementById('jDayClose'))document.getElementById('jDayClose').addEventListener('click',function(){selJDay=null;var p=document.getElementById('jDayPanel');if(p)p.style.display='none';});
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
 document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);});
