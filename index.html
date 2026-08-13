@@ -500,7 +500,7 @@ ul.tight li::marker{color:var(--org)}
     <section class="view" id="view-journal">
       <div class="crumb">Matrix / <b>Trade Journal</b></div>
       <h1 class="h1">Trade Journal</h1>
-      <div style="max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+      <div style="max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
         <div class="panel">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button class="btn grn" id="openLogBtn" style="flex:1;min-width:150px;padding:11px">＋ Log a Trade</button>
@@ -869,7 +869,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2q · 2026-08-12 · journal sub-tabs + HD PMR pdf';
+const BUILD='v2t · 2026-08-12 · master sequence card rebuild';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1212,21 +1212,20 @@ function pmseqHtml(b){
 const SEQCARD_ITEMS=[
  {g:'PRE-MARKET',items:[
   {id:'pm_state',t:'State — Settled Authority. One trade does not make me.'},
-  {id:'pm_amd',t:'AMD identified — daily / weekly clock named'}]},
+  {id:'pm_amd',t:'Narrative Locked In'}]},
  {g:'SEQ 1 · DRAW',items:[
-  {id:'s2_b',t:'Point B still open — draw not yet reached'}]},
+  {id:'s2_b',t:'Point B open'}]},
  {g:'SEQ 2 · LOCATION',items:[
-  {id:'s1_a',t:'Point A — POI Hit · gap / FVG violated & respected (no close-through · shallow tap = better)'}]},
- {g:'SEQ 3 · SMT (NQ/ES)',items:[
-  {id:'s3_timed',t:'Timed SMT — completed · right direction · unbroken'},
-  {id:'s3_m1',t:'M1 SMT followed — NQ/ES vice versa'}]},
+  {id:'s1_a',t:'Point A — POI Identified'}]},
+ {g:'SEQ 3 · SMT',items:[
+  {id:'s3_timed',t:'Timed SMT — completed · right direction'}]},
  {g:'SEQ 4 · TIME',items:[
-  {id:'s4_win',t:'Clock 09:30–10:30 — manipulated timed POI hit, distribution opening'}]},
- {g:'SEQ 5 · CSD (M1)',items:[
-  {id:'s5_disp',t:'Displacement — FVG and/or closed through OB (breaker)'}]},
+  {id:'s4_win',t:'Macro Window'}]},
+ {g:'SEQ 5 · CSD',items:[
+  {id:'s5_disp',t:'(M1) PD Array Matrix — tCSD'}]},
  {g:'EXECUTION',items:[
   {id:'ex_entry',t:'Entry — calm trigger pull'},
-  {id:'ex_stop',t:'Stop loss placement — M1 SMT H/L'}]}];
+  {id:'ex_stop',t:'Stop loss placement'}]}];
 function seqCardKey(){return 'ct_seqcard_'+etParts().date;}
 function seqCardLoad(){try{return JSON.parse(lsGet(seqCardKey())||'{}');}catch(e){return {};}}
 function seqCardSave(st){try{lsSet(seqCardKey(),JSON.stringify(st));}catch(e){}}
@@ -1237,14 +1236,12 @@ function renderSeqCard(){
   const done=SEQCARD_ITEMS.reduce((a,g)=>a+g.items.filter(i=>st[i.id]).length,0);
   const go=done===total;
   let h=`<div class="ph" style="border:0;padding:0 0 8px"><div><h2 class="sec ${go?'grn':''}" style="margin:0">Master Sequence Card</h2><span class="subtle">${etParts().date} · resets daily</span></div><button class="btn" id="seqCardReset" style="padding:5px 10px">↺ Reset</button></div>`;
-  h+=`<div style="border:1px solid ${go?'var(--grn)':'var(--line2)'};border-radius:8px;padding:8px 10px;margin-bottom:8px;text-align:center;font-family:var(--mono);font-weight:700;color:${go?'var(--grn)':'var(--red)'}">${go?'🟩 GO — calm trigger pull. It is already done.':'🟥 NO-GO — '+done+'/'+total+' · every box or no trade'}</div>`;
   SEQCARD_ITEMS.forEach(gr=>{
     h+=`<div class="sec" style="margin:8px 0 4px;font-size:11px">${gr.g}</div>`;
     gr.items.forEach(it=>{
       h+=`<label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer;font-size:12px;line-height:1.35;${st[it.id]?'color:var(--grn)':''}"><input type="checkbox" class="sq-box" data-id="${it.id}" ${st[it.id]?'checked':''} style="margin-top:2px;accent-color:#22c55e">${it.t}</label>`;
     });
   });
-  h+=`<hr class="d"><div class="subtle" style="font-size:11px;line-height:1.5"><b>Point A valid =</b> hit in the right time window · respected (price does not close through the gap/FVG) · shallow tap preferred (less trade into it = better). Pre-market grade: gap ✓ · +FVG ✓✓ · +SD ✓✓✓.<br><b>GO rules:</b> Entry — calm trigger pull (retrace into the PD Array: fresh FVG / breaker) · stop at the M1 SMT H/L · TP ladder ±0.33 → ±0.66 → ±1.33 → ±1.66 to B · out by 11:30 (~99%) · default size · one trade per window.<br><b>Every box or no trade.</b> Skipped valid = taken invalid = deviation. Freeze at the trigger = Shadow 1 (L2): name it → exhale → “It is already done.”</div>`;
   el.innerHTML=h;
   el.querySelectorAll('.sq-box').forEach(b=>b.addEventListener('change',()=>{const s=seqCardLoad();s[b.dataset.id]=b.checked;seqCardSave(s);renderSeqCard();}));
   const r=document.getElementById('seqCardReset');if(r)r.addEventListener('click',()=>{seqCardSave({});renderSeqCard();});
@@ -2546,7 +2543,7 @@ function radarSvg(axes){
     dots+=`<circle cx="${d[0].toFixed(1)}" cy="${d[1].toFixed(1)}" r="2.6" fill="var(--grn)"><title>${escH(a.k)}: ${a.score==null?'no data':Math.round(a.score)+'/100'} · ${escH(a.raw)}</title></circle>`;
   });
   const poly=axes.map((a,i)=>pt(i,Math.max((a.score||0)/100,0.02)).map(n=>n.toFixed(1)).join(',')).join(' ');
-  return `<svg viewBox="0 0 300 268" style="width:100%;max-width:330px;height:auto">${rings}${spokes}<polygon points="${poly}" fill="rgba(53,208,127,.22)" stroke="var(--grn)" stroke-width="1.6"/>${dots}${labels}</svg>`;
+  return `<svg viewBox="-56 -8 412 292" style="width:100%;max-width:390px;height:auto">${rings}${spokes}<polygon points="${poly}" fill="rgba(53,208,127,.22)" stroke="var(--grn)" stroke-width="1.6"/>${dots}${labels}</svg>`;
 }
 function scoreBarHtml(total){
   if(total==null)return '<div class="subtle">Log a few closed trades to generate your score.</div>';
@@ -3221,7 +3218,7 @@ function pmRoutineVal(cid){return Array.prototype.slice.call(document.querySelec
 function readinessOf(pm){if(!pm||!pm.ready)return null;const v=['sleep','energy','focus'].map(k=>+pm.ready[k]||0).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
 let PV=curMonth(), selPmrDay=etParts().date, selWeek=null, selWeekDay=null, pmrShots=[], pmrDebriefData=null, pmrTechDebriefData=null;
 const SEVEN_STEPS=`DR. JOE'S 7-STEP SEQUENCE — the process this trader runs each morning and the spine beneath their Identity Pro layers (L1–L4). It is the FOUNDATION; the 4 Pillars / Mastery-of-Self frame sits above it. When you diagnose, name which step(s) broke, and in the ACTION field prescribe the exact practice note that repairs it (the trader keeps each as a file):\n1. Get beyond the analytical mind → coherence. [L2] Practice: 'Open Focus Practice' (+ 'Brainwave States'). Breaks as: executed from high-beta / survival, tilt, never dropped into Settled Authority.\n2. Retire the old self. [L1] Practice: 'Un-memorizing the Emotion', 'Breaking the Habit of the Old Self'. Breaks as: an old emotional program (fear, unworthiness, revenge, shame) ran the session.\n3. Install the new self. [L1→L3] Practice: 'Mental Rehearsal Practice', 'Who I Am Being'. Breaks as: acted as the old identity; no clear self decided or rehearsed.\n4. Marry a clear intention to an elevated emotion. [L4×L2] Practice: 'Elevated Emotions — Menu & Fusion'. Breaks as: traded from lack / need instead of a felt, funded, complete state.\n5. Command matter, then surrender the how. [L4] Practice: 'Command & Surrender', 'Non-Resistance & the Law of Reverse Effort'. Breaks as: forced the outcome, moved stops, micromanaged, revenge (reverse effort).\n6. Gratitude — the state of receivership. [L4] Practice: 'Gratitude — The State of Receivership'. Breaks as: traded from wanting / scarcity rather than 'already done'.\n7. Get up different, and maintain the state all day. [L3] Practice: 'Maintaining the State — All-Day Protocol', 'The Signs That It's Manifesting', 'Starting Again'. Breaks as: had the state, then dropped it mid-session; spiraled after a loss (Identity Collapse).\nRun order: State(1) → retire+install identity(2–3) → intention+elevated emotion(4) → command+surrender(5) → gratitude(6) → maintain all day(7). Diagnose in this order, and in ACTION always name the specific practice note above.`;
-const COACH_DEBRIEF_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro layers L1–L4 + Execution Protocol Framework).
+const COACH_DEBRIEF_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: POI → Draw → SMT → Time → CSD) and their operating system (Identity Pro layers L1–L4 + Execution Protocol Framework).
 
 The 4 Pillars To Success — MASTER FILTER for every comment you make. In the briefing / pre-market, the 4 Pillars filter the whole conversation. In post-market reviews, L1–L4 is the primary lens but the 4 Pillars still sit above it:
 1. Bring Forth the Right Mind — know it to be true and present; mind and being complete, without attachment to the outcome of the choice and without judgment of what should or shouldn't be happening.
@@ -3523,7 +3520,7 @@ function weekDossier(mon){
     pg:gradeAvg(trades,'pgrade'),eg:gradeAvg(trades,'egrade'),mg:gradeAvg(trades,'mgrade'),
     debrief:(loadWeekly()[mon]||{}).debrief||null};
 }
-const COACH_WEEK_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their operating system (Identity Pro L1–L4 + Execution Protocol Framework).
+const COACH_WEEK_PROMPT=`You are this trader's 1-on-1 trading coach and psychological mentor — a savant who scaled from nothing past $100M, now mentoring them. You share their protocol (Matrix: POI → Draw → SMT → Time → CSD) and their operating system (Identity Pro L1–L4 + Execution Protocol Framework).
 
 The 4 Pillars To Success are the master filter for every comment you make:
 1. Bring Forth the Right Mind — mind and being complete, without attachment to outcome and without judgment of what should or shouldn't be happening.
@@ -3773,7 +3770,7 @@ function renderPmrDetail(){
     if(sub)sub.textContent=w.stats.n+' trade'+(w.stats.n!==1?'s':'')+' · '+w.journals+'/5 journals · Mon–Fri roll-up';
     const body=weekReviewHtml(w);
     el.innerHTML=`<div style="text-align:right;margin-bottom:8px"><button class="btn" id="wkPdf" style="padding:4px 10px">⬇ PDF</button></div>`+body;
-    const pb=document.getElementById('wkPdf');if(pb)pb.addEventListener('click',()=>printDoc('Week Review — '+w.label,body));
+    const pb=document.getElementById('wkPdf');if(pb)pb.addEventListener('click',()=>printDoc('Week Review — '+w.label,'<style>@page{size:landscape;margin:11mm}</style>'+body));
     const db=document.getElementById('wk-debrief-btn');if(db)db.addEventListener('click',weekDebrief);
     /* stay in the week view — open the day inline below the list, and keep clicking through */
     el.querySelectorAll('.wkday').forEach(x=>x.addEventListener('click',()=>{
@@ -3792,7 +3789,7 @@ function renderPmrDetail(){
   if(sub)sub.textContent=(D.hasJournal?'journal saved':'no journal yet')+(D.trades.length?' · '+D.trades.length+' trade'+(D.trades.length!==1?'s':''):'')+(D.hasPlan?' · framework':'');
   const body=dayDossierHtml(D);
   el.innerHTML=`<div style="text-align:right;margin-bottom:8px"><button class="btn" id="pmrPdf" style="padding:4px 10px">⬇ PDF</button></div>`+body;
-  const pb=document.getElementById('pmrPdf');if(pb)pb.addEventListener('click',()=>printDoc('Post Market Review — '+fmtDayLong(selPmrDay),body));
+  const pb=document.getElementById('pmrPdf');if(pb)pb.addEventListener('click',()=>printDoc('Post Market Review — '+fmtDayLong(selPmrDay),'<style>@page{size:landscape;margin:11mm}</style>'+body));
   bindPmrTradeOpeners(el);
 }
 function renderPmrWeeks(){
@@ -4200,7 +4197,7 @@ function csvDoImport(){
    entry/exit, and your annotated screenshots to the coach, and gets a
    technical grading of the execution against the Matrix protocol.
    ============================================================ */
-const COACH_TRADE_PROMPT=`You are this trader's 1-on-1 trading mentor — a savant who scaled past $100M. You share their protocol (Matrix: SMT → POI → Time → Displacement → CSD → M1) and their focus windows (Prime AM 09:40–10:15 · Silver Bullet 10:25–10:35 · Late AM 10:45–11:15 · Early PM 12:45–13:15 · Afternoon 13:45–14:15 ET).
+const COACH_TRADE_PROMPT=`You are this trader's 1-on-1 trading mentor — a savant who scaled past $100M. You share their protocol (Matrix: POI → Draw → SMT → Time → CSD) and their focus windows (Prime AM 09:40–10:15 · Silver Bullet 10:25–10:35 · Late AM 10:45–11:15 · Early PM 12:45–13:15 · Afternoon 13:45–14:15 ET).
 
 ${SEVEN_STEPS}
 
