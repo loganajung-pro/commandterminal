@@ -520,9 +520,12 @@ ul.tight li::marker{color:var(--org)}
           <div class="ph" style="border:0;padding:0 0 8px"><h2 class="sec grn" id="jDayTitle" style="margin:0"></h2><button class="btn" id="jDayClose" style="padding:4px 10px">✕</button></div>
           <div class="tlog" id="jDayTrades"></div>
         </div>
-        <div class="panel"><h2 class="sec">Performance</h2><div class="stat" id="jStat"></div>
+        <div class="panel"><h2 class="sec">Performance</h2>
+          <div id="jEV" style="margin-bottom:10px"></div>
+          <div class="stat" id="jStat"></div>
           <div class="sec" style="margin:12px 0 6px">Edge Quality</div><div class="stat" id="jStat2"></div>
           <div class="sec" style="margin:12px 0 6px">Discipline &amp; Behaviour</div><div class="stat" id="jStat3"></div></div>
+        <div class="panel"><h2 class="sec grn">Setup Grade — Expected Value</h2><div id="jGradeEV"></div></div>
         <div class="panel"><h2 class="sec">Equity Curve (R)</h2><div id="jEquity"></div></div>
         <div class="panel"><h2 class="sec grn">Protocol Score</h2>
           <div class="pscore"><div id="jRadar"></div><div id="jScoreList"></div></div>
@@ -540,6 +543,7 @@ ul.tight li::marker{color:var(--org)}
           <div class="sec" style="margin:14px 0 6px">By Entry Execution</div><div id="jByEntry"></div>
           <div class="sec" style="margin:14px 0 6px">By Area of Interest</div><div id="jByAoi"></div>
           <div class="sec" style="margin:14px 0 6px">By Draw on Liquidity</div><div id="jByDraw"></div>
+          <div class="sec" style="margin:14px 0 6px">By Entry Trigger</div><div id="jByTrigger"></div>
           <div class="sec" style="margin:14px 0 6px">By Entry Timeframe</div><div id="jByTf"></div>
           <div class="sec" style="margin:14px 0 6px">By Sleep / Health</div><div id="jBySleep"></div>
           <div class="sec" style="margin:14px 0 6px">By Distraction</div><div id="jByDistract"></div>
@@ -858,7 +862,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2n · 2026-08-12 · tags + grades update';
+const BUILD='v2p · 2026-08-12 · EV + grade EV drill-down';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2582,7 +2586,7 @@ function renderJournalCharts(){
   set('jByExit',barsHtml(G.byExit));
   set('jByState',barsHtml(attribBy(trades,t=>t.state)));
   TAG_GROUPS.forEach(g=>{
-    const id={mistake:'jByMistake',market:'jByMarket',entry:'jByEntry',aoi:'jByAoi',draw:'jByDraw',tf:'jByTf',sleep:'jBySleep',distract:'jByDistract',routine:'jByRoutine'}[g.id];
+    const id={mistake:'jByMistake',market:'jByMarket',entry:'jByEntry',aoi:'jByAoi',draw:'jByDraw',trigger:'jByTrigger',tf:'jByTf',sleep:'jBySleep',distract:'jByDistract',routine:'jByRoutine'}[g.id];
     if(id)set(id,barsHtml(attribBy(trades,t=>tagsOf(t,g.id))));
   });
 }
@@ -2616,11 +2620,13 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
     +cell(G.holdLoss!=null?Math.round(G.holdLoss)+'m':'—','Hold · losses')
     +cell(G.ready.hi!=null?(G.ready.hi>=0?'+':'')+G.ready.hi.toFixed(1)+'R':'—','R · high readiness',G.ready.hi!=null&&G.ready.hi>=0?'up':'')
     +cell(G.ready.lo!=null?(G.ready.lo>=0?'+':'')+G.ready.lo.toFixed(1)+'R':'—','R · low readiness',G.ready.lo!=null&&G.ready.lo<0?'down':'');
+  safe(function(){renderEV(t,P);});
+  safe(function(){renderGradeEV(t);});
   safe(renderJournalCharts);
   document.getElementById('jEquity').innerHTML=equitySvg(t);
   document.getElementById('jCalTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(JV.y,JV.m-1,1)));monthCal('j',JV,t);
-  document.querySelectorAll('#jCalBody .cell[data-d]').forEach(c=>{const ds=c.dataset.d;if(t.some(x=>x.date===ds)){c.style.cursor='pointer';c.title='View trades';c.addEventListener('click',()=>{selJDay=ds;renderDayTrades(ds);});}});
-  if(selJDay&&t.some(x=>x.date===selJDay))renderDayTrades(selJDay);else{selJDay=null;const _p=document.getElementById('jDayPanel');if(_p)_p.style.display='none';}
+  document.querySelectorAll('#jCalBody .cell[data-d]').forEach(c=>{const ds=c.dataset.d;if(t.some(x=>x.date===ds)){c.style.cursor='pointer';c.title='View trades';c.addEventListener('click',()=>openDayTrades(ds));}});
+  const _p=document.getElementById('jDayPanel');if(_p)_p.style.display='none';
 }
 var selJDay=null;
 function renderDayTrades(ds){
@@ -2633,6 +2639,44 @@ function renderDayTrades(ds){
   panel.querySelectorAll('.x').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();const id=+x.dataset.id;saveTrades(loadTrades().filter(t=>t.id!==id));renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);}));
 }
 if(document.getElementById('jDayClose'))document.getElementById('jDayClose').addEventListener('click',function(){selJDay=null;var p=document.getElementById('jDayPanel');if(p)p.style.display='none';});
+/* ===== Expected Value (EV) — the headline stat ===== */
+function renderEV(t,P){
+  const el=document.getElementById('jEV');if(!el)return;
+  const evR=P.expectancy;const uv=t.filter(isClosed).map(tradeUsdAny).filter(x=>x!=null);
+  const evU=uv.length?uv.reduce((a,b)=>a+b,0)/uv.length:null;const pos=evR>=0;
+  el.innerHTML=`<div style="border:1px solid ${pos?'var(--grn-dim)':'#7a2f2f'};border-radius:10px;padding:12px 14px;background:linear-gradient(180deg,rgba(53,208,127,.06),transparent)">
+    <div class="subtle" style="font-size:10px;letter-spacing:.14em">EXPECTED VALUE · PER TRADE</div>
+    <div style="display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;margin-top:3px">
+      <div style="font-family:var(--num);font-size:30px;font-weight:700;color:${pos?'var(--grn)':'var(--red)'}">${pos?'+':''}${evR.toFixed(2)}R</div>
+      ${evU!=null?`<div style="font-family:var(--num);font-size:20px;font-weight:600;color:${evU>=0?'var(--grn)':'var(--red)'}">${evU>=0?'+$':'-$'}${Math.abs(evU).toFixed(0)}<span class="subtle" style="font-size:11px"> / trade</span></div>`:''}
+      <div class="subtle" style="font-size:11px">${P.closed} closed · ${P.wr}% win · avg win +${P.avgW.toFixed(1)}R · avg loss -${P.avgL.toFixed(1)}R</div>
+    </div>
+    <div class="subtle" style="font-size:10px;margin-top:4px">EV = (win% × avg win) − (loss% × avg loss) — your expectancy per trade. Positive = the system prints at scale.</div>
+  </div>`;
+}
+/* ===== Setup-grade EV table — click a grade to drill into its trades ===== */
+function gradeOrder(g){return ['A+','A','B','C','F'].indexOf(g);}
+function renderGradeEV(t){
+  const el=document.getElementById('jGradeEV');if(!el)return;
+  const groups={};t.forEach(x=>{const g=((x.setup||'').trim())||'Ungraded';(groups[g]=groups[g]||[]).push(x);});
+  const keys=Object.keys(groups).sort((a,b)=>{const ia=gradeOrder(a),ib=gradeOrder(b);return ((ia<0?98:ia)-(ib<0?98:ib))||a.localeCompare(b);});
+  const gc='grid-template-columns:60px 1fr 1fr 1.1fr 1fr';
+  let h=`<div style="display:grid;${gc};gap:6px;padding:0 6px 4px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)"><div>Grade</div><div>Trades</div><div>Win</div><div>EV / trade</div><div>EV $</div></div>`;
+  if(!keys.length)h+='<div class="subtle" style="padding:6px">No trades yet.</div>';
+  keys.forEach(g=>{const arr=groups[g],P=perfStats(arr);const uv=arr.filter(isClosed).map(tradeUsdAny).filter(x=>x!=null);const evU=uv.length?uv.reduce((a,b)=>a+b,0)/uv.length:null;
+    h+=`<div class="graderow" data-g="${escH(g)}" style="display:grid;${gc};gap:6px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--line);cursor:pointer;font-family:var(--num);font-size:12px">
+      <div style="font-family:var(--title);font-weight:700;font-size:13px">${escH(g)}</div>
+      <div>${P.closed}</div>
+      <div>${P.closed?P.wr+'%':'—'}</div>
+      <div class="${P.expectancy>=0?'up':'down'}" style="font-weight:700">${P.closed?(P.expectancy>=0?'+':'')+P.expectancy.toFixed(2)+'R':'—'}</div>
+      <div class="${evU==null?'mut':(evU>=0?'up':'down')}">${evU==null?'—':((evU>=0?'+$':'-$')+Math.abs(evU).toFixed(0))}</div>
+    </div>`;});
+  h+=`<div class="subtle" style="font-size:10px;margin-top:8px">Click a grade to open its trades — each shows the full journal detail.</div>`;
+  el.innerHTML=h;
+  el.querySelectorAll('.graderow').forEach(r=>r.addEventListener('click',()=>openGradeTrades(r.dataset.g)));
+}
+function gradeTradesHtml(grade,editable){const list=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).slice().sort((a,b)=>b.date.localeCompare(a.date));if(!list.length)return '<div class="subtle">No trades with this grade.</div>';return list.map(tr=>(editable?`<div style="text-align:right;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit trade</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
+function openGradeTrades(grade){curTradeId=null;const n=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).length;document.getElementById('tradeModalTitle').textContent='Setup grade · '+grade;document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below';document.getElementById('tradeModalBody').innerHTML=gradeTradesHtml(grade,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const tt=loadTrades().find(x=>x.id===id);if(tt){closeTradeModal();openLogModal(tt);}}));curPrint={title:'Setup grade '+grade,body:gradeTradesHtml(grade,false)};document.getElementById('tradeModal').classList.add('open');}
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
 document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);});
@@ -3337,6 +3381,7 @@ function tR(t){return +t.r||0;}
 function isClosed(t){return t.res==='Win'||t.res==='Loss'||t.res==='BE';}
 function byChrono(a,b){return String(a.date).localeCompare(String(b.date))||((a.id||0)-(b.id||0));}
 function tradeUsd(t){const rk=+t.risk||0;return rk>0?rk*tR(t):null;}
+function tradeUsdAny(t){if(t.usd!=null&&t.usd!==''&&!isNaN(+t.usd))return +t.usd;return tradeUsd(t);}
 function perfStats(trades){
   const closed=trades.filter(isClosed).slice().sort(byChrono);
   const wins=closed.filter(t=>t.res==='Win'),losses=closed.filter(t=>t.res==='Loss');
@@ -4389,6 +4434,7 @@ const TAG_GROUPS=[
   {id:'tf',      label:'Entry Timeframe', opts:['5 sec','15 sec','1 min','2 min','3 min','5 min','15 min','30 min','1 hour','4 hour','Daily']},
   {id:'aoi',     label:'Area of Interest',opts:['Inverse MMSM','Inverse MMBM','7AM Range Roadmap','15m trendline','Daily level','Order block','FVG / imbalance','Equal highs','Equal lows','PDH','PDL','Midnight open','VWAP','100 EMA','200 EMA']},
   {id:'draw',    label:'Draw on Liquidity',opts:['1M Equal Lows','1M Equal Highs','PDH','PDL','15M BISI','15M SIBI']},
+  {id:'trigger', label:'Entry Triggers',  opts:['Time','SMT','1M CSD','15M CSD','FVG','HTF breaker','1M Breaker','1M MMSM','1M MMBM','1M Rejection Block']},
   {id:'mistake', label:'Mistakes',        opts:['Oversized','Overtraded','Revenge traded','Took low-quality setup','Broke rules',"Didn't wait for confirmation",'Traded during chop',"Didn't follow playbook",'FOMO entry','Cut winner early']},
   {id:'market',  label:'Market Condition',opts:['Trending','Choppy','Range-bound','High volume','Low volume','News-driven','Volatile','Slow']},
   {id:'distract',label:'Distractions',    opts:['Phone distraction','Social media','Family interruption','Work interruption','Noise','Rushing / late start']},
