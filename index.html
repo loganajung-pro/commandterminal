@@ -869,7 +869,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2t · 2026-08-12 · master sequence card rebuild';
+const BUILD='v2u · 2026-08-12 · dots + copy-trade merge';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2403,7 +2403,7 @@ function seedTrades(){let t=loadTrades();if(t.length)return t;
 function fmtDay(ds){try{return new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric'}).format(new Date(ds+'T12:00:00'));}catch(e){return ds;}}
 function computeStats(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE');const wins=closed.filter(t=>t.res==='Win').length,loss=closed.filter(t=>t.res==='Loss').length;const totR=closed.reduce((a,t)=>a+(+t.r||0),0);const wr=closed.length?Math.round(wins/closed.length*100):0;const avg=closed.length?(totR/closed.length):0;return{n:trades.length,closed:closed.length,wins,loss,wr,totR,avg};}
 function equitySvg(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE').slice().sort((a,b)=>a.date.localeCompare(b.date));if(!closed.length)return '<div class="subtle">No closed trades yet.</div>';let cum=0;const pts=[0];closed.forEach(t=>{cum+=(+t.r||0);pts.push(cum);});const W=100,H=40,mn=Math.min(...pts,0),mx=Math.max(...pts,1);const X=i=>i/(pts.length-1)*W,Y=v=>H-(v-mn)/(mx-mn||1)*H;const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p).toFixed(1)).join(' ');const z=Y(0).toFixed(1);return `<svg viewBox="0 0 100 44" style="width:100%;height:110px"><line x1="0" y1="${z}" x2="100" y2="${z}" stroke="var(--line2)" stroke-width="0.5"/><path d="${d}" fill="none" stroke="var(--grn)" stroke-width="1.3"/></svg><div class="subtle">Cumulative: ${cum>=0?'+':''}${cum.toFixed(1)}R over ${closed.length} closed</div>`;}
-function dayDots(trades,ds){const dl=trades.filter(t=>t.date===ds);let d='';dl.forEach(t=>{d+=`<span class="sw" style="display:inline-block;margin:1px;background:${t.dir==='Long'?'var(--grn)':'var(--red)'}"></span>`;if(t.res==='Win')d+='<span class="sw" style="display:inline-block;margin:1px;background:#a970ff"></span>';else if(t.res==='Loss')d+='<span class="sw" style="display:inline-block;margin:1px;background:var(--blue)"></span>';});return d;}
+function dayDots(trades,ds){const dl=trades.filter(t=>t.date===ds);let d='';dl.forEach(t=>{const col=t.res==='Win'?'var(--grn)':(t.res==='Loss'?'var(--red)':(t.res==='BE'?'var(--mut)':'var(--faint)'));const ar=(t.dir==='Short')?'▼':'▲';d+=`<span title="${t.dir==='Short'?'Short':'Long'} · ${t.res||'Open'}" style="display:inline-block;margin:0 1px;font-size:10px;line-height:1;font-weight:700;color:${col}">${ar}</span>`;});return d;}
 function monthCal(prefix,view,trades){const y=view.y,m=view.m;document.getElementById(prefix+'CalHead').innerHTML=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const dl=trades.filter(t=>t.date===ds);let nu=0,hu=false,nr=0,hr=false;dl.forEach(t=>{if(t.usd!=null&&t.usd!==''&&!isNaN(+t.usd)){nu+=+t.usd;hu=true;}if(t.r!==''&&t.r!=null&&!isNaN(+t.r)){nr+=+t.r;hr=true;}});const nv=dl.length?(hu?((nu>=0?'+$':'-$')+Math.abs(nu).toFixed(0)):(hr?((nr>=0?'+':'')+nr.toFixed(1)+'R'):dl.length+'t')):'';const nc=dl.length?(((hu?nu:nr)>=0)?'var(--grn)':'var(--red)'):'';const nh=nv?`<div style="font-family:var(--num);font-size:10px;font-weight:600;color:${nc};line-height:1.1">${nv}</div>`:'';cells+=`<div class="cell ${ds===td?'today':''}" data-d="${ds}" style="min-height:52px"><div class="dn">${d}</div>${nh}<div>${dayDots(trades,ds)}</div></div>`;}document.getElementById(prefix+'CalBody').innerHTML=cells;}
 let IV=curMonth(),JV=curMonth();
 const FKEY='ct_frameworks';
@@ -4961,19 +4961,57 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
       shots:[],tags:{}
     };
   }
+  /* Merge a cluster of round-trips (same trade copied across accounts) into ONE journal entry:
+     PnL summed, size summed, size-weighted avg entry/exit, every account listed in the notes. */
+  function mergeCluster(trips){
+    var pair=trips[0].pair||mapPair(trips[0].cid),dirLong=trips[0].dirLong;
+    var inN=0,inSz=0,outN=0,outSz=0,pnl=0,hasP=false,tS=trips[0].tS,tE=trips[0].tE,accts=[];
+    trips.forEach(function(tr){
+      tr.ein.forEach(function(f){inN+=f.price*f.size;inSz+=f.size;});
+      tr.eout.forEach(function(f){outN+=f.price*f.size;outSz+=f.size;});
+      if(tr.pnl!=null){pnl+=tr.pnl;hasP=true;}
+      if(new Date(tr.tS)<new Date(tS))tS=tr.tS;
+      if(new Date(tr.tE)>new Date(tE))tE=tr.tE;
+      if(accts.indexOf(tr.acct)<0)accts.push(tr.acct);
+    });
+    var avgIn=inSz?inN/inSz:null,avgOut=outSz?outN/outSz:null,eET=etOf(tS),xET=etOf(tE);
+    var usd=hasP?r2(pnl):null,copy=accts.length>1;
+    return {
+      id:(typeof nextTid==='function'?nextTid():Date.now()),src:'tsx',srcId:'tsx|'+pair+'|'+(dirLong?'L':'S')+'|'+tS,acct:accts.join(', '),
+      date:eET.date,pair:pair,dir:dirLong?'Long':'Short',time:hm2(eET),timeout:(outSz?hm2(xET):''),
+      pentry:(avgIn!=null?String(r2(avgIn)):''),pexit:(avgOut!=null?String(r2(avgOut)):''),
+      qty:String(inSz),usd:(usd!=null?usd:''),res:(usd==null?'Open':(usd>0?'Win':(usd<0?'Loss':'BE'))),
+      r:'',model:'TopstepX'+(copy?' · copy':''),seq:[],sess:sessFromMin(eET.min),state:'',
+      notes:'Auto-imported from TopstepX'+(copy?(' · COPY TRADE across '+accts.length+' accounts'):'')+' · Accounts: '+accts.join(', ')+' · '+pair+' '+(dirLong?'Long':'Short')+' '+inSz+(avgIn!=null?(' @ '+r2(avgIn)):'')+(avgOut!=null?(' → '+r2(avgOut)):'')+(usd!=null?(' · combined '+money(usd)):''),
+      shots:[],tags:{}
+    };
+  }
   async function syncTrades(days){
     days=days||30;
     var accs=await accounts();
     var startISO=new Date(Date.now()-days*864e5).toISOString(),endISO=new Date().toISOString();
     var existing=(typeof loadTrades==='function')?loadTrades():[];
     var seen={};existing.forEach(function(t){if(t.srcId)seen[t.srcId]=1;});
-    var added=0;
+    // 1) collect every closed round-trip across all accounts, tagged by account
+    var all=[];
     for(var i=0;i<accs.length;i++){
       var acc=accs[i],fills=[];
       try{fills=await trades(acc.id,startISO,endISO);}catch(e){continue;}
-      var trips=tsxTrips(fills).filter(function(tr){return tr.closed;});
-      trips.forEach(function(tr){tr.acct=acc.name||('Acct '+acc.id);var td=tripToTrade(tr);if(!td.srcId||seen[td.srcId])return;seen[td.srcId]=1;existing.push(td);added++;});
+      tsxTrips(fills).filter(function(tr){return tr.closed;}).forEach(function(tr){tr.acct=acc.name||('Acct '+acc.id);tr.pair=mapPair(tr.cid);all.push(tr);});
     }
+    // 2) cluster copies: same instrument+direction fired within ~60s across DIFFERENT accounts = one trade
+    var byKey={};all.forEach(function(tr){var k=tr.pair+'|'+(tr.dirLong?'L':'S');(byKey[k]=byKey[k]||[]).push(tr);});
+    var clusters=[],W=60000;
+    Object.keys(byKey).forEach(function(k){
+      byKey[k].slice().sort(function(a,b){return new Date(a.tS)-new Date(b.tS);}).forEach(function(tr){
+        var last=clusters.length?clusters[clusters.length-1]:null;
+        if(last&&last.key===k&&(new Date(tr.tS)-new Date(last.t0))<=W&&last.accts.indexOf(tr.acct)<0){last.trips.push(tr);last.accts.push(tr.acct);}
+        else clusters.push({key:k,t0:tr.tS,accts:[tr.acct],trips:[tr]});
+      });
+    });
+    // 3) merge each cluster into one journal trade
+    var added=0;
+    clusters.forEach(function(cl){var td=mergeCluster(cl.trips);if(!td.srcId||seen[td.srcId])return;seen[td.srcId]=1;existing.push(td);added++;});
     if(added){
       if(typeof saveTrades==='function')saveTrades(existing);
       try{if(typeof renderJournal==='function')renderJournal();}catch(e){}
