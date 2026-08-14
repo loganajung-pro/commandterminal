@@ -508,7 +508,7 @@ ul.tight li::marker{color:var(--org)}
             <select id="jrnlSyncRange" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:9px;font-family:var(--mono);font-size:12px"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option></select>
           </div>
           <div class="subtle" id="jrnlSyncStatus" style="margin-top:6px"></div>
-          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">Import JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button></div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">Import JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button><button class="btn" id="jrnlClearTsx" style="padding:4px 8px;font-size:10px;border-color:var(--red);color:var(--red)">Clear TopstepX imports</button></div>
           <input type="file" id="impFile" accept="application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
         </div>
         <div class="subtabs" id="jSubtabs" style="align-self:flex-start">
@@ -869,7 +869,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2u · 2026-08-12 · dots + copy-trade merge';
+const BUILD='v2v · 2026-08-12 · delete trade + clear imports';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2690,8 +2690,8 @@ function renderGradeEV(t){
   el.innerHTML=h;
   el.querySelectorAll('.graderow').forEach(r=>r.addEventListener('click',()=>openGradeTrades(r.dataset.g)));
 }
-function gradeTradesHtml(grade,editable){const list=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).slice().sort((a,b)=>b.date.localeCompare(a.date));if(!list.length)return '<div class="subtle">No trades with this grade.</div>';return list.map(tr=>(editable?`<div style="text-align:right;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit trade</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
-function openGradeTrades(grade){curTradeId=null;const n=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).length;document.getElementById('tradeModalTitle').textContent='Setup grade · '+grade;document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below';document.getElementById('tradeModalBody').innerHTML=gradeTradesHtml(grade,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const tt=loadTrades().find(x=>x.id===id);if(tt){closeTradeModal();openLogModal(tt);}}));curPrint={title:'Setup grade '+grade,body:gradeTradesHtml(grade,false)};document.getElementById('tradeModal').classList.add('open');}
+function gradeTradesHtml(grade,editable){const list=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).slice().sort((a,b)=>b.date.localeCompare(a.date));if(!list.length)return '<div class="subtle">No trades with this grade.</div>';return list.map(tr=>(editable?`<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit</button><button class="btn tr-del-btn" data-id="${tr.id}" style="padding:5px 12px;border-color:var(--red);color:var(--red)">🗑 Delete</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
+function openGradeTrades(grade){curTradeId=null;const n=loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).length;document.getElementById('tradeModalTitle').textContent='Setup grade · '+grade;document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below';document.getElementById('tradeModalBody').innerHTML=gradeTradesHtml(grade,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const tt=loadTrades().find(x=>x.id===id);if(tt){closeTradeModal();openLogModal(tt);}}));document.querySelectorAll('#tradeModalBody .tr-del-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;if(!confirm('Delete this trade permanently?'))return;saveTrades(loadTrades().filter(t=>t.id!==id));if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);renderJournal();if(loadTrades().filter(t=>(((t.setup||'').trim())||'Ungraded')===grade).length)openGradeTrades(grade);else closeTradeModal();}));curPrint={title:'Setup grade '+grade,body:gradeTradesHtml(grade,false)};document.getElementById('tradeModal').classList.add('open');}
 document.querySelectorAll('#jSubtabs .subtab').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('#jSubtabs .subtab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');var v=btn.dataset.jsub;document.querySelectorAll('#view-journal .jsub').forEach(function(s){s.style.display=(s.dataset.jsub===v)?'flex':'none';});});});
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
@@ -3908,7 +3908,7 @@ function tradeFieldsHtml(tr){
 }
 function shotsArrHtml(arr){return (arr&&arr.length)?`<div class="briefsec"><h4>Charts</h4>${arr.map(s=>`<div class="fwshot" style="margin-top:8px;page-break-inside:avoid"><img src="${s}" style="width:100%;max-width:100%;height:auto;display:block"></div>`).join('')}</div>`:'';}
 function tradeDetailHtml(tr){return tradeFieldsHtml(tr)+shotsArrHtml(tr.shots);}
-function dayTradesHtml(ds,editable){const list=loadTrades().filter(t=>t.date===ds);if(!list.length)return '<div class="subtle">No trades this day.</div>';return list.map(tr=>(editable?`<div style="text-align:right;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit trade</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
+function dayTradesHtml(ds,editable){const list=loadTrades().filter(t=>t.date===ds);if(!list.length)return '<div class="subtle">No trades this day.</div>';return list.map(tr=>(editable?`<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px"><button class="btn grn tr-edit-btn" data-id="${tr.id}" style="padding:5px 12px">✎ Edit</button><button class="btn tr-del-btn" data-id="${tr.id}" style="padding:5px 12px;border-color:var(--red);color:var(--red)">🗑 Delete</button></div>`:'')+tradeDetailHtml(tr)).join('<hr class="d">');}
 function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)return;
   curTradeId=id;tradeShots=(tr.shots||[]).slice();
   document.getElementById('tradeModalTitle').textContent=tr.pair+' · '+tr.dir+' — '+fmtDayLong(tr.date);
@@ -3931,7 +3931,7 @@ function openTradeReview(id){const tr=loadTrades().find(t=>t.id===id);if(!tr)ret
   const rb=document.getElementById('tr-replay-btn');if(rb)rb.addEventListener('click',()=>{const t=loadTrades().filter(x=>x.id===id)[0];if(t)renderReplay(t,'tr-replay');});
   const cb2=document.getElementById('tr-coach-btn');if(cb2)cb2.addEventListener('click',()=>coachTradeReview(id));
   document.getElementById('tradeModal').classList.add('open');}
-function openDayTrades(ds){curTradeId=null;const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below, or open one from the log to add charts';document.getElementById('tradeModalBody').innerHTML=dayTradesHtml(ds,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const t=loadTrades().find(x=>x.id===id);if(t){closeTradeModal();openLogModal(t);}}));curPrint={title:'Trades · '+fmtDayLong(ds),body:dayTradesHtml(ds,false)};document.getElementById('tradeModal').classList.add('open');}
+function openDayTrades(ds){curTradeId=null;const n=loadTrades().filter(t=>t.date===ds).length;document.getElementById('tradeModalTitle').textContent='Trades — '+fmtDayLong(ds);document.getElementById('tradeModalSub').textContent=n+' trade'+(n!==1?'s':'')+' · ✎ Edit any trade below, or open one from the log to add charts';document.getElementById('tradeModalBody').innerHTML=dayTradesHtml(ds,true);document.querySelectorAll('#tradeModalBody .tr-edit-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;const t=loadTrades().find(x=>x.id===id);if(t){closeTradeModal();openLogModal(t);}}));document.querySelectorAll('#tradeModalBody .tr-del-btn').forEach(b=>b.addEventListener('click',()=>{const id=+b.dataset.id;if(!confirm('Delete this trade permanently?'))return;saveTrades(loadTrades().filter(t=>t.id!==id));if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);renderJournal();if(loadTrades().filter(t=>t.date===ds).length)openDayTrades(ds);else closeTradeModal();}));curPrint={title:'Trades · '+fmtDayLong(ds),body:dayTradesHtml(ds,false)};document.getElementById('tradeModal').classList.add('open');}
 function closeTradeModal(){document.getElementById('tradeModal').classList.remove('open');}
 function renderTradeShots(){renderShotStrip('tr-shots',tradeShots,renderTradeShots);}
 function trAddFile(file){if(!file)return;const rd=new FileReader();rd.onload=()=>shrinkImg(rd.result,u=>{tradeShots.push(u);renderTradeShots();});rd.readAsDataURL(file);}
@@ -5027,7 +5027,22 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     try{var r=await syncTrades(days);say(r.added?'up':'mut',(r.added?'✓ ':'')+r.added+' new trade'+(r.added!==1?'s':'')+' imported from '+r.accounts+' account'+(r.accounts!==1?'s':'')+'.'+(r.added?' Journal · PMR · Calendar · Proof Library updated.':' Nothing new — already in sync.'));}
     catch(e){say('down','Sync failed: '+esc(e.message)+' — check Settings → Live Account.');}
   }
-  function wireSync(){var go=document.getElementById('jrnlSyncGo');if(go)go.addEventListener('click',function(){go.disabled=true;doSync(+((document.getElementById('jrnlSyncRange')||{}).value||30)).then(function(){go.disabled=false;},function(){go.disabled=false;});});}
+  function wireSync(){
+    var go=document.getElementById('jrnlSyncGo');if(go)go.addEventListener('click',function(){go.disabled=true;doSync(+((document.getElementById('jrnlSyncRange')||{}).value||30)).then(function(){go.disabled=false;},function(){go.disabled=false;});});
+    var clr=document.getElementById('jrnlClearTsx');
+    if(clr)clr.addEventListener('click',function(){
+      var imp=(typeof loadTrades==='function'?loadTrades():[]).filter(function(t){return t.src==='tsx';});
+      var st=document.getElementById('jrnlSyncStatus');
+      if(!imp.length){if(st)st.innerHTML='<span class="mut">No TopstepX-imported trades to clear.</span>';return;}
+      if(!confirm('Delete all '+imp.length+' TopstepX-imported trades? Your manually-logged trades are kept.'))return;
+      if(typeof saveTrades==='function')saveTrades(loadTrades().filter(function(t){return t.src!=='tsx';}));
+      try{if(typeof renderJournal==='function')renderJournal();}catch(e){}
+      try{if(typeof RENDERED!=='undefined'&&RENDERED.pmr&&typeof renderPmr==='function')renderPmr();}catch(e){}
+      try{if(typeof RENDERED!=='undefined'&&RENDERED.prooflib&&typeof renderProofLib==='function')renderProofLib();}catch(e){}
+      try{if(typeof RENDERED!=='undefined'&&RENDERED.calendar&&typeof loadMonthView==='function'){if(typeof MV!=='undefined'&&typeof curMonth==='function')MV=curMonth();loadMonthView();}}catch(e){}
+      if(st)st.innerHTML='<span class="up">Cleared '+imp.length+' imported trade'+(imp.length!==1?'s':'')+'. Re-sync to re-import (copy trades now combine).</span>';
+    });
+  }
 
   /* ---- live context for the Brief's coach read (levels + M15 SMT) ---- */
   function contextText(){
