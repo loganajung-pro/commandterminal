@@ -869,7 +869,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2v · 2026-08-12 · delete trade + clear imports';
+const BUILD='v2w · 2026-08-12 · acceptable window 0830-1115';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -1603,7 +1603,9 @@ function tick(){
 document.getElementById("briefDate").textContent="· "+new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",weekday:"long",month:"long",day:"numeric",year:"numeric"}).format(new Date())+" ET";
 
 /* ===== Protocol windows ===== */
-const BASE_WINDOWS=[{s:'09:40',e:'10:15',label:'Prime AM'},{s:'10:25',e:'10:35',label:'Silver Bullet'},{s:'10:45',e:'11:15',label:'Late AM'},{s:'12:45',e:'13:15',label:'Early PM'},{s:'13:45',e:'14:15',label:'Afternoon'}];
+/* ACCEPTABLE window = 08:30–11:15 (any entry inside is acceptable). BASE_WINDOWS below are the OPTIMAL tier inside it. */
+const ACCEPT_WIN={s:'08:30',e:'11:15',label:'Acceptable window'};
+const BASE_WINDOWS=[{s:'09:40',e:'10:15',label:'Prime AM'},{s:'10:25',e:'10:35',label:'Silver Bullet'},{s:'10:45',e:'11:15',label:'Late AM'}];
 /* Daily AMD phase (Time Theory clock) + the next 90-minute EXECUTION cycle.
    90-min cycles are anchored to midnight ET → boundaries fall on 09:00 / 10:30 /
    12:00 / 13:30 / 15:00, which is where the trader's macro windows live. */
@@ -1628,7 +1630,7 @@ function execCycleContext(){
     c90:c90?(hmStr(c90.s)+'–'+hmStr(c90.e)+' '+c90.p+(c90.exec?' — EXECUTION 90M':'')):'—',
     c30:c30?(hmStr(c30.s)+'–'+hmStr(c30.e)+' '+c30.p):'(30M focus cycles run 08:30–11:30 only)',
     optimal:inOpt?('YES — inside optimal entry '+hmStr(inOpt[0])+'–'+hmStr(inOpt[1])):(nextOpt?('no — next optimal entry '+hmStr(nextOpt[0])+'–'+hmStr(nextOpt[1])):'no optimal entry window left today'),
-    outBy:'11:30 ET'
+    outBy:'no new entries after 11:15 · flat by 11:30 ET'
   };
 }
 const FOMC_WIN={s:'14:45',e:'15:15',label:'FOMC Window',fomc:true};
@@ -3740,8 +3742,8 @@ function weekReviewHtml(w){
   const stk=Object.keys(w.states);
   if(stk.length)h+=`<div class="kv"><span class="k">State at execution</span><span class="v">${stk.map(k=>`<span class="tag ${/settled|grounded/i.test(k)?'bull':'med'}" style="margin:1px">${escH(k)} ×${w.states[k]}</span>`).join(' ')}</span></div>`;
   const wOut=w.trades.filter(t=>windowFor(t.time)===false);
-  if(wOut.length)h+=`<div class="kv"><span class="k">Window discipline</span><span class="v"><b class="down">${wOut.length}</b> trade${wOut.length!==1?'s':''} taken outside a focus window <span class="subtle">${wOut.map(t=>fmtDay(t.date)+' '+(hhmm(t.time)||'')).join(' · ')}</span></span></div>`;
-  else if(w.trades.some(t=>hhmm(t.time)))h+=`<div class="kv"><span class="k">Window discipline</span><span class="v"><span class="tag bull">all entries inside focus windows</span></span></div>`;
+  if(wOut.length)h+=`<div class="kv"><span class="k">Window discipline</span><span class="v"><b class="down">${wOut.length}</b> trade${wOut.length!==1?'s':''} outside the 08:30–11:15 window <span class="subtle">${wOut.map(t=>fmtDay(t.date)+' '+(hhmm(t.time)||'')).join(' · ')}</span></span></div>`;
+  else if(w.trades.some(t=>hhmm(t.time)))h+=`<div class="kv"><span class="k">Window discipline</span><span class="v"><span class="tag bull">all entries inside 08:30–11:15</span></span></div>`;
   if(w.violations.length)h+=`<div class="kv"><span class="k">Protocol violations</span><span class="v">${w.violations.map(v=>`<span class="tag bear" style="margin:1px">${fmtDay(v.ds)} — ${escH(v.v)}</span>`).join(' ')}</span></div>`;
   h+='<hr class="d"><div class="sec">Day by Day <span class="subtle">— click a day to open it below · click another any time</span></div>';
   h+=w.days.map(D=>{
@@ -4197,7 +4199,7 @@ function csvDoImport(){
    entry/exit, and your annotated screenshots to the coach, and gets a
    technical grading of the execution against the Matrix protocol.
    ============================================================ */
-const COACH_TRADE_PROMPT=`You are this trader's 1-on-1 trading mentor — a savant who scaled past $100M. You share their protocol (Matrix: POI → Draw → SMT → Time → CSD) and their focus windows (Prime AM 09:40–10:15 · Silver Bullet 10:25–10:35 · Late AM 10:45–11:15 · Early PM 12:45–13:15 · Afternoon 13:45–14:15 ET).
+const COACH_TRADE_PROMPT=`You are this trader's 1-on-1 trading mentor — a savant who scaled past $100M. You share their protocol (Matrix: POI → Draw → SMT → Time → CSD) and their acceptable execution window 08:30–11:15 ET — ANY entry inside it is acceptable, not a deviation; the OPTIMAL windows inside are Prime AM 09:40–10:15 · Silver Bullet 10:25–10:35 · Late AM 10:45–11:15. No new entries after 11:15, flat by 11:30 as the default, though pre-annotated conditions can extend it and still count as acceptable.
 
 ${SEVEN_STEPS}
 
@@ -4239,7 +4241,7 @@ async function coachTradeReview(id){
   const w=windowFor(tr.time);
   const rec='TRADE RECORD:\n'+JSON.stringify({date:tr.date,pair:tr.pair,dir:tr.dir,session:tr.sess,model:tr.model,
     entry:tr.pentry,stop:tr.pstop,target:tr.ptarget,exit:tr.pexit,entryTime:tr.time,exitTime:tr.timeout,
-    window:(w===false?'OUTSIDE all focus windows':w?w.label:'no time logged'),
+    window:(w===false?'OUTSIDE the 08:30–11:15 acceptable window':(w?(w.tier==='optimal'?(w.label+' — optimal window'):'inside 08:30–11:15 acceptable window'):'no time logged')),
     result:tr.res,r:tr.r,plannedRR:tr.prr,mfe:tr.mfe,mae:tr.mae,setupGrade:tr.setup,state:tr.state,exitBehaviour:tr.exit,notes:tr.notes},null,1);
   const content=[];
   visionParts(tr.shots,3).parts.forEach(pt=>content.push(pt));
@@ -4336,9 +4338,10 @@ Execution ONLY lives in the 08:30–10:00 and 10:00–11:30 cycles.
 · 08:30–09:00 Accumulation · 09:00–09:30 Manipulation · 09:30–10:00 Distribution
 · 10:00–10:30 Accumulation · 10:30–11:00 Manipulation · 11:00–11:30 Distribution
 
+ACCEPTABLE ENTRY WINDOW: 08:30–11:15 ET — ANY entry inside this window is acceptable, not a mistake. The two OPTIMAL windows below are the highest-probability slots inside it, but an entry anywhere in 08:30–11:15 is valid.
 OPTIMAL ENTRY — right AFTER the 30M Manipulation, right BEFORE the 30M Distribution:
 · 09:40–10:15 · 10:40–11:15.
-FULLY OUT of the market by 11:30 ET.
+No new entries after 11:15; fully out by 11:30 ET is the default — pre-annotated conditions may extend this and remain acceptable.
 
 HOW TO USE IT: the 270M phase gives session context, the 90M cycle tells you if execution is live, the 30M focus AMD times the entry. POI and Target must respect where price sits in this stack — position off a 30M Manipulation and execute into the 30M Distribution, ideally inside an optimal entry window (09:40–10:15 or 10:40–11:15), running the full protocol stack (sweep → SMT → CSD → displacement → continuation). No new entries after 11:15 and flat by 11:30. Outside 07:00–11:30 there is no trade.`;
 
@@ -4404,8 +4407,8 @@ async function cbCoachRead(){
     '· 270M session AMD: '+ex.c270,
     '· 90M cycle: '+ex.c90,
     '· 30M focus AMD: '+ex.c30,
-    '· Optimal entry: '+ex.optimal+' (windows 09:40–10:15 · 10:40–11:15).',
-    '· Flat by '+ex.outBy+'. Execution only inside 07:00–11:30 (the 270M Manipulation), and only in the 08:30–10:00 / 10:00–11:30 90M cycles.',
+    '· ACCEPTABLE entry window: 08:30–11:15 ET — any entry inside is acceptable. Optimal windows: 09:40–10:15 · 10:40–11:15. Current: '+ex.optimal,
+    '· '+ex.outBy+'. Acceptable execution lives inside 08:30–11:15 (the 90M cycles 08:30–10:00 / 10:00–11:30); pre-annotated conditions may extend and remain acceptable.',
     'Filter POI, Target and entry through all three tiers: 270M context → 90M execution cycle → 30M focus AMD → optimal window → the complete protocol stack (sweep → SMT → CSD → displacement → continuation). HTF cycles are bias only.'].join('\n');
   let __live='';try{if(window.TSX_LIVE&&window.TSX_LIVE.ensureContext)__live=await window.TSX_LIVE.ensureContext();}catch(e){}
   content.push({type:'text',text:COACH_CHART_PROMPT+'\n\nCONTEXT\n'+ctx+(__live?('\n\nLIVE MACHINE DATA (TopstepX)\n'+__live+'\nFold these live levels + the M15 SMT into the read — name which array price is at and whether the SMT supports the draw. Keep OUTPUT in structural language per the rules.'):'')});
@@ -4432,17 +4435,19 @@ async function cbCoachRead(){
 }
 /* ===== Window compliance — objective, computed from entry time ===== */
 function windowFor(hm){
-  const t=hhmm(hm);if(!t)return null;
+  const t=hhmm(hm);if(!t)return null;   // null = no time logged
   const m=toMin(t);
-  const wins=BASE_WINDOWS.concat([FOMC_WIN]);
-  for(let i=0;i<wins.length;i++)if(m>=toMin(wins[i].s)&&m<=toMin(wins[i].e))return wins[i];
-  return false;   // false = logged a time, outside every window · null = no time logged
+  const opt=todaysWindows();            // optimal sub-windows (+ FOMC on FOMC days)
+  for(let i=0;i<opt.length;i++)if(m>=toMin(opt[i].s)&&m<=toMin(opt[i].e))return {tier:'optimal',label:opt[i].label,s:opt[i].s,e:opt[i].e};
+  if(m>=toMin(ACCEPT_WIN.s)&&m<=toMin(ACCEPT_WIN.e))return {tier:'accept',label:'Acceptable window',s:ACCEPT_WIN.s,e:ACCEPT_WIN.e};
+  return false;                          // outside the 08:30–11:15 acceptable window
 }
 function windowFlagHtml(tr){
   const w=windowFor(tr.time);
   if(w==null)return '';
-  return w?`<span class="tag bull" style="font-size:9px" title="Entry inside ${escH(w.label)} (${w.s}–${w.e} ET)">◷ ${escH(w.label)}</span>`
-          :`<span class="tag bear" style="font-size:9px" title="Entry at ${escH(hhmm(tr.time))} ET — outside every focus window">◷ OUTSIDE WINDOW</span>`;
+  if(w===false)return `<span class="tag bear" style="font-size:9px" title="Entry at ${escH(hhmm(tr.time))} ET — outside the 08:30–11:15 acceptable window">◷ OUTSIDE WINDOW</span>`;
+  if(w.tier==='optimal')return `<span class="tag bull" style="font-size:9px" title="Entry inside ${escH(w.label)} (${escH(w.s)}–${escH(w.e)} ET) — optimal">◷ ${escH(w.label)} · OPTIMAL</span>`;
+  return `<span class="tag med" style="font-size:9px" title="Entry inside 08:30–11:15 — acceptable (not an optimal window)">◷ ACCEPTABLE</span>`;
 }
 /* ===== Trade tags — multi-select per category ===== */
 const TAG_GROUPS=[
@@ -4754,12 +4759,10 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
 
   /* ---- sessions / windows ---- */
   var WINDOWS=[
-    {n:'Card window 09:30–10:30',a:570,b:630},
-    {n:'Prime AM 09:40–10:15',a:580,b:615},
-    {n:'Silver Bullet 10:25–10:35',a:625,b:635},
-    {n:'Late AM 10:45–11:15',a:645,b:675},
-    {n:'Early PM 12:45–13:15',a:765,b:795},
-    {n:'Afternoon 13:45–14:15',a:825,b:855}];
+    {n:'ACCEPTABLE 08:30–11:15',a:510,b:675},
+    {n:'Optimal · Prime AM 09:40–10:15',a:580,b:615},
+    {n:'Optimal · Silver Bullet 10:25–10:35',a:625,b:635},
+    {n:'Optimal · Late AM 10:45–11:15',a:645,b:675}];
   function sessionName(min){
     if(min>=1080||min<120)return 'Asia';
     if(min<480)return 'London';
@@ -4848,7 +4851,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
         var tier=TIER[it.id]||'man';
         var pill='<span class="lvpill '+tier+'">'+(tier==='auto'?'AUTO':'MANUAL')+'</span>';
         var read='';
-        if(it.id==='s4_win'){var on=(min>=570&&min<630);read=' <span class="lvpill '+(on?'on':'off')+'">'+(on?'● WINDOW OPEN':'window closed')+'</span>';}
+        if(it.id==='s4_win'){var on=(min>=510&&min<=675);read=' <span class="lvpill '+(on?'on':'off')+'">'+(on?'● WINDOW OPEN · 08:30–11:15':'window closed')+'</span>';}
         var manual=st[it.id]?' <span class="up" style="font-size:11px">✓ you</span>':'';
         h+='<div style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:12px;line-height:1.35"><div style="flex:1">'+esc(it.t)+read+manual+'</div>'+pill+'</div>';
       });
