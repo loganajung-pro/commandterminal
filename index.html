@@ -222,6 +222,34 @@ ul.tight li::marker{color:var(--org)}
 .hasbrief{cursor:pointer}
 .brdot{float:right;font-size:9px;filter:grayscale(.1)}
 .hasbrief:hover{outline:1px solid var(--grn-dim)}
+/* journal calendar — trade P&L tiles */
+.cell.win{background:rgba(53,208,127,.07)} .cell.win .cls{color:var(--grn)}
+.cell.loss{background:rgba(229,84,75,.07)} .cell.loss .cls{color:var(--red)}
+.cell.flat{background:rgba(216,162,58,.06)} .cell.flat .cls{color:var(--amber)}
+.cell.win{border-left:3px solid var(--grn-dim)} .cell.loss{border-left:3px solid #7a2f2f} .cell.flat{border-left:3px solid rgba(216,162,58,.5)}
+.cell .cls.pnl{font-family:var(--num);font-size:11px;font-weight:700}
+.cell .tct{font-size:8.5px;color:var(--mut);letter-spacing:.04em;text-transform:uppercase}
+.cell .dots{margin-top:2px;line-height:1}
+/* date-range pop-out picker */
+.rangepop{position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:270px;background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:12px;box-shadow:0 18px 48px rgba(0,0,0,.55)}
+.rpresets{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}
+.rpreset{background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:6px 4px;font-family:var(--mono);font-size:10.5px;color:var(--ink);cursor:pointer;text-align:center}
+.rpreset:hover{border-color:var(--grn-dim);background:#141922}
+.rpreset.on{background:var(--grn);color:#03110a;border-color:var(--grn)}
+.rphead{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}
+.rphead b{font-size:11.5px;font-weight:600}
+.rpnav{background:var(--panel2);border:1px solid var(--line2);border-radius:5px;color:var(--ink);cursor:pointer;width:22px;height:22px;line-height:20px;text-align:center;font-size:11px}
+.rpnav:hover{background:#141922}
+.rgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.rgrid .rdow{text-align:center;font-size:8.5px;color:var(--faint);font-weight:600;padding:2px 0}
+.rcell{text-align:center;font-family:var(--num);font-size:10.5px;padding:5px 0;border-radius:5px;cursor:pointer;color:var(--ink);border:1px solid transparent}
+.rcell:hover{background:#141922}
+.rcell.mut{color:var(--faint);cursor:default}
+.rcell.mut:hover{background:transparent}
+.rcell.inrange{background:rgba(53,208,127,.14)}
+.rcell.end{background:var(--grn);color:#03110a;font-weight:700}
+.rpfoot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px}
+.rpfoot .sel{font-size:10px;color:var(--mut);flex:1}
 @keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
 .pulsing{animation:pulse 1.5s ease-in-out infinite}
 .badge.live{color:var(--grn);border-color:var(--grn-dim);background:rgba(53,208,127,.08)}
@@ -505,8 +533,12 @@ ul.tight li::marker{color:var(--org)}
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button class="btn grn" id="openLogBtn" style="flex:1;min-width:150px;padding:11px">＋ Log a Trade</button>
             <button class="btn grn" id="jrnlSyncGo" style="flex:1;min-width:150px;padding:11px">⤓ Sync fills from TopstepX</button>
-            <select id="jrnlSyncRange" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:6px;padding:9px;font-family:var(--mono);font-size:12px"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option></select>
+            <div style="position:relative">
+              <button class="btn" id="jRangeBtn" style="padding:9px 12px;white-space:nowrap">▤ All time ▾</button>
+              <div class="rangepop" id="jRangePop" style="display:none"></div>
+            </div>
           </div>
+          <div class="subtle" id="jRangeNote" style="margin-top:6px;display:none"></div>
           <div class="subtle" id="jrnlSyncStatus" style="margin-top:6px"></div>
           <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap"><button class="btn" id="expPdf" style="padding:4px 8px;font-size:10px">PDF</button><button class="btn" id="expCsv" style="padding:4px 8px;font-size:10px">CSV</button><button class="btn" id="expJson" style="padding:4px 8px;font-size:10px">JSON</button><button class="btn" id="impJson" style="padding:4px 8px;font-size:10px">Import JSON</button><button class="btn grn" id="impCsvBtn" style="padding:4px 8px;font-size:10px">＋ CSV</button><button class="btn" id="jrnlClearTsx" style="padding:4px 8px;font-size:10px;border-color:var(--red);color:var(--red)">Clear TopstepX imports</button></div>
           <input type="file" id="impFile" accept="application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;left:-9999px">
@@ -521,6 +553,8 @@ ul.tight li::marker{color:var(--org)}
           <div class="ph" style="border:0;padding:0 0 8px"><span id="jCalTitle" style="font-size:14px;font-weight:600;color:var(--ink)"></span>
             <div class="navbtns"><button class="btn" id="prevMJ">◄</button><button class="btn" id="nextMJ">►</button></div></div>
           <div class="calgrid" id="jCalHead"></div><div class="calgrid" id="jCalBody"></div>
+          <div class="summary" id="jMonthSummary" style="margin-top:12px"></div>
+          <div class="legend" style="margin-top:8px"><span class="lg"><span style="color:var(--grn);font-weight:700">▲</span> long</span><span class="lg"><span style="color:var(--red);font-weight:700">▼</span> short · arrow colour = outcome</span><span class="lg"><span style="color:var(--grn)">■</span> green day</span><span class="lg"><span style="color:var(--red)">■</span> red day</span><span class="lg"><span style="color:var(--amber)">■</span> break-even</span><span class="lg subtle">click a day to view / edit its trades</span></div>
         </div>
         </div><!-- /jsub cal -->
         <div class="jsub" data-jsub="perf" style="display:none;flex-direction:column;gap:14px">
@@ -869,7 +903,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2w · 2026-08-12 · acceptable window 0830-1115';
+const BUILD='v2x · 2026-08-17 · journal calendar tiles + date-range picker';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2406,8 +2440,71 @@ function fmtDay(ds){try{return new Intl.DateTimeFormat('en-US',{weekday:'short',
 function computeStats(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE');const wins=closed.filter(t=>t.res==='Win').length,loss=closed.filter(t=>t.res==='Loss').length;const totR=closed.reduce((a,t)=>a+(+t.r||0),0);const wr=closed.length?Math.round(wins/closed.length*100):0;const avg=closed.length?(totR/closed.length):0;return{n:trades.length,closed:closed.length,wins,loss,wr,totR,avg};}
 function equitySvg(trades){const closed=trades.filter(t=>t.res==='Win'||t.res==='Loss'||t.res==='BE').slice().sort((a,b)=>a.date.localeCompare(b.date));if(!closed.length)return '<div class="subtle">No closed trades yet.</div>';let cum=0;const pts=[0];closed.forEach(t=>{cum+=(+t.r||0);pts.push(cum);});const W=100,H=40,mn=Math.min(...pts,0),mx=Math.max(...pts,1);const X=i=>i/(pts.length-1)*W,Y=v=>H-(v-mn)/(mx-mn||1)*H;const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p).toFixed(1)).join(' ');const z=Y(0).toFixed(1);return `<svg viewBox="0 0 100 44" style="width:100%;height:110px"><line x1="0" y1="${z}" x2="100" y2="${z}" stroke="var(--line2)" stroke-width="0.5"/><path d="${d}" fill="none" stroke="var(--grn)" stroke-width="1.3"/></svg><div class="subtle">Cumulative: ${cum>=0?'+':''}${cum.toFixed(1)}R over ${closed.length} closed</div>`;}
 function dayDots(trades,ds){const dl=trades.filter(t=>t.date===ds);let d='';dl.forEach(t=>{const col=t.res==='Win'?'var(--grn)':(t.res==='Loss'?'var(--red)':(t.res==='BE'?'var(--mut)':'var(--faint)'));const ar=(t.dir==='Short')?'▼':'▲';d+=`<span title="${t.dir==='Short'?'Short':'Long'} · ${t.res||'Open'}" style="display:inline-block;margin:0 1px;font-size:10px;line-height:1;font-weight:700;color:${col}">${ar}</span>`;});return d;}
-function monthCal(prefix,view,trades){const y=view.y,m=view.m;document.getElementById(prefix+'CalHead').innerHTML=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const dl=trades.filter(t=>t.date===ds);let nu=0,hu=false,nr=0,hr=false;dl.forEach(t=>{if(t.usd!=null&&t.usd!==''&&!isNaN(+t.usd)){nu+=+t.usd;hu=true;}if(t.r!==''&&t.r!=null&&!isNaN(+t.r)){nr+=+t.r;hr=true;}});const nv=dl.length?(hu?((nu>=0?'+$':'-$')+Math.abs(nu).toFixed(0)):(hr?((nr>=0?'+':'')+nr.toFixed(1)+'R'):dl.length+'t')):'';const nc=dl.length?(((hu?nu:nr)>=0)?'var(--grn)':'var(--red)'):'';const nh=nv?`<div style="font-family:var(--num);font-size:10px;font-weight:600;color:${nc};line-height:1.1">${nv}</div>`:'';cells+=`<div class="cell ${ds===td?'today':''}" data-d="${ds}" style="min-height:52px"><div class="dn">${d}</div>${nh}<div>${dayDots(trades,ds)}</div></div>`;}document.getElementById(prefix+'CalBody').innerHTML=cells;}
+function monthCal(prefix,view,trades){const y=view.y,m=view.m;
+  document.getElementById(prefix+'CalHead').innerHTML=['SUN','MON','TUE','WED','THU','FRI','SAT'].map(d=>`<div class="dow">${d}</div>`).join('');
+  const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate(),td=etDateStr(new Date());
+  let cells='';for(let i=0;i<sd;i++)cells+='<div class="cell dim"></div>';
+  let mNet=0,mHasU=false,mNetR=0,mTrades=0,mWinDays=0,mDays=0;
+  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,dow=new Date(Date.UTC(y,m-1,d)).getUTCDay();
+    const dl=trades.filter(t=>t.date===ds);
+    if(dow===0||dow===6){cells+=`<div class="cell dim"><div class="dn">${d}</div></div>`;continue;}
+    if(!dl.length){cells+=`<div class="cell ${ds===td?'today':''}"><div class="dn">${d}</div></div>`;continue;}
+    let nu=0,hu=false,nr=0,hr=false;dl.forEach(t=>{if(t.usd!=null&&t.usd!==''&&!isNaN(+t.usd)){nu+=+t.usd;hu=true;}if(t.r!==''&&t.r!=null&&!isNaN(+t.r)){nr+=+t.r;hr=true;}});
+    const metric=hu?nu:nr;const cls=metric>0?'win':(metric<0?'loss':'flat');
+    const net=hu?((nu>=0?'+$':'-$')+Math.abs(nu).toFixed(0)):(hr?((nr>=0?'+':'')+nr.toFixed(1)+'R'):dl.length+'t');
+    mDays++;mTrades+=dl.length;if(hu){mNet+=nu;mHasU=true;}mNetR+=nr;if(metric>0)mWinDays++;
+    const nt=dl.length;
+    cells+=`<div class="cell ${cls} ${ds===td?'today':''}" data-d="${ds}"><div class="dn">${d}</div><div class="dots">${dayDots(trades,ds)}</div><div class="tct" style="margin-top:auto">${nt} trade${nt!==1?'s':''}</div><div class="cls pnl">${net}</div></div>`;}
+  document.getElementById(prefix+'CalBody').innerHTML=cells;
+  const ms=document.getElementById(prefix+'MonthSummary');
+  if(ms){const netLbl=mHasU?((mNet>=0?'+$':'-$')+Math.abs(mNet).toLocaleString(undefined,{maximumFractionDigits:0})):((mNetR>=0?'+':'')+mNetR.toFixed(1)+'R');const netCls=(mHasU?mNet:mNetR)>=0?'trade':'skip';const wd=mDays?Math.round(mWinDays/mDays*100):0;
+    ms.innerHTML=`<div class="sumcard"><div class="n">${mTrades}</div><div class="l">Trades</div></div><div class="sumcard trade"><div class="n">${wd}%</div><div class="l">Green days</div></div><div class="sumcard ${netCls}"><div class="n">${netLbl}</div><div class="l">Net · month</div></div>`;}
+}
 let IV=curMonth(),JV=curMonth();
+/* ===== Journal date-range filter ===== */
+let JRANGE=null;try{const _r=JSON.parse(lsGet('ct_jrange')||'null');if(_r&&_r.from&&_r.to)JRANGE=_r;}catch(e){}
+function filterRange(list){if(!JRANGE)return list;return list.filter(t=>t.date>=JRANGE.from&&t.date<=JRANGE.to);}
+function todayET(){return etParts().date;}
+function dShift(ds,delta){const d=new Date(ds+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);}
+function shortD(ds){try{return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(ds+'T12:00:00'));}catch(e){return ds;}}
+function rangeLabelText(){return JRANGE?('▤ '+shortD(JRANGE.from)+' – '+shortD(JRANGE.to)+' ▾'):'▤ All time ▾';}
+const RANGE_PRESETS=[{k:'7D',days:7},{k:'30D',days:30},{k:'90D',days:90},{k:'MTD',mtd:true},{k:'YTD',ytd:true},{k:'All',all:true}];
+function presetRange(p){const td=todayET();if(p.all)return null;if(p.mtd)return{from:td.slice(0,7)+'-01',to:td};if(p.ytd)return{from:td.slice(0,4)+'-01-01',to:td};return{from:dShift(td,-(p.days-1)),to:td};}
+function activePresetKey(){if(!JRANGE)return 'All';for(const p of RANGE_PRESETS){const r=presetRange(p);if(r&&r.from===JRANGE.from&&r.to===JRANGE.to)return p.k;}return null;}
+let RPV=curMonth();let RPsel={from:null,to:null};
+function applyRange(r,syncLabel){JRANGE=r;try{if(r)lsSet('ct_jrange',JSON.stringify(r));else lsDel('ct_jrange');}catch(e){}
+  const b=document.getElementById('jRangeBtn');if(b)b.textContent=rangeLabelText();
+  const note=document.getElementById('jRangeNote');if(note){if(JRANGE){note.style.display='';note.textContent='Performance & analytics filtered to '+shortD(JRANGE.from)+' – '+shortD(JRANGE.to)+'. Calendar shows all trades.';}else{note.style.display='none';}}
+  safe(renderJournal);}
+function renderRangePop(){const el=document.getElementById('jRangePop');if(!el)return;
+  const ap=activePresetKey();
+  const presets=RANGE_PRESETS.map(p=>`<div class="rpreset ${ap===p.k?'on':''}" data-preset="${p.k}">${p.k}</div>`).join('');
+  const y=RPV.y,m=RPV.m;const title=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1)));
+  const first=new Date(Date.UTC(y,m-1,1)),sd=first.getUTCDay(),di=new Date(Date.UTC(y,m,0)).getUTCDate();
+  let cells=['S','M','T','W','T','F','S'].map(d=>`<div class="rdow">${d}</div>`).join('');
+  for(let i=0;i<sd;i++)cells+='<div class="rcell mut"></div>';
+  for(let d=1;d<=di;d++){const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let c='rcell';const f=RPsel.from,t=RPsel.to;
+    if(f&&t){if(ds===f||ds===t)c+=' end';else if(ds>f&&ds<t)c+=' inrange';}
+    else if(f&&ds===f)c+=' end';
+    cells+=`<div class="${c}" data-rd="${ds}">${d}</div>`;}
+  const selTxt=RPsel.from?(shortD(RPsel.from)+(RPsel.to?' – '+shortD(RPsel.to):' – …')):'Pick a start & end date';
+  el.innerHTML=`<div class="rpresets">${presets}</div>
+    <div class="rphead"><span class="rpnav" data-rpnav="-1">◄</span><b>${title}</b><span class="rpnav" data-rpnav="1">►</span></div>
+    <div class="rgrid">${cells}</div>
+    <div class="rpfoot"><span class="sel">${selTxt}</span><button class="btn" data-rpclear="1" style="padding:5px 9px;font-size:10px">Clear</button><button class="btn grn" data-rpapply="1" style="padding:5px 9px;font-size:10px"${RPsel.from&&RPsel.to?'':' disabled'}>Apply</button></div>`;
+  el.querySelectorAll('.rpreset').forEach(x=>x.addEventListener('click',()=>{const p=RANGE_PRESETS.find(q=>q.k===x.dataset.preset);const r=presetRange(p);RPsel={from:null,to:null};applyRange(r);closeRangePop();}));
+  el.querySelectorAll('.rpnav').forEach(x=>x.addEventListener('click',()=>{let mm=RPV.m+ +x.dataset.rpnav,yy=RPV.y;if(mm<1){mm=12;yy--;}if(mm>12){mm=1;yy++;}RPV={y:yy,m:mm};renderRangePop();}));
+  el.querySelectorAll('.rcell[data-rd]').forEach(x=>x.addEventListener('click',()=>{const ds=x.dataset.rd;
+    if(!RPsel.from||(RPsel.from&&RPsel.to)){RPsel={from:ds,to:null};}
+    else if(ds<RPsel.from){RPsel={from:ds,to:RPsel.from};}
+    else{RPsel.to=ds;}renderRangePop();}));
+  const ap2=el.querySelector('[data-rpapply]');if(ap2)ap2.addEventListener('click',()=>{if(RPsel.from&&RPsel.to){applyRange({from:RPsel.from,to:RPsel.to});closeRangePop();}});
+  const cl=el.querySelector('[data-rpclear]');if(cl)cl.addEventListener('click',()=>{RPsel={from:null,to:null};applyRange(null);renderRangePop();});
+}
+function openRangePop(){const el=document.getElementById('jRangePop');if(!el)return;if(JRANGE){RPsel={from:JRANGE.from,to:JRANGE.to};RPV={y:+JRANGE.from.slice(0,4),m:+JRANGE.from.slice(5,7)};}else{RPsel={from:null,to:null};RPV=curMonth();}renderRangePop();el.style.display='block';}
+function closeRangePop(){const el=document.getElementById('jRangePop');if(el)el.style.display='none';}
+function syncLookbackDays(){if(JRANGE){const a=new Date(JRANGE.from+'T12:00:00Z'),b=new Date(todayET()+'T12:00:00Z');return Math.max(1,Math.min(400,Math.round((b-a)/86400000)+1));}return 30;}
 const FKEY='ct_frameworks';
 function loadFw(){try{return JSON.parse(lsGet(FKEY)||'{}');}catch(e){return {};}}
 function saveFwAll(o){try{lsSet(FKEY,JSON.stringify(o));return true;}catch(e){alert('Storage full — remove some screenshots and try again.');return false;}}
@@ -2486,8 +2583,8 @@ function visionParts(shots,max){
    ============================================================ */
 function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
 function scaleScore(v,zero,full){if(v==null||!isFinite(v))return null;return clamp((v-zero)/(full-zero)*100,0,100);}
-function protocolScore(){
-  const trades=loadTrades(),closed=trades.filter(isClosed);
+function protocolScore(src){
+  const trades=src||loadTrades(),closed=trades.filter(isClosed);
   if(!closed.length)return null;
   const P=perfStats(trades),S=shadowMetrics(trades),jr=loadPmr();
   /* 1 Win % — 30% scores 0, 65% scores 100 */
@@ -2588,10 +2685,10 @@ function dailyBarsSvg(trades){
   const tot=vals.reduce((a,b)=>a+b,0);
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100px"><line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="var(--line2)" stroke-width="0.7"/>${bars}</svg><div class="subtle">${days.length} day${days.length!==1?'s':''} · ${tot>=0?'+':''}${tot.toFixed(1)}R · green above the line, red below</div>`;
 }
-function renderJournalCharts(){
-  const trades=loadTrades(),G=globalAnalytics();
+function renderJournalCharts(trades){
+  trades=trades||loadTrades();const G=globalAnalytics(trades);
   const set=(id,html)=>{const e=document.getElementById(id);if(e)e.innerHTML=html;};
-  const ps=protocolScore();
+  const ps=protocolScore(trades);
   set('jRadar',ps?radarSvg(ps.axes):'<div class="subtle">Log a closed trade to build your score.</div>');
   set('jScoreList',ps?ps.axes.map(a=>`<div class="srow"><span>${escH(a.k)}</span><span class="sv ${a.score==null?'mut':(a.score>=65?'up':(a.score<40?'down':''))}">${a.score==null?'—':Math.round(a.score)}<span class="subtle" style="font-weight:400"> · ${escH(a.raw)}</span></span></div>`).join(''):'');
   set('jScoreBar',scoreBarHtml(ps?ps.total:null));
@@ -2607,8 +2704,8 @@ function renderJournalCharts(){
     if(id)set(id,barsHtml(attribBy(trades,t=>tagsOf(t,g.id))));
   });
 }
-function renderJournal(){const t=loadTrades();const s=computeStats(t);
-  const P=perfStats(t),S=shadowMetrics(t),G=globalAnalytics();
+function renderJournal(){const tAll=loadTrades();const t=filterRange(tAll);const s=computeStats(t);
+  const P=perfStats(t),S=shadowMetrics(t),G=globalAnalytics(t);
   const cell=(v,l,c)=>`<div class="s"><div class="v ${c||''}">${v}</div><div class="l">${l}</div></div>`;
   document.getElementById('jStat').innerHTML=cell(s.n,'Trades')+cell(s.wr+'%','Win rate','up')+cell(s.wins,'Wins')+cell(s.loss,'Losses','down')+cell((s.avg>=0?'+':'')+s.avg.toFixed(1),'Avg R',s.avg>=0?'up':'down')+cell((s.totR>=0?'+':'')+s.totR.toFixed(1),'Total R',s.totR>=0?'up':'down');
   const j2=document.getElementById('jStat2');
@@ -2639,10 +2736,10 @@ function renderJournal(){const t=loadTrades();const s=computeStats(t);
     +cell(G.ready.lo!=null?(G.ready.lo>=0?'+':'')+G.ready.lo.toFixed(1)+'R':'—','R · low readiness',G.ready.lo!=null&&G.ready.lo<0?'down':'');
   safe(function(){renderEV(t,P);});
   safe(function(){renderGradeEV(t);});
-  safe(renderJournalCharts);
+  safe(function(){renderJournalCharts(t);});
   document.getElementById('jEquity').innerHTML=equitySvg(t);
-  document.getElementById('jCalTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(JV.y,JV.m-1,1)));monthCal('j',JV,t);
-  document.querySelectorAll('#jCalBody .cell[data-d]').forEach(c=>{const ds=c.dataset.d;if(t.some(x=>x.date===ds)){c.style.cursor='pointer';c.title='View trades';c.addEventListener('click',()=>openDayTrades(ds));}});
+  document.getElementById('jCalTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(JV.y,JV.m-1,1)));monthCal('j',JV,tAll);
+  document.querySelectorAll('#jCalBody .cell[data-d]').forEach(c=>{const ds=c.dataset.d;if(tAll.some(x=>x.date===ds)){c.style.cursor='pointer';c.title='View trades';c.addEventListener('click',()=>openDayTrades(ds));}});
   const _p=document.getElementById('jDayPanel');if(_p)_p.style.display='none';
 }
 var selJDay=null;
@@ -2697,6 +2794,12 @@ function openGradeTrades(grade){curTradeId=null;const n=loadTrades().filter(t=>(
 document.querySelectorAll('#jSubtabs .subtab').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('#jSubtabs .subtab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');var v=btn.dataset.jsub;document.querySelectorAll('#view-journal .jsub').forEach(function(s){s.style.display=(s.dataset.jsub===v)?'flex':'none';});});});
 document.getElementById('prevMJ').addEventListener('click',()=>{let m=JV.m-1,y=JV.y;if(m<1){m=12;y--;}JV={y,m};renderJournal();});
 document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=JV.y;if(m>12){m=1;y++;}JV={y,m};renderJournal();});
+/* date-range picker wiring */
+(function(){const b=document.getElementById('jRangeBtn');if(!b)return;b.textContent=rangeLabelText();
+  const note=document.getElementById('jRangeNote');if(note&&JRANGE){note.style.display='';note.textContent='Performance & analytics filtered to '+shortD(JRANGE.from)+' – '+shortD(JRANGE.to)+'. Calendar shows all trades.';}
+  b.addEventListener('click',function(e){e.stopPropagation();const el=document.getElementById('jRangePop');if(el&&el.style.display==='block')closeRangePop();else openRangePop();});
+  document.addEventListener('click',function(e){const el=document.getElementById('jRangePop');if(!el||el.style.display!=='block')return;if(el.contains(e.target)||e.target===b)return;closeRangePop();});
+})();
 document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').addEventListener('click',()=>download('command-terminal-trades.json',JSON.stringify(loadTrades(),null,2),'application/json'));
@@ -3466,8 +3569,8 @@ function holdMinutes(t){
   const a=p(t.time),b=p(t.timeout);if(a==null||b==null)return null;
   let d=b-a;if(d<0)d+=1440;return d;
 }
-function globalAnalytics(){
-  const trades=loadTrades(),closed=trades.filter(isClosed);
+function globalAnalytics(src){
+  const trades=src||loadTrades(),closed=trades.filter(isClosed);
   const pm=loadPm(),jr=loadPmr();
   /* adherence → R : does following the plan actually pay? */
   const adhR={Y:[],Partial:[],N:[]};
@@ -5031,7 +5134,7 @@ if(document.getElementById('expPdf'))document.getElementById('expPdf').addEventL
     catch(e){say('down','Sync failed: '+esc(e.message)+' — check Settings → Live Account.');}
   }
   function wireSync(){
-    var go=document.getElementById('jrnlSyncGo');if(go)go.addEventListener('click',function(){go.disabled=true;doSync(+((document.getElementById('jrnlSyncRange')||{}).value||30)).then(function(){go.disabled=false;},function(){go.disabled=false;});});
+    var go=document.getElementById('jrnlSyncGo');if(go)go.addEventListener('click',function(){go.disabled=true;doSync(syncLookbackDays()).then(function(){go.disabled=false;},function(){go.disabled=false;});});
     var clr=document.getElementById('jrnlClearTsx');
     if(clr)clr.addEventListener('click',function(){
       var imp=(typeof loadTrades==='function'?loadTrades():[]).filter(function(t){return t.src==='tsx';});
