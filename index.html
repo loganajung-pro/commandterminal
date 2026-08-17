@@ -550,7 +550,7 @@ ul.tight li::marker{color:var(--org)}
         </div>
         <div class="jsub" data-jsub="cal" style="display:flex;flex-direction:column;gap:14px">
         <div class="panel"><h2 class="sec">Month Summary</h2>
-          <div class="summary" id="jMonthSummary"></div>
+          <div class="summary" id="jMonthSummary" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"></div>
           <div class="legend" style="margin-top:8px"><span class="lg"><span style="color:var(--grn);font-weight:700">▲</span> long</span><span class="lg"><span style="color:var(--red);font-weight:700">▼</span> short · arrow colour = outcome</span><span class="lg"><span style="color:var(--grn)">■</span> green day</span><span class="lg"><span style="color:var(--red)">■</span> red day</span><span class="lg"><span style="color:var(--amber)">■</span> break-even</span><span class="lg subtle">click a day to view / edit its trades</span></div>
         </div>
         <div class="panel"><h2 class="sec grn" style="margin:0 0 8px">Calendar</h2>
@@ -905,7 +905,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2y · 2026-08-17 · journal cal full-width · summary on top · picker range-select fix';
+const BUILD='v2z · 2026-08-17 · month summary: win% · EV · green days · protocol vs off';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2459,8 +2459,37 @@ function monthCal(prefix,view,trades){const y=view.y,m=view.m;
     cells+=`<div class="cell ${cls} ${ds===td?'today':''}" data-d="${ds}"><div class="dn">${d}</div><div class="dots">${dayDots(trades,ds)}</div><div class="tct" style="margin-top:auto">${nt} trade${nt!==1?'s':''}</div><div class="cls pnl">${net}</div></div>`;}
   document.getElementById(prefix+'CalBody').innerHTML=cells;
   const ms=document.getElementById(prefix+'MonthSummary');
-  if(ms){const netLbl=mHasU?((mNet>=0?'+$':'-$')+Math.abs(mNet).toLocaleString(undefined,{maximumFractionDigits:0})):((mNetR>=0?'+':'')+mNetR.toFixed(1)+'R');const netCls=(mHasU?mNet:mNetR)>=0?'trade':'skip';const wd=mDays?Math.round(mWinDays/mDays*100):0;
-    ms.innerHTML=`<div class="sumcard"><div class="n">${mTrades}</div><div class="l">Trades</div></div><div class="sumcard trade"><div class="n">${wd}%</div><div class="l">Green days</div></div><div class="sumcard ${netCls}"><div class="n">${netLbl}</div><div class="l">Net · month</div></div>`;}
+  if(ms){
+    const mm=String(m).padStart(2,'0');const mStart=`${y}-${mm}-01`,mEnd=`${y}-${mm}-${String(di).padStart(2,'0')}`;
+    const mt=trades.filter(t=>t.date>=mStart&&t.date<=mEnd);
+    if(!mt.length){ms.innerHTML=`<div class="sumcard" style="grid-column:1/-1"><div class="l" style="margin:0">No trades logged this month</div></div>`;return;}
+    const closed=mt.filter(isClosed);const wins=closed.filter(t=>t.res==='Win').length;const wr=closed.length?Math.round(wins/closed.length*100):0;
+    const Pm=perfStats(mt);const evR=Pm.expectancy;
+    const uv=closed.map(tradeUsdAny).filter(x=>x!=null);const evU=uv.length?uv.reduce((a,b)=>a+b,0)/uv.length:null;
+    const wd=mDays?Math.round(mWinDays/mDays*100):0;
+    const evOf=(arr)=>{const c=arr.filter(isClosed);return c.length?c.reduce((a,t)=>a+tR(t),0)/c.length:null;};
+    const proto=mt.filter(isProtocolTrade),off=mt.filter(t=>!isProtocolTrade(t));
+    const evP=evOf(proto),evF=evOf(off);
+    const evFmt=(v)=>v==null?'—':((v>=0?'+':'')+v.toFixed(2)+'R');
+    const evCol=(v)=>v==null?'var(--mut)':(v>=0?'var(--grn)':'var(--red)');
+    ms.innerHTML=
+      `<div class="sumcard ${wr>=50?'trade':(wr<40?'skip':'')}"><div class="n">${wr}%</div><div class="l">Win rate</div></div>`+
+      `<div class="sumcard ${evR>=0?'trade':'skip'}"><div class="n">${evR>=0?'+':''}${evR.toFixed(2)}R</div>${evU!=null?`<div style="font-family:var(--num);font-size:13px;font-weight:600;color:${evU>=0?'var(--grn)':'var(--red)'};margin-top:1px">${evU>=0?'+$':'-$'}${Math.abs(evU).toFixed(0)}<span class="subtle" style="font-size:10px"> / trade</span></div>`:''}<div class="l">Expected value</div></div>`+
+      `<div class="sumcard trade"><div class="n">${wd}%</div><div class="l">Green days</div></div>`+
+      `<div class="sumcard" title="Protocol = POI · Draw · SMT · Time · CSD all logged on the trade" style="text-align:left"><div class="l" style="margin:0 0 6px">Protocol vs off-protocol</div><div style="display:flex;gap:12px;justify-content:space-between"><div><div class="n" style="font-size:20px;color:var(--grn)">${proto.length}</div><div class="l" style="text-transform:none;letter-spacing:0">protocol · <b style="color:${evCol(evP)}">${evFmt(evP)}</b></div></div><div style="border-left:1px solid var(--line);padding-left:12px"><div class="n" style="font-size:20px;color:var(--mut)">${off.length}</div><div class="l" style="text-transform:none;letter-spacing:0">off · <b style="color:${evCol(evF)}">${evFmt(evF)}</b></div></div></div></div>`;}
+}
+/* Protocol trade = the full macro read was logged: POI + Draw + SMT + Time + CSD.
+   Checks the trade's Protocol-Sequence chips AND its Draw / Entry-Trigger tags for each component. */
+function isProtocolTrade(t){
+  const seq=(tradeSeqs(t)||[]).join(' | ').toLowerCase();
+  const trig=tagsOf(t,'trigger').map(s=>String(s).toLowerCase());
+  const has=(re)=>re.test(seq);const trigHas=(s)=>trig.some(x=>x.indexOf(s)>=0);
+  const poi = has(/poi/) || tagsOf(t,'aoi').length>0;
+  const draw = has(/liquidity|draw|pdh|pdl|equal|bisi|sibi/) || tagsOf(t,'draw').length>0;
+  const smt = has(/smt/) || trigHas('smt');
+  const time = has(/0930|1030|0940|silver|window|\btime\b|reversal|distribution/) || trigHas('time');
+  const csd = has(/csd/) || trigHas('csd');
+  return poi&&draw&&smt&&time&&csd;
 }
 let IV=curMonth(),JV=curMonth();
 /* ===== Journal date-range filter ===== */
