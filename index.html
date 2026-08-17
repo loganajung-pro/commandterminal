@@ -528,13 +528,13 @@ ul.tight li::marker{color:var(--org)}
     <section class="view" id="view-journal">
       <div class="crumb">Matrix / <b>Trade Journal</b></div>
       <h1 class="h1">Trade Journal</h1>
-      <div style="max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
-        <div class="panel">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="panel" style="max-width:1400px;width:100%">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button class="btn grn" id="openLogBtn" style="flex:1;min-width:150px;padding:11px">＋ Log a Trade</button>
-            <button class="btn grn" id="jrnlSyncGo" style="flex:1;min-width:150px;padding:11px">⤓ Sync fills from TopstepX</button>
+            <button class="btn grn" id="openLogBtn" style="flex:1;min-width:150px;padding:6px">＋ Log a Trade</button>
+            <button class="btn grn" id="jrnlSyncGo" style="flex:1;min-width:150px;padding:6px">⤓ Sync fills from TopstepX</button>
             <div style="position:relative">
-              <button class="btn" id="jRangeBtn" style="padding:9px 12px;white-space:nowrap">▤ All time ▾</button>
+              <button class="btn" id="jRangeBtn" style="padding:6px 12px;white-space:nowrap">▤ All time ▾</button>
               <div class="rangepop" id="jRangePop" style="display:none"></div>
             </div>
           </div>
@@ -549,15 +549,17 @@ ul.tight li::marker{color:var(--org)}
           <button class="subtab" data-jsub="analytics">Analytics</button>
         </div>
         <div class="jsub" data-jsub="cal" style="display:flex;flex-direction:column;gap:14px">
+        <div class="panel"><h2 class="sec">Month Summary</h2>
+          <div class="summary" id="jMonthSummary"></div>
+          <div class="legend" style="margin-top:8px"><span class="lg"><span style="color:var(--grn);font-weight:700">▲</span> long</span><span class="lg"><span style="color:var(--red);font-weight:700">▼</span> short · arrow colour = outcome</span><span class="lg"><span style="color:var(--grn)">■</span> green day</span><span class="lg"><span style="color:var(--red)">■</span> red day</span><span class="lg"><span style="color:var(--amber)">■</span> break-even</span><span class="lg subtle">click a day to view / edit its trades</span></div>
+        </div>
         <div class="panel"><h2 class="sec grn" style="margin:0 0 8px">Calendar</h2>
           <div class="ph" style="border:0;padding:0 0 8px"><span id="jCalTitle" style="font-size:14px;font-weight:600;color:var(--ink)"></span>
             <div class="navbtns"><button class="btn" id="prevMJ">◄</button><button class="btn" id="nextMJ">►</button></div></div>
           <div class="calgrid" id="jCalHead"></div><div class="calgrid" id="jCalBody"></div>
-          <div class="summary" id="jMonthSummary" style="margin-top:12px"></div>
-          <div class="legend" style="margin-top:8px"><span class="lg"><span style="color:var(--grn);font-weight:700">▲</span> long</span><span class="lg"><span style="color:var(--red);font-weight:700">▼</span> short · arrow colour = outcome</span><span class="lg"><span style="color:var(--grn)">■</span> green day</span><span class="lg"><span style="color:var(--red)">■</span> red day</span><span class="lg"><span style="color:var(--amber)">■</span> break-even</span><span class="lg subtle">click a day to view / edit its trades</span></div>
         </div>
         </div><!-- /jsub cal -->
-        <div class="jsub" data-jsub="perf" style="display:none;flex-direction:column;gap:14px">
+        <div class="jsub" data-jsub="perf" style="display:none;flex-direction:column;gap:14px;max-width:1400px;width:100%">
         <div class="panel"><h2 class="sec">Performance</h2>
           <div id="jEV" style="margin-bottom:10px"></div>
           <div class="stat" id="jStat"></div>
@@ -569,7 +571,7 @@ ul.tight li::marker{color:var(--org)}
           <div class="pscore"><div id="jRadar"></div><div id="jScoreList"></div></div>
           <div id="jScoreBar" style="margin-top:10px"></div></div>
         </div><!-- /jsub perf -->
-        <div class="jsub" data-jsub="analytics" style="display:none;flex-direction:column;gap:14px">
+        <div class="jsub" data-jsub="analytics" style="display:none;flex-direction:column;gap:14px;max-width:1400px;width:100%">
         <div class="panel"><h2 class="sec">Charts</h2>
           <div class="sec" style="margin:2px 0 6px">Daily R</div><div id="jDaily"></div>
           <div class="sec" style="margin:14px 0 6px">R Distribution</div><div id="jDist"></div>
@@ -903,7 +905,7 @@ ul.tight li::marker{color:var(--org)}
 </div></div>
 <script>
 /* Build stamp — bump this whenever the file changes so a stale/cached copy is obvious at a glance */
-const BUILD='v2x · 2026-08-17 · journal calendar tiles + date-range picker';
+const BUILD='v2y · 2026-08-17 · journal cal full-width · summary on top · picker range-select fix';
 try{const _b=document.getElementById('buildStamp');if(_b)_b.textContent='build '+BUILD;}catch(e){}
 /* ============================ DATA LAYER ============================ */
 const FMP="mcp__e237ac4a-028f-4759-8c31-cb1815921609__";
@@ -2797,8 +2799,12 @@ document.getElementById('nextMJ').addEventListener('click',()=>{let m=JV.m+1,y=J
 /* date-range picker wiring */
 (function(){const b=document.getElementById('jRangeBtn');if(!b)return;b.textContent=rangeLabelText();
   const note=document.getElementById('jRangeNote');if(note&&JRANGE){note.style.display='';note.textContent='Performance & analytics filtered to '+shortD(JRANGE.from)+' – '+shortD(JRANGE.to)+'. Calendar shows all trades.';}
-  b.addEventListener('click',function(e){e.stopPropagation();const el=document.getElementById('jRangePop');if(el&&el.style.display==='block')closeRangePop();else openRangePop();});
-  document.addEventListener('click',function(e){const el=document.getElementById('jRangePop');if(!el||el.style.display!=='block')return;if(el.contains(e.target)||e.target===b)return;closeRangePop();});
+  const pop=document.getElementById('jRangePop');
+  /* clicks inside the pop must not reach the document-level close handler —
+     re-rendering the grid detaches the clicked cell, so contains() would miss it and wrongly close. */
+  if(pop)pop.addEventListener('click',function(e){e.stopPropagation();});
+  b.addEventListener('click',function(e){e.stopPropagation();if(pop&&pop.style.display==='block')closeRangePop();else openRangePop();});
+  document.addEventListener('click',function(e){if(!pop||pop.style.display!=='block')return;if(e.target===b)return;closeRangePop();});
 })();
 document.getElementById('logBtn').addEventListener('click',()=>{const g=id=>document.getElementById(id).value;const date=g('f-date')||etParts().date;const data={date,pair:g('f-pair'),dir:g('f-dir'),model:teSeq.join(' · '),seq:teSeq.slice(),sess:g('f-sess'),res:g('f-res'),r:g('f-r'),pentry:g('f-pentry'),pstop:g('f-pstop'),ptarget:g('f-ptarget'),pexit:g('f-pexit'),risk:g('f-risk'),time:g('f-time'),setup:g('f-setup'),mfe:g('f-mfe'),mae:g('f-mae'),prr:g('f-prr'),timeout:g('f-timeout'),exit:g('f-exit'),state:g('f-state'),pgrade:g('f-pgrade'),egrade:g('f-egrade'),mgrade:g('f-mgrade'),notes:g('f-notes'),tags:teTagsVal(),shots:teShots.slice()};const t=loadTrades();if(editingTradeId!=null){const i=t.findIndex(x=>x.id===editingTradeId);if(i>=0)t[i]=Object.assign({},t[i],data,{id:editingTradeId});else t.push(Object.assign({id:nextTid()},data));}else{t.push(Object.assign({id:nextTid()},data));}saveTrades(t);editingTradeId=null;teShots=[];teSeq=[];teTags={};teTagsRender();['f-r','f-pentry','f-pstop','f-ptarget','f-pexit','f-risk','f-time','f-setup','f-mfe','f-mae','f-prr','f-timeout','f-exit','f-state','f-notes','f-pgrade','f-egrade','f-mgrade'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const _ts=document.getElementById('te-shots');if(_ts)_ts.innerHTML='';if(typeof teSeqRender==='function')teSeqRender();if(typeof closeLogModal==='function')closeLogModal();renderJournal();if(RENDERED.pmr)safe(renderPmr);if(RENDERED.prooflib)safe(renderProofLib);});
 function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
